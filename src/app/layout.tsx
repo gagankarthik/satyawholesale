@@ -23,7 +23,7 @@ const mono = IBM_Plex_Mono({
 });
 
 const DESCRIPTION =
-  "Satya Wholesale is a licensed wholesale and cash-and-carry distributor in Cincinnati, Ohio, supplying independent convenience retailers across Greater Cincinnati and the Tri-State — tobacco, vape, grocery, candy, HBA and more on one trade account.";
+  "Satya Wholesale is a licensed wholesale and cash-and-carry distributor in Cincinnati, Ohio, supplying independent convenience retailers across Greater Cincinnati — tobacco, vape, grocery, candy, HBA and more on one trade account.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://satyawholesalers.com"),
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "tobacco distributor Cincinnati",
     "vape wholesale Ohio",
     "candy and grocery wholesale",
-    "c-store distributor Tri-State",
+    "c-store distributor Greater Cincinnati",
   ],
   authors: [{ name: "Satya Wholesale" }],
   category: "business",

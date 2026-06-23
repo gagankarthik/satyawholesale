@@ -55,8 +55,16 @@ export interface OrderLine {
   price: number;
 }
 
-export type OrderStatus = "Submitted" | "Picking" | "Out for delivery" | "Delivered";
+export type OrderStatus =
+  | "Pending" | "Processing" | "At Local Facility" | "Out for delivery" | "Completed";
 export type PayStatus = "Unpaid" | "Paid" | "Partial" | "Refunded";
+
+/** Ordered fulfilment lifecycle — shared by the portal tracker and admin console. */
+export const ORDER_FLOW: OrderStatus[] = [
+  "Pending", "Processing", "At Local Facility", "Out for delivery", "Completed",
+];
+/** css-safe slug for a status, e.g. "Out for delivery" -> "outfordelivery". */
+export const statusSlug = (s: OrderStatus) => s.replace(/\s+/g, "").toLowerCase();
 
 export interface Order {
   ref: string;
@@ -77,6 +85,8 @@ export interface Order {
   paymentStatus?: PayStatus;
   billing?: string;
   shipping?: string;
+  adminNote?: string; // message from the warehouse team, shown to the customer
+  taxExempt?: boolean; // resale exemption; when false, sales tax applies
 }
 
 export const orderGrand = (o: Order) =>
@@ -91,7 +101,7 @@ export const CONTACT = {
   address1: "8100 Reading Rd",
   address2: "Cincinnati, OH 45237-1404",
   city: "Cincinnati, Ohio",
-  region: "Greater Cincinnati & the Tri-State",
+  region: "Greater Cincinnati",
   domain: "satyawholesalers.com",
   hours: "Mon–Fri 10–5:30 · Sat 10:30–5 · Sun closed",
   hoursList: [
@@ -197,19 +207,19 @@ const DAY = 86400000;
 
 /* historical orders so the admin dashboards have data on first run */
 export const SEED_ORDERS: Order[] = [
-  { ref: "SW-4810", placed: Date.now() - 1 * DAY, store: "Reading Rd Mini Mart", status: "Delivered", cases: 22, total: 1284.4,
+  { ref: "SW-4810", placed: Date.now() - 1 * DAY, store: "Reading Rd Mini Mart", status: "Out for delivery", cases: 22, total: 1284.4,
     lines: [{ id: 5510, name: "Breeze Pro 2% Assorted", qty: 8, price: 53.0 }, { id: 6411, name: "Candy Treasure Assorted Mix", qty: 6, price: 44.99 }, { id: 5127, name: "24/7 King Red Carton", qty: 8, price: 60.0 }] },
-  { ref: "SW-4806", placed: Date.now() - 2 * DAY, store: "Tri-State Smoke & Vape", status: "Delivered", cases: 18, total: 2106.5,
+  { ref: "SW-4806", placed: Date.now() - 2 * DAY, store: "Tri-State Smoke & Vape", status: "Processing", cases: 18, total: 2106.5,
     lines: [{ id: 5310, name: "Mr Fog Switch 5500", qty: 10, price: 149.5 }, { id: 7120, name: "ZYN Cool Mint 6mg", qty: 8, price: 78.4 }] },
-  { ref: "SW-4801", placed: Date.now() - 3 * DAY, store: "Norwood Quick Stop", status: "Delivered", cases: 14, total: 742.86,
+  { ref: "SW-4801", placed: Date.now() - 3 * DAY, store: "Norwood Quick Stop", status: "Completed", cases: 14, total: 742.86,
     lines: [{ id: 2798, name: "4K'S Cigarillo 4F99 Diamond", qty: 9, price: 10.42 }, { id: 6610, name: "Twix Cookie Dough King 24ct", qty: 5, price: 30.99 }] },
-  { ref: "SW-4793", placed: Date.now() - 4 * DAY, store: "Jay's Stop & Shop", status: "Delivered", cases: 26, total: 1488.0,
+  { ref: "SW-4793", placed: Date.now() - 4 * DAY, store: "Jay's Stop & Shop", status: "Completed", cases: 26, total: 1488.0,
     lines: [{ id: 5128, name: "24/7 King Gold Carton", qty: 12, price: 60.0 }, { id: 4801, name: "Clipper Lighter Tray 48ct", qty: 8, price: 34.99 }, { id: 7250, name: "5-Hour Energy Berry 12ct", qty: 6, price: 18.99 }] },
-  { ref: "SW-4788", placed: Date.now() - 5 * DAY, store: "Reading Rd Mini Mart", status: "Delivered", cases: 11, total: 612.4,
+  { ref: "SW-4788", placed: Date.now() - 5 * DAY, store: "Reading Rd Mini Mart", status: "Completed", cases: 11, total: 612.4,
     lines: [{ id: 6240, name: "Essentia Water 24pk", qty: 7, price: 22.8 }, { id: 9110, name: "Fashion Sunglasses Display", qty: 4, price: 48.0 }] },
-  { ref: "SW-4779", placed: Date.now() - 6 * DAY, store: "Eastgate Convenience", status: "Delivered", cases: 19, total: 1342.7,
+  { ref: "SW-4779", placed: Date.now() - 6 * DAY, store: "Eastgate Convenience", status: "Completed", cases: 19, total: 1342.7,
     lines: [{ id: 5402, name: "EB Design BC5000 Mix", qty: 9, price: 88.0 }, { id: 4401, name: "3 Kings Hookah Charcoal Big", qty: 10, price: 16.97 }] },
-  { ref: "SW-4768", placed: Date.now() - 7 * DAY, store: "Tri-State Smoke & Vape", status: "Delivered", cases: 16, total: 968.0,
+  { ref: "SW-4768", placed: Date.now() - 7 * DAY, store: "Tri-State Smoke & Vape", status: "Completed", cases: 16, total: 968.0,
     lines: [{ id: 1981, name: "357 Magnum BTL", qty: 10, price: 60.0 }, { id: 9010, name: "Phone Charging Cable Asst.", qty: 6, price: 32.0 }] },
 ];
 
@@ -321,6 +331,41 @@ export function useOrders() {
 
   return { orders, placeOrder, setStatus, patchOrder, removeOrder };
 }
+
+/* ---- app settings (tax, thresholds) ---- */
+const SETTINGS_KEY = "satya.settings.v1";
+export interface AppSettings {
+  taxRate: number; // percent, e.g. 6.5
+  taxLabel: string;
+  lowStock: number;
+}
+export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", lowStock: LOW_STOCK };
+
+export function useSettings() {
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  useEffect(() => {
+    setSettings(read(SETTINGS_KEY, DEFAULT_SETTINGS));
+    const sync = () => setSettings(read(SETTINGS_KEY, DEFAULT_SETTINGS));
+    window.addEventListener(`satya:${SETTINGS_KEY}`, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(`satya:${SETTINGS_KEY}`, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const update = useCallback((patch: Partial<AppSettings>) => {
+    setSettings((s) => {
+      const next = { ...s, ...patch };
+      write(SETTINGS_KEY, next);
+      return next;
+    });
+  }, []);
+  return { settings, update };
+}
+
+/* sales tax for an order: 0 when resale-exempt, else subtotal × rate% */
+export const computeTax = (subtotal: number, exempt: boolean | undefined, ratePct: number) =>
+  exempt === false ? Math.round(subtotal * ratePct) / 100 : 0;
 
 /* decrement stock when an order is submitted */
 export function commitStockForOrder(lines: OrderLine[]) {

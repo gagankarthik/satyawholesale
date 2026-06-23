@@ -858,8 +858,8 @@ section {
 
 /* ---------- footer ---------- */
 footer {
-  background: var(--ink);
-  color: #fff;
+  background: var(--paper-2);
+  color: var(--ink);
   padding: 72px 0 36px;
 }
 .foot-grid {
@@ -886,18 +886,18 @@ footer .brand img {
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--slate-3);
+  color: var(--slate);
   margin-bottom: 16px;
 }
 .fcol a {
   display: block;
   font-size: 14.5px;
-  color: #d5d7e6;
+  color: var(--ink);
   padding: 6px 0;
   transition: color 0.15s;
 }
 .fcol a:hover {
-  color: #fff;
+  color: var(--signal);
 }
 .foot-bot {
   display: flex;
@@ -905,11 +905,11 @@ footer .brand img {
   justify-content: space-between;
   margin-top: 52px;
   padding-top: 26px;
-  border-top: 1px solid var(--ink-line);
+  border-top: 1px solid var(--line);
   font-family: var(--font-mono-f);
   font-size: 11.5px;
   letter-spacing: 0.5px;
-  color: var(--slate-3);
+  color: var(--slate);
   flex-wrap: wrap;
   gap: 12px;
 }

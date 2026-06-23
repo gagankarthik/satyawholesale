@@ -1,0 +1,46 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { Arrow } from "@/components/Icons";
+
+export default function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const close = () => setMenuOpen(false);
+
+  return (
+    <header className="nav" id="nav">
+      <div className="wrap nav-in">
+        <a href="#main" className="brand" aria-label="Satya Wholesale home">
+          <Image src="/logo.webp" alt="Satya Wholesale — Cash & Carry" width={232} height={58} priority />
+        </a>
+        <nav className="nav-links" aria-label="Primary">
+          <a href="#departments">What we carry</a>
+          <a href="#how">How we serve</a>
+          <a href="#why">Why Satya</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <div className="nav-cta">
+          <Link className="btn btn-ghost btn-sm" href="/portal">Login</Link>
+          <a className="btn btn-primary btn-sm" href="#account">Open an account <Arrow /></a>
+          <button className="burger" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d={menuOpen ? "M6 6l12 12M18 6 6 18" : "M4 7h16M4 12h16M4 17h16"} strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      {menuOpen && (
+        <div className="mobmenu">
+          <a href="#departments" onClick={close}>What we carry</a>
+          <a href="#how" onClick={close}>How we serve</a>
+          <a href="#why" onClick={close}>Why Satya</a>
+          <a href="#contact" onClick={close}>Contact</a>
+          <Link href="/portal" onClick={close}>Login →</Link>
+          <a className="btn btn-primary" href="#account" onClick={close}>Open an account <Arrow /></a>
+        </div>
+      )}
+    </header>
+  );
+}

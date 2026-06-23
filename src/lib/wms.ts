@@ -96,7 +96,7 @@ const promoImg = (id: string) => `https://images.unsplash.com/photo-${id}?auto=f
 export const SEED_PROMOS: Promotion[] = [
   { id: "PR-01", tag: "New arrivals", title: "Fresh vapor & disposables", subtitle: "The latest Mr Fog, Breeze and EB Design — just landed by the case.", image: promoImg("1586528116311-ad8dd3c8310d"), active: true, created: Date.now() - 2 * DAY },
   { id: "PR-02", tag: "This week's deal", title: "Stock up & save by the case", subtitle: "Volume pricing across candy, snacks and beverages.", image: promoImg("1604719312566-8912e9227c6a"), active: true, created: Date.now() - 5 * DAY },
-  { id: "PR-03", tag: "Free next-day delivery", title: "Order by 2 PM, we deliver tomorrow", subtitle: "Across Greater Cincinnati and the Tri-State.", image: promoImg("1601584115197-04ecc0da31d7"), active: true, created: Date.now() - 9 * DAY },
+  { id: "PR-03", tag: "Free next-day delivery", title: "Order by 2 PM, we deliver tomorrow", subtitle: "Across Greater Cincinnati.", image: promoImg("1601584115197-04ecc0da31d7"), active: true, created: Date.now() - 9 * DAY },
 ];
 export const usePromotions = () => {
   const { items, ready, persist } = usePersisted<Promotion>("satya.promos.v1", SEED_PROMOS);

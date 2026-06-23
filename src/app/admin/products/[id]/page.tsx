@@ -1,0 +1,78 @@
+"use client";
+
+import Link from "next/link";
+import { use } from "react";
+import { deptName, fmt, sku, useInventory, LOW_STOCK, type Product } from "@/lib/store";
+import { Badge } from "@/components/ui";
+
+export default function AdminProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { products } = useInventory();
+  const p = products.find((x) => String(x.id) === id) as Product | undefined;
+
+  if (!p) {
+    return (
+      <>
+        <button className="detail-back" onClick={() => history.back()}>← Products</button>
+        <div className="empty"><div className="ei">🔍</div><h3>Product not found</h3><p>It may have been removed from the catalog.</p></div>
+      </>
+    );
+  }
+
+  const tone = p.stock <= 0 ? "danger" : p.stock <= LOW_STOCK ? "warning" : "success";
+
+  return (
+    <>
+      <Link className="detail-back" href="/admin/products">← All products</Link>
+      <header className="adminbar">
+        <div><h1>{p.name}</h1><p>{deptName(p.dep)} · {sku(p)}</p></div>
+        <Badge tone={tone}>{p.stock} cases</Badge>
+      </header>
+
+      <div className="detail-grid">
+        <div className="detail-main">
+          <div className="panel">
+            <div className="panel-h"><h3>Master data</h3></div>
+            <div className="kvs two">
+              <div className="kv2"><span>Item #</span><b className="mono">{p.id}</b></div>
+              <div className="kv2"><span>SKU</span><b className="mono">{sku(p)}</b></div>
+              <div className="kv2"><span>GTIN</span><b className="mono">{p.gtin || "—"}</b></div>
+              <div className="kv2"><span>Department</span><b>{deptName(p.dep)}</b></div>
+              <div className="kv2"><span>Case pack</span><b>{p.pack}</b></div>
+              <div className="kv2"><span>Unit</span><b>{p.unit}</b></div>
+              <div className="kv2"><span>Case qty</span><b>{p.caseQty ?? "—"}</b></div>
+              <div className="kv2"><span>Reorder point</span><b>{p.reorderPoint ?? LOW_STOCK}</b></div>
+            </div>
+          </div>
+          {p.description && (
+            <div className="panel">
+              <div className="panel-h"><h3>Description</h3></div>
+              <p style={{ fontSize: 13.5, color: "var(--slate)", lineHeight: 1.6 }}>{p.description}</p>
+            </div>
+          )}
+        </div>
+
+        <aside className="detail-side">
+          <div className="panel">
+            <div className="panel-h"><h3>Pricing</h3></div>
+            <div className="kvs">
+              <div className="kv2"><span>Sell price</span><b className="mono">${fmt(p.price)}</b></div>
+              <div className="kv2"><span>Landed cost</span><b className="mono">{p.cost != null ? `$${fmt(p.cost)}` : "—"}</b></div>
+              <div className="kv2"><span>Suggested retail</span><b className="mono">{p.mrp != null ? `$${fmt(p.mrp)}` : "—"}</b></div>
+              <div className="kv2"><span>Margin</span><b className="mono">{p.cost != null && p.price ? `${Math.round((1 - p.cost / p.price) * 100)}%` : "—"}</b></div>
+            </div>
+          </div>
+          <div className="panel">
+            <div className="panel-h"><h3>Stock</h3></div>
+            <div className="kvs">
+              <div className="kv2"><span>On hand</span><b>{p.stock} cases</b></div>
+              <div className="kv2"><span>Status</span><Badge tone={tone}>{p.stock <= 0 ? "Out of stock" : p.stock <= LOW_STOCK ? "Low" : "In stock"}</Badge></div>
+              <div className="kv2"><span>Max stock</span><b>{p.maxStock ?? "—"}</b></div>
+            </div>
+            <Link href="/admin/products" className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit in catalog →</Link>
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+}

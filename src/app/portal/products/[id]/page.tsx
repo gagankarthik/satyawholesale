@@ -1,0 +1,79 @@
+"use client";
+
+import Link from "next/link";
+import { use } from "react";
+import { DEPT_BG, deptName, fmt, sku, type Product } from "@/lib/store";
+import { usePortal } from "../../PortalShell";
+import ProductCard from "../../ProductCard";
+import { DEPT_COLOR, DEPT_ICON } from "../../meta";
+
+export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { products, cart, add, changeQty } = usePortal();
+  const p = products.find((x) => String(x.id) === id) as Product | undefined;
+
+  if (!p) {
+    return (
+      <div className="odetail">
+        <Link className="detail-back" href="/portal/products">← Back to products</Link>
+        <div className="empty"><div className="ei">🔍</div><h3>Product not found</h3><p>It may have been removed from the catalog.</p></div>
+      </div>
+    );
+  }
+
+  const Thumb = DEPT_ICON[p.dep];
+  const inCart = cart[p.id] || 0;
+  const out = p.stock <= 0;
+  const related = products.filter((x) => x.dep === p.dep && x.id !== p.id).slice(0, 4);
+
+  return (
+    <div className="odetail">
+      <Link className="detail-back" href="/portal/products">← Back to products</Link>
+      <div className="od-cols">
+        <div className="panel pd-hero" style={{ background: DEPT_BG[p.dep] }}>
+          <span className="pd-thumb" style={{ color: DEPT_COLOR[p.dep] }}><Thumb /></span>
+        </div>
+        <aside className="od-side">
+          <div className="panel">
+            <span className="cat">{deptName(p.dep)}</span>
+            <h2 className="od-ref" style={{ fontSize: 24, marginTop: 4 }}>{p.name}</h2>
+            <div className="pricerow" style={{ margin: "12px 0 16px" }}>
+              <span className="pr" style={{ fontSize: 26 }}>${fmt(p.price)}</span>
+              <span className="un">/ {p.unit}</span>
+            </div>
+            <div className="kvs">
+              <div className="kv2"><span>Item #</span><b className="mono">#{p.id}</b></div>
+              <div className="kv2"><span>SKU</span><b className="mono">{sku(p)}</b></div>
+              <div className="kv2"><span>Case pack</span><b>{p.pack}</b></div>
+              <div className="kv2"><span>In stock</span><b>{p.stock} cases</b></div>
+            </div>
+            <div style={{ marginTop: 16 }}>
+              {inCart ? (
+                <div className="stepper">
+                  <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case">−</button>
+                  <span className="qv">{inCart}<small>cases</small></span>
+                  <button onClick={() => changeQty(p.id, 1)} disabled={inCart >= p.stock} aria-label="Add one case">+</button>
+                </div>
+              ) : (
+                <button className="addbtn" onClick={() => add(p.id)} disabled={out}>{out ? "Out of stock" : "+ Add to order"}</button>
+              )}
+            </div>
+          </div>
+          {p.description && (
+            <div className="panel">
+              <div className="panel-h"><h3>Details</h3></div>
+              <p style={{ fontSize: 13.5, color: "var(--slate)", lineHeight: 1.6 }}>{p.description}</p>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {related.length > 0 && (
+        <section className="catrow">
+          <div className="catrow-head"><h3>More in {deptName(p.dep)}</h3><Link className="viewall" href="/portal/products">Browse all →</Link></div>
+          <div className="catrow-scroll">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
+        </section>
+      )}
+    </div>
+  );
+}
