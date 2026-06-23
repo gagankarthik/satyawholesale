@@ -2,11 +2,11 @@ import Image from "next/image";
 
 /**
  * Brand lockup — always the original Satya Wholesale logo.
- * `dark` is accepted for call-site compatibility; the same logo
- * asset is used on every surface (no recolouring, no wordmark).
+ * On dark surfaces the original logo (navy text) is unreadable, so it
+ * sits on a small clean light chip rather than being recoloured.
  */
-export default function Brand({ height = 36 }: { dark?: boolean; height?: number }) {
-  return (
+export default function Brand({ dark = false, height = 34 }: { dark?: boolean; height?: number }) {
+  const img = (
     <Image
       src="/logo.webp"
       alt="Satya Wholesale"
@@ -16,4 +16,5 @@ export default function Brand({ height = 36 }: { dark?: boolean; height?: number
       priority
     />
   );
+  return dark ? <span className="brandchip">{img}</span> : img;
 }

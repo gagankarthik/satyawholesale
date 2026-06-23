@@ -27,18 +27,18 @@ const ush = (id: string, w = 1000) =>
 const HERO_IMAGES = [
   { id: "1553413077-190dd305871c", alt: "Pallet racking inside a wholesale distribution warehouse" },
   { id: "1586528116311-ad8dd3c8310d", alt: "Cases of stocked goods on warehouse shelving" },
-  { id: "1604719312566-8912e9227c6a", alt: "Convenience-store aisle stocked from the warehouse" },
+  { id: "1565891741441-64926e441838", alt: "Loaded distribution yard ready for dispatch" },
 ];
 
 const SERVICE = [
-  { Icon: Store, n: "At the warehouse", h: "Cash & carry", img: "1604719312566-8912e9227c6a", p: "Walk our Reading Road floor, load your own cases and check out the same day. No appointment, no minimum." },
+  { Icon: Store, n: "At the warehouse", h: "Cash & carry", img: "1494412519320-aa613dfb7738", p: "Walk our Reading Road floor, load your own cases and check out the same day. No appointment, no minimum." },
   { Icon: Truck, n: "Across the Tri-State", h: "Regional delivery", img: "1601584115197-04ecc0da31d7", p: "Place an order from the trade portal and we deliver across Greater Cincinnati and the Tri-State — typically next day." },
-  { Icon: Receipt, n: "One invoice", h: "A single account", img: "1586528116311-ad8dd3c8310d", p: "Tobacco, grocery, HBA and automotive on one bill and one drop-off, instead of chasing five separate suppliers." },
+  { Icon: Receipt, n: "One invoice", h: "A single account", img: "1605902711622-cfb43c4437b5", p: "Tobacco, grocery, HBA and automotive on one bill and one drop-off, instead of chasing five separate suppliers." },
 ];
 
 const STRENGTHS = [
   { h: "Licensed & compliant", p: "A fully licensed wholesale and tobacco distributor — every account is verified and age-restricted to 21+." },
-  { h: "Consistent, deep stock", p: "Thousands of SKUs held across seven departments so a full restock rarely comes back short." },
+  { h: "Consistent, deep stock", p: "A deep, well-kept range across every department, so a full restock rarely comes back short." },
   { h: "One invoice, one delivery", p: "Consolidate the whole counter onto a single order, a single bill and a single drop-off each week." },
   { h: "Local Cincinnati partner", p: "Based on Reading Road and serving the Tri-State directly — not a distant warehouse or a marketplace." },
 ];
@@ -82,6 +82,32 @@ export default function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Store",
+            name: "Satya Wholesale",
+            description:
+              "Licensed wholesale and cash-and-carry distributor for independent convenience retailers across Greater Cincinnati and the Tri-State.",
+            url: "https://satyawholesalers.com",
+            telephone: "+15132666175",
+            email: CONTACT.email,
+            priceRange: "$$",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "8100 Reading Rd",
+              addressLocality: "Cincinnati",
+              addressRegion: "OH",
+              postalCode: "45237",
+              addressCountry: "US",
+            },
+            areaServed: "Greater Cincinnati & the Tri-State",
+            openingHours: ["Mo-Fr 10:00-17:30", "Sa 10:30-17:00"],
+          }),
+        }}
+      />
       {/* contact bar */}
       <div className="contactbar">
         <div className="wrap contactbar-in">
@@ -147,8 +173,8 @@ export default function Home() {
               </h1>
               <p className="sub reveal">
                 Satya Wholesale is a licensed cash-and-carry distributor in Cincinnati, supplying
-                independent convenience retailers across the Tri-State. Seven departments, consistent
-                stock, one invoice, one delivery.
+                independent convenience retailers across the Tri-State — the whole front counter on
+                one account, with consistent stock, one invoice and one delivery.
               </p>
               <div className="hero-actions reveal">
                 <a className="btn btn-primary" href="#account">Open a trade account <Arrow /></a>
@@ -170,8 +196,8 @@ export default function Home() {
                 <div className="dossier-rows">
                   <div className="drow2">
                     <span className="ic"><Boxes /></span>
-                    <div className="tx"><b>Seven departments</b><span>Tobacco through automotive</span></div>
-                    <span className="val">5,000+ SKUs</span>
+                    <div className="tx"><b>Every department</b><span>Tobacco through automotive</span></div>
+                    <span className="val">In stock</span>
                   </div>
                   <div className="drow2">
                     <span className="ic"><Store /></span>
@@ -209,10 +235,10 @@ export default function Home() {
         {/* trust band */}
         <div className="trust">
           <div className="wrap trust-in">
-            <div className="ti reveal"><b>7</b><span>Departments under one account</span></div>
-            <div className="ti reveal"><b>5,000<span className="u">+</span></b><span>SKUs held in stock</span></div>
+            <div className="ti reveal"><b>Licensed</b><span>Wholesale &amp; tobacco distributor</span></div>
+            <div className="ti reveal"><b>One<span className="u">·account</span></b><span>The whole front counter</span></div>
             <div className="ti reveal"><b>Next<span className="u">·day</span></b><span>Delivery across the Tri-State</span></div>
-            <div className="ti reveal"><b>21<span className="u">+</span></b><span>Licensed, trade-only accounts</span></div>
+            <div className="ti reveal"><b>21<span className="u">+</span></b><span>Trade-only, verified accounts</span></div>
           </div>
         </div>
 
@@ -221,7 +247,7 @@ export default function Home() {
           <div className="wrap">
             <div className="shead reveal">
               <div className="tag">What we distribute</div>
-              <h2 className="sx">Seven departments,<br />the whole front counter.</h2>
+              <h2 className="sx">Everything behind<br />the counter.</h2>
               <p>
                 A brief look at the categories Satya supplies. Live catalog, case pricing and ordering
                 are reserved for verified trade accounts inside the order portal.
@@ -291,7 +317,7 @@ export default function Home() {
             <div className="reveal">
               <div className="shotcard">
                 <Image
-                  src={ush("1553413077-190dd305871c", 1100)}
+                  src={ush("1578575437130-527eed3abbec", 1100)}
                   alt="Inside the Satya Wholesale distribution warehouse"
                   fill
                   sizes="(max-width:1000px) 100vw, 50vw"
@@ -415,48 +441,58 @@ export default function Home() {
       {/* footer */}
       <footer>
         <div className="wrap">
-          <div className="foot-grid">
-            <div>
-              <a href="#main" className="brand">
-                <Brand dark height={38} />
-              </a>
+          <div className="foot-top">
+            <div className="foot-brand">
+              <a href="#main" className="brand"><Brand dark height={40} /></a>
               <p className="ab">
                 A licensed wholesale &amp; cash-and-carry distributor serving independent convenience
                 retailers across Greater Cincinnati and the Tri-State.
               </p>
-              <ul className="foot-contact">
-                <li><Pin /> {CONTACT.address1}, {CONTACT.address2}</li>
-                <li><Phone /> <a href={CONTACT.phoneHref}>{CONTACT.phone}</a></li>
-                <li><Mail /> <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></li>
-              </ul>
+              <div className="foot-badges">
+                <span><Shield /> Licensed distributor</span>
+                <span><Check /> 21+ trade-only</span>
+              </div>
             </div>
-            <div className="fcol">
-              <h5>Company</h5>
-              <a href="#departments">What we carry</a>
-              <a href="#how">How we serve</a>
-              <a href="#why">Why Satya</a>
-              <a href="#account">Trade accounts</a>
-            </div>
-            <div className="fcol">
-              <h5>Account &amp; legal</h5>
-              <Link href="/portal">Trade login</Link>
-              <Link href="/admin">Admin console</Link>
-              <Link href="/privacy">Privacy policy</Link>
-              <Link href="/returns">Return policy</Link>
-              <Link href="/terms">Terms of service</Link>
-            </div>
-            <div className="fcol">
-              <h5>Warehouse hours</h5>
-              <ul className="fhours">
-                {CONTACT.hoursList.map((h) => (
-                  <li key={h.d}><span>{h.d}</span><span className={h.t === "Closed" ? "closed" : ""}>{h.t}</span></li>
-                ))}
-              </ul>
+            <div className="foot-cols">
+              <div className="fcol">
+                <h5>Company</h5>
+                <a href="#departments">What we carry</a>
+                <a href="#how">How we serve</a>
+                <a href="#why">Why Satya</a>
+                <a href="#account">Trade accounts</a>
+              </div>
+              <div className="fcol">
+                <h5>Account</h5>
+                <Link href="/portal">Trade login</Link>
+                <Link href="/portal">Order portal</Link>
+                <Link href="/admin">Admin console</Link>
+                <a href="#contact">Support</a>
+              </div>
+              <div className="fcol">
+                <h5>Contact</h5>
+                <a href={CONTACT.phoneHref}>{CONTACT.phone}</a>
+                <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+                <span className="faddr">{CONTACT.address1}<br />{CONTACT.address2}</span>
+              </div>
+              <div className="fcol">
+                <h5>Warehouse hours</h5>
+                <ul className="fhours">
+                  {CONTACT.hoursList.map((h) => (
+                    <li key={h.d}><span>{h.d.slice(0, 3)}</span><span className={h.t === "Closed" ? "closed" : ""}>{h.t}</span></li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
           <div className="foot-bot">
-            <span>© 2026 {CONTACT.legalName} · {CONTACT.address1}, {CONTACT.address2}</span>
-            <span> 21+ · We verify every order against state &amp; federal law</span>
+            <span>© 2026 {CONTACT.legalName} · All rights reserved.</span>
+            <div className="foot-legal">
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/returns">Returns</Link>
+              <Link href="/terms">Terms</Link>
+              <span className="sep">·</span>
+              <span>21+ · Verified to state &amp; federal law</span>
+            </div>
           </div>
         </div>
       </footer>

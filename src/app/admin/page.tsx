@@ -40,8 +40,9 @@ type Flash = (m: string) => void;
    ADMIN SHELL
    ======================================================================= */
 export default function Admin() {
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<Tab>("orders");
   const [toast, setToast] = useState("");
+  const [mobileNav, setMobileNav] = useState(false);
   const flash: Flash = (msg) => {
     setToast(msg);
     window.clearTimeout((flash as unknown as { t?: number }).t);
@@ -57,7 +58,11 @@ export default function Admin() {
   const openPOs = pos.filter((p) => p.status !== "Closed" && p.status !== "Received").length;
 
   const GROUPS: { label: string; items: { key: Tab; label: string; Icon: typeof Grid; badge?: number }[] }[] = [
-    { label: "Overview", items: [{ key: "dashboard", label: "Dashboard", Icon: Grid }] },
+    { label: "Sales", items: [
+      { key: "orders", label: "Orders", Icon: Receipt, badge: orders.length },
+      { key: "dashboard", label: "Dashboard", Icon: Grid },
+      { key: "customers", label: "Accounts", Icon: Users, badge: pendingAccounts || undefined },
+    ] },
     { label: "Catalog", items: [
       { key: "products", label: "Products", Icon: Boxes, badge: products.length },
       { key: "import", label: "Bulk import", Icon: Receipt },
@@ -70,10 +75,6 @@ export default function Admin() {
       { key: "pos", label: "Purchase orders", Icon: Receipt, badge: openPOs },
       { key: "warehouse", label: "Warehouse", Icon: Store },
     ] },
-    { label: "Sales", items: [
-      { key: "orders", label: "Orders", Icon: Receipt, badge: orders.length },
-      { key: "customers", label: "Accounts", Icon: Users, badge: pendingAccounts || undefined },
-    ] },
     { label: "Admin", items: [
       { key: "users", label: "Users & roles", Icon: Shield },
       { key: "settings", label: "Settings", Icon: Grid },
@@ -84,7 +85,8 @@ export default function Admin() {
   return (
     <ConfirmProvider>
     <div className="admin">
-      <aside className="aside-dark">
+      <div className={`sideov ${mobileNav ? "show" : ""}`} onClick={() => setMobileNav(false)} />
+      <aside className={`aside-dark ${mobileNav ? "open" : ""}`}>
         <Link href="/" className="side-brand"><Brand dark height={30} /></Link>
         <div className="adminrole mono">WAREHOUSE CONSOLE</div>
         <nav className="anav scroll">
@@ -92,7 +94,7 @@ export default function Admin() {
             <div key={g.label} className="anav-group">
               <div className="anav-label">{g.label}</div>
               {g.items.map(({ key, label, Icon, badge }) => (
-                <button key={key} className={tab === key ? "on" : ""} onClick={() => setTab(key)}>
+                <button key={key} className={tab === key ? "on" : ""} onClick={() => { setTab(key); setMobileNav(false); }}>
                   <Icon className="nicon" /> {label}
                   {badge ? <span className="cb">{badge}</span> : null}
                   {key === "possync" && <span className="soon">soon</span>}
@@ -107,6 +109,12 @@ export default function Admin() {
       </aside>
 
       <div className="adminmain">
+        <div className="admintopbar">
+          <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
+          </button>
+          <Brand height={28} />
+        </div>
         {tab === "dashboard" && <DashboardTab go={setTab} />}
         {tab === "products" && <ProductsTab flash={flash} go={setTab} />}
         {tab === "import" && <ImportTab flash={flash} />}
