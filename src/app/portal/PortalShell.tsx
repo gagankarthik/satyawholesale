@@ -11,7 +11,7 @@ import {
 import { useSession } from "@/lib/auth";
 import { Boxes, Gear, Bag, Search, Grid, Receipt } from "@/components/Icons";
 import Brand from "@/components/Brand";
-import { ADDRESSES, DEPT_ICON, DEPT_SUBCATS } from "./meta";
+import { ADDRESSES, DEPT_SUBCATS } from "./meta";
 
 type Cart = Record<number, number>; // id -> cases
 
@@ -68,6 +68,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const [toast, setToast] = useState("");
   const [confirmation, setConfirmation] = useState<Order | null>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [productsOpen, setProductsOpen] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
 
   /* redirect to login when the session is known and signed-out */
@@ -182,25 +183,23 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           <Link href="/" className="side-brand"><Brand dark height={30} /></Link>
           <div className="snav">
             {navItem("/portal", isDash, <Grid />, "Dashboard")}
-            <Link href="/portal/products" className={`sitem ${seg === "products" ? "on" : ""}`} onClick={() => { setDept("all"); setSub(""); setMobileNav(false); }}>
+
+            <button className={`sitem ${seg === "products" ? "on" : ""}`} onClick={() => { setDept("all"); setSub(""); router.push("/portal/products"); setProductsOpen((o) => !o); setMobileNav(false); }}>
               <span className="ic"><Boxes /></span> Products <span className="cb">{counts.all}</span>
-            </Link>
-            {navItem("/portal/orders", seg === "orders", <Receipt />, "My orders", myOrders.length)}
-            {navItem("/portal/receipts", seg === "receipts", <Receipt />, "Receipts")}
-            {pathname.startsWith("/portal/products") && (
-              <>
-                <div className="sgroup">Departments</div>
-                <button className={`sitem ${dept === "all" ? "on" : ""}`} onClick={() => { setDept("all"); setSub(""); router.push("/portal/products"); }}>
-                  <span className="ic"><Boxes /></span> All products <span className="cb">{counts.all}</span>
+              <svg className={`chev ${productsOpen ? "" : "closed"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
+            {productsOpen && (
+              <div className="sgroup-items">
+                <button className={`sitem subitem ${seg === "products" && dept === "all" ? "on" : ""}`} onClick={() => { setDept("all"); setSub(""); router.push("/portal/products"); setMobileNav(false); }}>
+                  All products <span className="cb">{counts.all}</span>
                 </button>
                 {DEPTS.map((d) => {
                   const open = openGroups[d.key];
-                  const Ic = DEPT_ICON[d.key];
                   const subs = DEPT_SUBCATS[d.key] || [];
                   return (
                     <div key={d.key}>
-                      <button className={`sitem ${dept === d.key && !sub ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(""); router.push("/portal/products"); setOpenGroups((s) => ({ ...s, [d.key]: !s[d.key] })); }}>
-                        <span className="ic"><Ic /></span> {d.name} <span className="cb">{counts[d.key]}</span>
+                      <button className={`sitem subitem ${seg === "products" && dept === d.key && !sub ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(""); router.push("/portal/products"); setOpenGroups((s) => ({ ...s, [d.key]: !s[d.key] })); setMobileNav(false); }}>
+                        {d.name} <span className="cb">{counts[d.key]}</span>
                         {subs.length > 0 && <svg className={`chev ${open ? "" : "closed"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                       </button>
                       {subs.length > 0 && (
@@ -208,7 +207,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
                           {subs.map((sc) => {
                             const n = products.filter((p) => p.dep === d.key && p.name.toLowerCase().includes(sc.q)).length;
                             return (
-                              <button key={sc.label} className={`sitem subitem ${dept === d.key && sub === sc.q ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(sc.q); router.push("/portal/products"); setMobileNav(false); }}>
+                              <button key={sc.label} className={`sitem subitem deep ${seg === "products" && dept === d.key && sub === sc.q ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(sc.q); router.push("/portal/products"); setMobileNav(false); }}>
                                 {sc.label} <span className="cb">{n}</span>
                               </button>
                             );
@@ -218,8 +217,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
                     </div>
                   );
                 })}
-              </>
+              </div>
             )}
+
+            {navItem("/portal/orders", seg === "orders", <Receipt />, "My orders", myOrders.length)}
+            {navItem("/portal/receipts", seg === "receipts", <Receipt />, "Receipts")}
           </div>
           <div className="acct">
             <Link href="/portal/profile" className="who-link" onClick={() => setMobileNav(false)}>

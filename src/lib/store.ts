@@ -87,6 +87,7 @@ export interface Order {
   shipping?: string;
   adminNote?: string; // message from the warehouse team, shown to the customer
   taxExempt?: boolean; // resale exemption; when false, sales tax applies
+  discountReason?: string; // why a discount was applied
 }
 
 export const orderGrand = (o: Order) =>

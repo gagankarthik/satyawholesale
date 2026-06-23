@@ -9,7 +9,9 @@ import {
 import {
   useSuppliers, useLocations, useMovements, usePurchaseOrders, useReceipts, useInvoices,
   poTotal, PO_FLOW, RECEIVE_TOLERANCE, threeWayMatch,
+  type POLine,
 } from "@/lib/wms";
+import { useConfirm } from "@/components/Confirm";
 import { Head, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
@@ -45,7 +47,9 @@ export function POTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Purchase orders" sub={`Receive · invoice · three-way match — tolerance ±${RECEIVE_TOLERANCE * 100}%`} />
+      <Head title="Purchase orders" sub={`Receive · invoice · three-way match — tolerance ±${RECEIVE_TOLERANCE * 100}%`}>
+        <button className="btn btn-primary btn-sm" onClick={() => router.push("/admin/purchaseorder/new")}>+ New PO</button>
+      </Head>
       {Object.keys(suggestions).length > 0 && (
         <div className="panel" style={{ marginBottom: 18 }}>
           <div className="panel-h"><h3>Reorder suggestions</h3><span className="hint">SKUs at/below reorder point, grouped by supplier</span></div>
@@ -106,6 +110,11 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
   const [recvQty, setRecvQty] = useState<Record<string, string>>({});
   const [invQty, setInvQty] = useState<Record<string, string>>({});
   const [invCost, setInvCost] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState(false);
+  const [dSup, setDSup] = useState("");
+  const [dExp, setDExp] = useState("");
+  const [dLines, setDLines] = useState<POLine[]>([]);
+  const [addId, setAddId] = useState("");
 
   const supName = (sid: string) => suppliers.find((s) => s.id === sid)?.name ?? sid;
   const cur = pos.find((p) => p.id === id) || null;
@@ -150,6 +159,32 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
     setMode("view");
   };
 
+  /* ---- edit PO (supplier, expected date, lines) ---- */
+  const startEdit = () => {
+    setDSup(cur.supplierId);
+    setDExp(new Date(cur.expected).toISOString().slice(0, 10));
+    setDLines(cur.lines.map((l) => ({ ...l })));
+    setAddId(""); setMode("view"); setEditing(true);
+  };
+  const dTotal = dLines.reduce((s, l) => s + l.ordered * l.cost, 0);
+  const setLineField = (code: string, field: "ordered" | "cost", val: string) =>
+    setDLines((ls) => ls.map((l) => (l.sku === code ? { ...l, [field]: Number(val) || 0 } : l)));
+  const dropLine = (code: string) => setDLines((ls) => ls.filter((l) => l.sku !== code));
+  const addLineEdit = () => {
+    const p = products.find((x) => String(x.id) === addId);
+    if (!p) return;
+    const code = sku(p);
+    if (dLines.some((l) => l.sku === code)) { flash("Already on this PO"); return; }
+    setDLines((ls) => [...ls, { sku: code, name: p.name, ordered: 12, received: 0, cost: p.cost ?? Math.round(p.price * 0.7 * 100) / 100 }]);
+    setAddId("");
+  };
+  const saveEdit = () => {
+    if (!dLines.length) { flash("A PO needs at least one line"); return; }
+    update(cur.id, { supplierId: dSup, expected: new Date(dExp).getTime(), lines: dLines });
+    setEditing(false);
+    flash("Purchase order updated");
+  };
+
   const match = threeWayMatch(cur, receipts, invoices);
   const idx = PO_FLOW.indexOf(cur.status);
   const poGrns = receipts.filter((g) => g.poId === cur.id);
@@ -164,6 +199,8 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
       <header className="adminbar">
         <div><h1>{cur.id}</h1><p>{supName(cur.supplierId)} · created {new Date(cur.created).toLocaleDateString()} · expected {new Date(cur.expected).toLocaleDateString()}</p></div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {mode === "view" && !editing && <button className="btn btn-ghost btn-sm" onClick={startEdit}>Edit PO</button>}
+          {editing && <span className="hint">editing</span>}
           <span className={`pobadge s-${cur.status.replace(/\s+/g, "").toLowerCase()}`}>{cur.status}</span>
           <span className={`matchbadge ${matchClass(match.status)}`}>{match.status}</span>
         </div>
@@ -188,42 +225,73 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
           <div className="panel">
             <div className="panel-h">
               <h3>Lines</h3>
-              <span className="hint">{mode === "receive" ? "Enter quantities received" : mode === "invoice" ? "Enter invoiced qty & cost" : `${cur.lines.length} SKUs`}</span>
+              <span className="hint">{editing ? "Edit quantities, cost & products" : mode === "receive" ? "Enter quantities received" : mode === "invoice" ? "Enter invoiced qty & cost" : `${cur.lines.length} SKUs`}</span>
             </div>
-            <div className="tablewrap">
-              <table className="invtable">
-                <thead><tr><th>Line</th><th className="r">Ordered</th><th className="r">Received</th><th className="r">Invoiced</th>
-                  {mode === "receive" && <th className="r">Receive now</th>}
-                  {mode === "invoice" && <th className="r">Inv qty</th>}
-                  {mode === "invoice" && <th className="r">Unit cost</th>}
-                </tr></thead>
-                <tbody>
-                  {cur.lines.map((l) => {
-                    const remaining = l.ordered - l.received;
-                    return (
-                      <tr key={l.sku}>
-                        <td><div className="pn" style={{ fontSize: 13.5 }}>{l.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{l.sku}</div></td>
-                        <td className="r mono">{l.ordered}</td>
-                        <td className="r mono">{recBySku[l.sku] ?? l.received}</td>
-                        <td className="r mono">{invBySku[l.sku] ?? 0}</td>
-                        {mode === "receive" && <td className="r"><input className="cellinput" type="number" min={0} placeholder={String(remaining)} value={recvQty[l.sku] ?? ""} onChange={(e) => setRecvQty({ ...recvQty, [l.sku]: e.target.value })} disabled={remaining <= 0} /></td>}
-                        {mode === "invoice" && <td className="r"><input className="cellinput" type="number" min={0} value={invQty[l.sku] ?? String(l.received)} onChange={(e) => setInvQty({ ...invQty, [l.sku]: e.target.value })} /></td>}
-                        {mode === "invoice" && <td className="r"><input className="cellinput" type="number" step="0.01" value={invCost[l.sku] ?? String(l.cost)} onChange={(e) => setInvCost({ ...invCost, [l.sku]: e.target.value })} /></td>}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {poGrns.length > 0 && mode === "view" && (
-              <div className="grnlist">
-                {poGrns.map((g) => <span key={g.id} className="grnchip">{g.id} · {g.lines.reduce((s, l) => s + l.qty, 0)} cs · {timeAgo(g.received)} · {g.by}</span>)}
-              </div>
+            {editing ? (
+              <>
+                <div className="tablewrap">
+                  <table className="invtable">
+                    <thead><tr><th>Line</th><th className="r">Order qty</th><th className="r">Unit cost</th><th className="r">Line</th><th></th></tr></thead>
+                    <tbody>
+                      {dLines.map((l) => (
+                        <tr key={l.sku}>
+                          <td><div className="pn" style={{ fontSize: 13.5 }}>{l.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{l.sku}</div></td>
+                          <td className="r"><input className="cellinput" type="number" min={1} value={l.ordered} onChange={(e) => setLineField(l.sku, "ordered", e.target.value)} /></td>
+                          <td className="r"><input className="cellinput" type="number" min={0} step="0.01" value={l.cost} onChange={(e) => setLineField(l.sku, "cost", e.target.value)} /></td>
+                          <td className="r mono">{m(l.ordered * l.cost)}</td>
+                          <td className="r"><button type="button" className="ia del" onClick={() => dropLine(l.sku)} disabled={l.received > 0} title={l.received > 0 ? "Already received" : "Remove"}>✕</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="addline">
+                  <select value={addId} onChange={(e) => setAddId(e.target.value)} aria-label="Add product">
+                    <option value="">+ Add a product…</option>
+                    {products.filter((p) => !dLines.some((l) => l.sku === sku(p))).map((p) => <option key={p.id} value={p.id}>{p.name} · {sku(p)}</option>)}
+                  </select>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={addLineEdit} disabled={!addId}>Add</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="tablewrap">
+                  <table className="invtable">
+                    <thead><tr><th>Line</th><th className="r">Ordered</th><th className="r">Received</th><th className="r">Invoiced</th>
+                      {mode === "receive" && <th className="r">Receive now</th>}
+                      {mode === "invoice" && <th className="r">Inv qty</th>}
+                      {mode === "invoice" && <th className="r">Unit cost</th>}
+                    </tr></thead>
+                    <tbody>
+                      {cur.lines.map((l) => {
+                        const remaining = l.ordered - l.received;
+                        return (
+                          <tr key={l.sku}>
+                            <td><div className="pn" style={{ fontSize: 13.5 }}>{l.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{l.sku}</div></td>
+                            <td className="r mono">{l.ordered}</td>
+                            <td className="r mono">{recBySku[l.sku] ?? l.received}</td>
+                            <td className="r mono">{invBySku[l.sku] ?? 0}</td>
+                            {mode === "receive" && <td className="r"><input className="cellinput" type="number" min={0} placeholder={String(remaining)} value={recvQty[l.sku] ?? ""} onChange={(e) => setRecvQty({ ...recvQty, [l.sku]: e.target.value })} disabled={remaining <= 0} /></td>}
+                            {mode === "invoice" && <td className="r"><input className="cellinput" type="number" min={0} value={invQty[l.sku] ?? String(l.received)} onChange={(e) => setInvQty({ ...invQty, [l.sku]: e.target.value })} /></td>}
+                            {mode === "invoice" && <td className="r"><input className="cellinput" type="number" step="0.01" value={invCost[l.sku] ?? String(l.cost)} onChange={(e) => setInvCost({ ...invCost, [l.sku]: e.target.value })} /></td>}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {poGrns.length > 0 && mode === "view" && (
+                  <div className="grnlist">
+                    {poGrns.map((g) => <span key={g.id} className="grnchip">{g.id} · {g.lines.reduce((s, l) => s + l.qty, 0)} cs · {timeAgo(g.received)} · {g.by}</span>)}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
         <aside className="detail-side">
+          {!editing && (
           <div className="panel">
             <div className="panel-h"><h3>Actions</h3></div>
             <div className="postack">
@@ -252,15 +320,134 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
               )}
             </div>
           </div>
+          )}
           <div className="panel">
             <div className="panel-h"><h3>Details</h3></div>
-            <div className="kvs">
-              <div className="kv2"><span>PO #</span><b className="mono">{cur.id}</b></div>
-              <div className="kv2"><span>Supplier</span><b>{supName(cur.supplierId)}</b></div>
-              <div className="kv2"><span>Status</span><b>{cur.status}</b></div>
-              <div className="kv2"><span>Created</span><b>{new Date(cur.created).toLocaleDateString()}</b></div>
-              <div className="kv2"><span>Expected</span><b>{new Date(cur.expected).toLocaleDateString()}</b></div>
-              <div className="kv2"><span>PO total</span><b className="mono">{m(poTotal(cur))}</b></div>
+            {editing ? (
+              <>
+                <label className="field"><span>Supplier</span>
+                  <select value={dSup} onChange={(e) => setDSup(e.target.value)}>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{s.status !== "Active" ? " (inactive)" : ""}</option>)}
+                  </select>
+                </label>
+                <label className="field" style={{ marginTop: 12 }}><span>Expected date</span>
+                  <input type="date" value={dExp} onChange={(e) => setDExp(e.target.value)} />
+                </label>
+                <div className="totals" style={{ marginTop: 14 }}><div className="tl grand"><span>PO total</span><b>{m(dTotal)}</b></div></div>
+                <div className="modalbtns" style={{ marginTop: 14 }}>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>Cancel</button>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={saveEdit}>Save changes</button>
+                </div>
+              </>
+            ) : (
+              <div className="kvs">
+                <div className="kv2"><span>PO #</span><b className="mono">{cur.id}</b></div>
+                <div className="kv2"><span>Supplier</span><b>{supName(cur.supplierId)}</b></div>
+                <div className="kv2"><span>Status</span><b>{cur.status}</b></div>
+                <div className="kv2"><span>Created</span><b>{new Date(cur.created).toLocaleDateString()}</b></div>
+                <div className="kv2"><span>Expected</span><b>{new Date(cur.expected).toLocaleDateString()}</b></div>
+                <div className="kv2"><span>PO total</span><b className="mono">{m(poTotal(cur))}</b></div>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+}
+
+/* =======================================================================
+   PURCHASE ORDER — create (/admin/purchaseorder/new)
+   ======================================================================= */
+type DraftLine = { sku: string; name: string; ordered: number; received: number; cost: number };
+export function AdminPOCreate({ flash }: { flash: Flash }) {
+  const router = useRouter();
+  const { suppliers } = useSuppliers();
+  const { products } = useInventory();
+  const { add } = usePurchaseOrders();
+
+  const active = suppliers.filter((s) => s.status === "Active");
+  const [supplierId, setSupplierId] = useState(active[0]?.id ?? suppliers[0]?.id ?? "");
+  const [expected, setExpected] = useState(new Date(Date.now() + 4 * 86400000).toISOString().slice(0, 10));
+  const [lines, setLines] = useState<DraftLine[]>([]);
+  const [addId, setAddId] = useState("");
+
+  const total = lines.reduce((s, l) => s + l.ordered * l.cost, 0);
+  const addLine = () => {
+    const p = products.find((x) => String(x.id) === addId);
+    if (!p) return;
+    const code = sku(p);
+    if (lines.some((l) => l.sku === code)) { flash("Already on this PO"); return; }
+    setLines((ls) => [...ls, { sku: code, name: p.name, ordered: 12, received: 0, cost: p.cost ?? Math.round(p.price * 0.7 * 100) / 100 }]);
+    setAddId("");
+  };
+  const setField = (code: string, field: "ordered" | "cost", val: string) =>
+    setLines((ls) => ls.map((l) => (l.sku === code ? { ...l, [field]: Number(val) || 0 } : l)));
+  const drop = (code: string) => setLines((ls) => ls.filter((l) => l.sku !== code));
+
+  const create = () => {
+    if (!supplierId) { flash("Pick a supplier"); return; }
+    if (!lines.length) { flash("Add at least one line"); return; }
+    const id = rid("PO-");
+    add({ id, supplierId, status: "Draft", created: Date.now(), expected: new Date(expected).getTime(), lines });
+    flash("Draft PO created");
+    router.push(`/admin/purchaseorder/${id}`);
+  };
+
+  return (
+    <>
+      <button className="detail-back" onClick={() => router.push("/admin/purchaseorder")}>← All purchase orders</button>
+      <header className="adminbar">
+        <div><h1>New purchase order</h1><p>Draft a PO to a supplier, then approve and send</p></div>
+      </header>
+
+      <div className="detail-grid">
+        <div className="detail-main">
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>Lines</h3><span className="hint">{lines.length} SKUs · {m(total)}</span></div>
+            {lines.length ? (
+              <table className="invtable flat">
+                <thead><tr><th>Product</th><th className="r">Order qty</th><th className="r">Unit cost</th><th className="r">Line</th><th></th></tr></thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.sku}>
+                      <td className="pn" style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>{l.sku}</div></td>
+                      <td className="r"><input className="cellinput" type="number" min={1} value={l.ordered} onChange={(e) => setField(l.sku, "ordered", e.target.value)} /></td>
+                      <td className="r"><input className="cellinput" type="number" min={0} step="0.01" value={l.cost} onChange={(e) => setField(l.sku, "cost", e.target.value)} /></td>
+                      <td className="r mono">{m(l.ordered * l.cost)}</td>
+                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.sku)}>✕</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="muted" style={{ fontSize: 14, padding: "6px 0 14px" }}>No lines yet — add products below.</p>}
+            <div className="addline">
+              <select value={addId} onChange={(e) => setAddId(e.target.value)} aria-label="Add product">
+                <option value="">+ Add a product…</option>
+                {products.filter((p) => !lines.some((l) => l.sku === sku(p))).map((p) => <option key={p.id} value={p.id}>{p.name} · {sku(p)}</option>)}
+              </select>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={addLine} disabled={!addId}>Add</button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="detail-side">
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>PO details</h3></div>
+            <label className="field"><span>Supplier</span>
+              <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{s.status !== "Active" ? " (inactive)" : ""}</option>)}
+              </select>
+            </label>
+            <label className="field" style={{ marginTop: 12 }}><span>Expected date</span>
+              <input type="date" value={expected} onChange={(e) => setExpected(e.target.value)} />
+            </label>
+            <div className="totals" style={{ marginTop: 14 }}>
+              <div className="tl grand"><span>PO total</span><b>{m(total)}</b></div>
+            </div>
+            <div className="modalbtns" style={{ marginTop: 14 }}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => router.push("/admin/purchaseorder")}>Cancel</button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={create}>Create draft PO</button>
             </div>
           </div>
         </aside>
@@ -330,36 +517,89 @@ export function InventoryTab({ flash }: { flash: Flash }) {
 /* =======================================================================
    WAREHOUSE
    ======================================================================= */
-export function WarehouseTab() {
-  const { locations } = useLocations();
+const EMPTY_BIN = { zone: "A", aisle: "01", rack: "R1", bin: "B1", capacity: "240", used: "0" };
+export function WarehouseTab({ flash }: { flash: Flash }) {
+  const { locations, update, add, remove } = useLocations();
+  const confirm = useConfirm();
+  const [adding, setAdding] = useState(false);
+  const [nb, setNb] = useState(EMPTY_BIN);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [eb, setEb] = useState({ capacity: "", used: "" });
+
   const totalCap = locations.reduce((s, l) => s + l.capacity, 0);
   const totalUsed = locations.reduce((s, l) => s + l.used, 0);
+  const cur = locations.find((l) => l.id === editId) || null;
+
+  const createBin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = `${nb.zone}-${nb.aisle}-${nb.rack}-${nb.bin}`.toUpperCase();
+    if (locations.some((l) => l.id === id)) { flash("That bin already exists"); return; }
+    add({ id, zone: nb.zone.toUpperCase(), aisle: nb.aisle, rack: nb.rack, bin: nb.bin, capacity: Number(nb.capacity) || 0, used: Number(nb.used) || 0 });
+    setNb(EMPTY_BIN); setAdding(false); flash("Bin added");
+  };
+  const openEdit = (id: string) => { const l = locations.find((x) => x.id === id)!; setEb({ capacity: String(l.capacity), used: String(l.used) }); setEditId(id); };
+  const saveEdit = (e: React.FormEvent) => { e.preventDefault(); if (cur) { update(cur.id, { capacity: Number(eb.capacity) || 0, used: Math.max(0, Number(eb.used) || 0) }); setEditId(null); flash("Bin updated"); } };
+
   return (
     <>
-      <Head title="Warehouse" sub="Zones → aisles → racks → bins, with live capacity" />
+      <Head title="Warehouse" sub="Zones → aisles → racks → bins, with live capacity">
+        <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add bin</button>
+      </Head>
       <div className="kpis">
         <div className="kpi"><div className="kl">Bins</div><div className="kv">{locations.length}</div><div className="kf">across {new Set(locations.map((l) => l.zone)).size} zones</div></div>
         <div className="kpi"><div className="kl">Total capacity</div><div className="kv">{totalCap.toLocaleString()}</div><div className="kf">cases</div></div>
-        <div className="kpi accent"><div className="kl">Utilization</div><div className="kv">{Math.round((totalUsed / totalCap) * 100)}%</div><div className="kf">{totalUsed.toLocaleString()} cases stored</div></div>
-        <div className="kpi warn"><div className="kl">Near full</div><div className="kv">{locations.filter((l) => l.used / l.capacity >= 0.85).length}</div><div className="kf">bins ≥ 85%</div></div>
+        <div className="kpi accent"><div className="kl">Utilization</div><div className="kv">{totalCap ? Math.round((totalUsed / totalCap) * 100) : 0}%</div><div className="kf">{totalUsed.toLocaleString()} cases stored</div></div>
+        <div className="kpi warn"><div className="kl">Near full</div><div className="kv">{locations.filter((l) => l.capacity && l.used / l.capacity >= 0.85).length}</div><div className="kf">bins ≥ 85%</div></div>
       </div>
       <div className="tablewrap">
         <table className="invtable">
-          <thead><tr><th>Bin</th><th>Zone</th><th>Aisle</th><th>Rack</th><th>Utilization</th><th className="r">Used / Cap</th></tr></thead>
+          <thead><tr><th>Bin</th><th>Zone</th><th>Aisle</th><th>Rack</th><th>Utilization</th><th className="r">Used / Cap</th><th className="r"></th></tr></thead>
           <tbody>
             {locations.map((l) => {
-              const pct = Math.round((l.used / l.capacity) * 100);
+              const pct = l.capacity ? Math.round((l.used / l.capacity) * 100) : 0;
               return (
-                <tr key={l.id}>
+                <tr key={l.id} className="clickrow" style={{ cursor: "pointer" }} onClick={() => openEdit(l.id)}>
                   <td className="mono">{l.id}</td><td>{l.zone}</td><td>{l.aisle}</td><td>{l.rack}</td>
                   <td><div className="capbar"><span className={`capfill ${pct >= 85 ? "hot" : pct >= 60 ? "mid" : ""}`} style={{ width: `${pct}%` }} /></div></td>
                   <td className="r mono muted">{l.used} / {l.capacity}</td>
+                  <td className="r" onClick={(e) => e.stopPropagation()}><button className="ia del" onClick={async () => { if (await confirm({ title: "Remove bin?", message: `${l.id} will be removed.`, confirmLabel: "Remove", danger: true })) { remove(l.id); flash("Bin removed"); } }}>✕</button></td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {adding && (
+        <div className="modal-overlay" onClick={() => setAdding(false)}>
+          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={createBin}>
+            <h3>Add a bin</h3>
+            <div className="formgrid">
+              <label className="field"><span>Zone</span><input value={nb.zone} onChange={(e) => setNb({ ...nb, zone: e.target.value })} maxLength={2} /></label>
+              <label className="field"><span>Aisle</span><input value={nb.aisle} onChange={(e) => setNb({ ...nb, aisle: e.target.value })} /></label>
+              <label className="field"><span>Rack</span><input value={nb.rack} onChange={(e) => setNb({ ...nb, rack: e.target.value })} /></label>
+              <label className="field"><span>Bin</span><input value={nb.bin} onChange={(e) => setNb({ ...nb, bin: e.target.value })} /></label>
+              <label className="field"><span>Capacity (cases)</span><input type="number" min={0} value={nb.capacity} onChange={(e) => setNb({ ...nb, capacity: e.target.value })} /></label>
+              <label className="field"><span>Currently used</span><input type="number" min={0} value={nb.used} onChange={(e) => setNb({ ...nb, used: e.target.value })} /></label>
+            </div>
+            <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button type="submit" className="btn btn-primary">Add bin</button></div>
+          </form>
+        </div>
+      )}
+
+      {cur && (
+        <div className="modal-overlay" onClick={() => setEditId(null)}>
+          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={saveEdit}>
+            <h3>Bin {cur.id}</h3>
+            <p className="modalp">{cur.zone} · aisle {cur.aisle} · rack {cur.rack}</p>
+            <div className="formgrid">
+              <label className="field"><span>Capacity (cases)</span><input type="number" min={0} value={eb.capacity} onChange={(e) => setEb({ ...eb, capacity: e.target.value })} /></label>
+              <label className="field"><span>Currently used</span><input type="number" min={0} value={eb.used} onChange={(e) => setEb({ ...eb, used: e.target.value })} /></label>
+            </div>
+            <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setEditId(null)}>Cancel</button><button type="submit" className="btn btn-primary">Save</button></div>
+          </form>
+        </div>
+      )}
     </>
   );
 }

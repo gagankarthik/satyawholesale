@@ -183,7 +183,9 @@ export const useLocations = () => {
   const { items, ready, persist } = usePersisted<WLocation>("satya.locations.v1", SEED_LOCATIONS);
   const update = (id: string, patch: Partial<WLocation>) =>
     persist(items.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-  return { locations: items, ready, update };
+  const add = (l: WLocation) => persist([...items, l]);
+  const remove = (id: string) => persist(items.filter((l) => l.id !== id));
+  return { locations: items, ready, update, add, remove };
 };
 
 /* =========================================================
@@ -223,6 +225,7 @@ export interface TradeAccount extends Customer {
   businessLicense?: string;
   tobaccoLicense?: string;
   applied?: number;
+  docs?: { label: string; name: string; uploaded: number }[];
 }
 const SEED_ACCOUNTS_KEY = "satya.accounts.v1";
 

@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  DEPTS, DEPT_BG, deptName, fmt, sku, useInventory, useOrders, useSettings, computeTax, LOW_STOCK,
+  DEPTS, DEPT_BG, deptName, fmt, sku, useInventory, useOrders, useSettings, computeTax,
+  commitStockForOrder, LOW_STOCK,
   CONTACT, CUSTOMERS, orderGrand, ORDER_FLOW, statusSlug,
   type DeptKey, type Product, type Tag, type Order, type OrderLine, type OrderStatus, type PayStatus,
 } from "@/lib/store";
@@ -272,6 +273,58 @@ export function ov(o: Order) {
   };
 }
 
+/* Editable money adjustments + manual tracking for an order. */
+function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: Order; patchOrder: (ref: string, p: Partial<Order>) => void; taxRate: number; taxLabel: string; flash: Flash }) {
+  const [deliv, setDeliv] = useState(String(order.deliveryFee ?? 0));
+  const [dkind, setDkind] = useState<"amount" | "percent">("amount");
+  const [dval, setDval] = useState("");
+  const [dreason, setDreason] = useState(order.discountReason ?? "");
+  const [track, setTrack] = useState(order.tracking && order.tracking !== "PICKUP" ? order.tracking : "");
+
+  const applyDeliv = () => {
+    const f = Math.max(0, Number(deliv) || 0);
+    patchOrder(order.ref, { deliveryFee: f });
+    flash("Delivery fee updated");
+  };
+  const applyDisc = () => {
+    const val = Number(dval) || 0;
+    if (val <= 0) { flash("Enter a discount amount"); return; }
+    const amount = dkind === "percent" ? Math.round(order.total * val) / 100 : val;
+    patchOrder(order.ref, { discount: Math.max(0, amount), discountReason: dreason.trim() || (dkind === "percent" ? `${val}% off` : undefined) });
+    flash("Discount applied");
+  };
+  const clearDisc = () => { patchOrder(order.ref, { discount: 0, discountReason: undefined }); setDval(""); setDreason(""); flash("Discount cleared"); };
+  const applyTrack = () => { patchOrder(order.ref, { tracking: track.trim() || undefined }); flash("Tracking updated"); };
+
+  return (
+    <div className="panel anim-in">
+      <div className="panel-h"><h3>Adjustments</h3></div>
+      <div className="adjform">
+        <label className="field"><span>Delivery fee ($)</span>
+          <div className="inline-apply"><input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} /><Button variant="ghost" size="sm" onClick={applyDeliv}>Apply</Button></div>
+        </label>
+        <div className="field"><span>Discount</span>
+          <div className="discrow">
+            <select value={dkind} onChange={(e) => setDkind(e.target.value as "amount" | "percent")}><option value="amount">$ amount</option><option value="percent">% percent</option></select>
+            <input type="number" min={0} step="0.01" value={dval} onChange={(e) => setDval(e.target.value)} placeholder={dkind === "percent" ? "10" : "25.00"} />
+          </div>
+        </div>
+        <label className="field"><span>Reason</span><input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Loyalty, damaged case, promo…" /></label>
+        <div className="modalbtns" style={{ marginTop: 2 }}>
+          {order.discount ? <Button variant="ghost" size="sm" onClick={clearDisc}>Clear</Button> : null}
+          <Button variant="primary" size="sm" onClick={applyDisc}>Apply discount</Button>
+        </div>
+        {order.status === "Out for delivery" && (
+          <label className="field" style={{ marginTop: 12, borderTop: "1px dashed var(--kraft-edge)", paddingTop: 14 }}><span>Tracking number</span>
+            <div className="inline-apply"><input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="1Z…" /><Button variant="ghost" size="sm" onClick={applyTrack}>Save</Button></div>
+            <small className="muted" style={{ fontSize: 11.5 }}>Shown to the customer on their order page.</small>
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   const { orders, setStatus, patchOrder, removeOrder } = useOrders();
   const { products } = useInventory();
@@ -413,7 +466,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                 </table>
                 <div className="totals">
                   <div className="tl"><span>Subtotal · {cur.cases} cases</span><span className="mono">{m(cur.total)}</span></div>
-                  <div className="tl"><span>Discount</span><span className="mono">−{m(v.discount)}</span></div>
+                  <div className="tl"><span>Discount{cur.discountReason ? ` · ${cur.discountReason}` : ""}</span><span className="mono">−{m(v.discount)}</span></div>
                   <div className="tl"><span>{exempt ? "Tax (resale exempt)" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">{m(tax)}</span></div>
                   <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: v.deliveryFee ? "inherit" : "var(--green)" }}>{v.deliveryFee ? m(v.deliveryFee) : "Free"}</span></div>
                   <div className="tl grand"><span>Order total</span><b>{m(grand)}</b></div>
@@ -456,6 +509,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               </label>
             </div>
           </div>
+          <OrderAdjust order={cur} patchOrder={patchOrder} taxRate={settings.taxRate} taxLabel={settings.taxLabel} flash={flash} />
           <div className="panel anim-in">
             <div className="panel-h"><h3>Addresses</h3></div>
             <div className="addrbox"><div className="al">Billing</div><p>{cur.store}<br />{v.billing}</p></div>
@@ -465,6 +519,164 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
         </aside>
       </div>
       <PrintReceipt order={cur} />
+    </>
+  );
+}
+
+/* =======================================================================
+   CREATE ORDER (admin, on behalf of a customer)
+   ======================================================================= */
+export function AdminOrderCreate({ flash }: { flash: Flash }) {
+  const router = useRouter();
+  const { placeOrder } = useOrders();
+  const { products } = useInventory();
+  const { customers } = useCustomers(CUSTOMERS);
+  const { settings } = useSettings();
+
+  const [custId, setCustId] = useState(customers[0]?.id ?? "");
+  const [lines, setLines] = useState<OrderLine[]>([]);
+  const [addId, setAddId] = useState("");
+  const [fulfilment, setFulfilment] = useState("Next-day delivery");
+  const [payment, setPayment] = useState("Net 15 terms");
+  const [taxExempt, setTaxExempt] = useState(true);
+  const [deliv, setDeliv] = useState("");
+  const [discKind, setDiscKind] = useState<"amount" | "percent">("amount");
+  const [discVal, setDiscVal] = useState("");
+  const [discReason, setDiscReason] = useState("");
+
+  const cust = customers.find((c) => c.id === custId);
+  const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
+  const cases = lines.reduce((s, l) => s + l.qty, 0);
+  const tax = computeTax(subtotal, taxExempt, settings.taxRate);
+  const deliveryFee = Math.max(0, Number(deliv) || 0);
+  const discVnum = Number(discVal) || 0;
+  const discount = Math.max(0, discKind === "percent" ? Math.round(subtotal * discVnum) / 100 : discVnum);
+  const grand = subtotal + tax + deliveryFee - discount;
+
+  const addLine = () => {
+    const p = products.find((x) => String(x.id) === addId);
+    if (!p) return;
+    if (lines.some((l) => l.id === p.id)) { flash("Already on this order"); return; }
+    setLines((ls) => [...ls, { id: p.id, name: p.name, qty: 1, price: p.price }]);
+    setAddId("");
+  };
+  const setQty = (id: number, d: number) => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, qty: Math.max(1, l.qty + d) } : l)));
+  const drop = (id: number) => setLines((ls) => ls.filter((l) => l.id !== id));
+
+  const create = () => {
+    if (!cust) { flash("Pick a customer"); return; }
+    if (!lines.length) { flash("Add at least one product"); return; }
+    const isPickup = fulfilment.includes("pickup");
+    const order: Order = {
+      ref: "SW-" + Math.floor(4000 + Math.random() * 5000),
+      placed: Date.now(),
+      store: cust.store,
+      lines, cases, total: subtotal, status: "Pending",
+      payment, fulfilment,
+      tracking: isPickup ? "PICKUP" : "1Z" + Math.floor(100000000 + Math.random() * 899999999) + "OH",
+      deliveryFee, tax, discount,
+      discountReason: discount > 0 ? (discReason.trim() || (discKind === "percent" ? `${discVnum}% off` : undefined)) : undefined,
+      paymentStatus: payment.includes("Net") ? "Unpaid" : "Paid",
+      billing: cust.address ?? cust.store, shipping: cust.address ?? cust.store,
+      taxExempt,
+    };
+    placeOrder(order);
+    commitStockForOrder(lines);
+    flash("Order created");
+    router.push(`/admin/orders/${order.ref}`);
+  };
+
+  return (
+    <>
+      <button className="detail-back" onClick={() => router.push("/admin/orders")}>← All orders</button>
+      <header className="adminbar">
+        <div><h1>New order</h1><p>Create an order on behalf of a trade account</p></div>
+      </header>
+
+      <div className="detail-grid">
+        <div className="detail-main">
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>Customer</h3></div>
+            <label className="field"><span>Trade account</span>
+              <select value={custId} onChange={(e) => setCustId(e.target.value)}>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.store} · {c.id}{c.status !== "Active" ? ` (${c.status})` : ""}</option>)}
+              </select>
+            </label>
+            {cust && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>{cust.contact} · {cust.email}{cust.address ? ` · ${cust.address}` : ""}</p>}
+          </div>
+
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>Products</h3><span className="hint">{cases} cases · {lines.length} items</span></div>
+            {lines.length ? (
+              <table className="invtable flat">
+                <thead><tr><th>Product</th><th className="r">Qty</th><th className="r">Unit</th><th className="r">Line</th><th></th></tr></thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id}>
+                      <td className="pn" style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></td>
+                      <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}>−</button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}>+</button></div></td>
+                      <td className="r mono">{m(l.price)}</td>
+                      <td className="r mono">{m(l.qty * l.price)}</td>
+                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.id)}>✕</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="muted" style={{ fontSize: 14, padding: "6px 0 14px" }}>No products yet — add some below.</p>}
+            <div className="addline">
+              <select value={addId} onChange={(e) => setAddId(e.target.value)} aria-label="Add product">
+                <option value="">+ Add a product…</option>
+                {products.filter((p) => !lines.some((l) => l.id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.name} · {m(p.price)}</option>)}
+              </select>
+              <Button variant="ghost" size="sm" onClick={addLine} disabled={!addId}>Add</Button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="detail-side">
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>Order setup</h3></div>
+            <div className="kvs">
+              <div className="kv2 col"><span>Fulfilment</span>
+                <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}><option>Next-day delivery</option><option>Cash &amp; carry pickup</option><option>Scheduled delivery</option></select>
+              </div>
+              <div className="kv2 col"><span>Payment</span>
+                <select value={payment} onChange={(e) => setPayment(e.target.value)}><option>Net 15 terms</option><option>Net 30 terms</option><option>Card on delivery</option><option>Cash on delivery</option></select>
+              </div>
+              <label className="taxtoggle">
+                <input type="checkbox" checked={taxExempt} onChange={(e) => setTaxExempt(e.target.checked)} />
+                <span><b>Resale tax-exempt</b><small>{taxExempt ? "No sales tax" : `${settings.taxLabel} ${settings.taxRate}%`}</small></span>
+              </label>
+              <div className="kv2 col"><span>Delivery fee ($)</span>
+                <input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="kv2 col"><span>Discount</span>
+                <div className="discrow">
+                  <select value={discKind} onChange={(e) => setDiscKind(e.target.value as "amount" | "percent")}><option value="amount">$ amount</option><option value="percent">% percent</option></select>
+                  <input type="number" min={0} step="0.01" value={discVal} onChange={(e) => setDiscVal(e.target.value)} placeholder={discKind === "percent" ? "10" : "25.00"} />
+                </div>
+              </div>
+              <div className="kv2 col"><span>Discount reason</span>
+                <input value={discReason} onChange={(e) => setDiscReason(e.target.value)} placeholder="Loyalty, promo…" />
+              </div>
+            </div>
+          </div>
+          <div className="panel anim-in">
+            <div className="panel-h"><h3>Summary</h3></div>
+            <div className="totals">
+              <div className="tl"><span>Subtotal · {cases} cases</span><span className="mono">{m(subtotal)}</span></div>
+              {discount > 0 && <div className="tl"><span>Discount{discReason.trim() ? ` · ${discReason.trim()}` : discKind === "percent" ? ` · ${discVnum}%` : ""}</span><span className="mono">−{m(discount)}</span></div>}
+              <div className="tl"><span>{taxExempt ? "Tax (resale exempt)" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">{m(tax)}</span></div>
+              <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: deliveryFee ? "inherit" : "var(--green)" }}>{deliveryFee ? m(deliveryFee) : "Free"}</span></div>
+              <div className="tl grand"><span>Order total</span><b>{m(grand)}</b></div>
+            </div>
+            <div className="modalbtns" style={{ marginTop: 14 }}>
+              <Button variant="ghost" size="sm" onClick={() => router.push("/admin/orders")}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={create}>Create order</Button>
+            </div>
+          </div>
+        </aside>
+      </div>
     </>
   );
 }
@@ -495,7 +707,9 @@ export function OrdersTab() {
 
   return (
     <>
-      <Head title="Orders" sub="Orders from the trade portal — open any order for the full receipt" />
+      <Head title="Orders" sub="Orders from the trade portal — open any order for the full receipt">
+        <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}>+ New order</Button>
+      </Head>
       <div className="kpis">
         <KpiCard tone="accent" label="All-time sales" value={k(rev)} foot={`${orders.length} orders`} />
         <KpiCard label="Open" value={orders.filter((o) => o.status !== "Completed").length} foot="in fulfillment" />
@@ -528,14 +742,33 @@ export function OrdersTab() {
 /* =======================================================================
    CUSTOMERS / ACCOUNTS  (approval)
    ======================================================================= */
+const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: "Net 15" };
 export function CustomersTab({ flash }: { flash: Flash }) {
-  const { customers, setStatus, update, remove } = useCustomers(CUSTOMERS);
+  const { customers, setStatus, update, add, remove } = useCustomers(CUSTOMERS);
   const { orders } = useOrders();
+  const router = useRouter();
   const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Hold">("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [inviting, setInviting] = useState(false);
+  const [inv, setInv] = useState(EMPTY_INVITE);
+  const [docEdit, setDocEdit] = useState(false);
+  const [docDraft, setDocDraft] = useState({ business: "", tobacco: "" });
   const confirm = useConfirm();
+
+  const sendInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inv.store.trim() || !inv.email.trim()) { flash("Store name and email are required"); return; }
+    add({
+      id: "C-" + Math.floor(1300 + Math.random() * 700),
+      store: inv.store.trim(), contact: inv.contact.trim(), email: inv.email.trim(),
+      phone: inv.phone.trim(), city: inv.city, since: String(new Date().getFullYear()),
+      status: "Pending", terms: inv.terms, applied: Date.now(),
+    });
+    setInv(EMPTY_INVITE); setInviting(false);
+    flash("Invite sent — account pending");
+  };
 
   const stats = customers.map((c) => {
     const theirs = orders.filter((o) => o.store === c.store);
@@ -594,7 +827,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   <thead><tr><th>Order</th><th>Date</th><th className="r">Cases</th><th className="r">Total</th><th>Status</th></tr></thead>
                   <tbody>
                     {cur.history.map((o) => (
-                      <tr key={o.ref}><td className="mono" style={{ fontWeight: 600 }}>{o.ref}</td><td className="muted" style={{ fontSize: 13 }}>{timeAgo(o.placed)}</td><td className="r mono">{o.cases}</td><td className="r mono">{m(o.total)}</td><td><Badge tone={statusTone(o.status)}>{o.status}</Badge></td></tr>
+                      <tr key={o.ref} className="clickrow" style={{ cursor: "pointer" }} onClick={() => router.push(`/admin/orders/${o.ref}`)}><td className="mono" style={{ fontWeight: 600 }}>{o.ref}</td><td className="muted" style={{ fontSize: 13 }}>{timeAgo(o.placed)}</td><td className="r mono">{o.cases}</td><td className="r mono">{m(o.total)}</td><td><Badge tone={statusTone(o.status)}>{o.status}</Badge></td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -612,13 +845,31 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               </div>
             </div>
             <div className="panel">
-              <div className="panel-h"><h3>Verification documents</h3></div>
-              <div className="doclist">
-                <div className="docchip"><span className="di">✓</span><div><div className="dn">Business license</div><div className="ds mono">{cur.businessLicense || "—"}</div></div></div>
-                <div className="docchip"><span className="di">✓</span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
-                <div className="docchip"><span className="di">✓</span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
-                <div className="docchip"><span className="di">✓</span><div><div className="dn">Resale / tax ID</div><div className="ds">On file</div></div></div>
+              <div className="panel-h"><h3>Verification documents</h3>
+                {docEdit
+                  ? <span className="hint">editing</span>
+                  : <Button variant="ghost" size="sm" onClick={() => { setDocDraft({ business: cur.businessLicense || "", tobacco: cur.tobaccoLicense || "" }); setDocEdit(true); }}>Edit</Button>}
               </div>
+              {docEdit ? (
+                <div className="formgrid" style={{ margin: 0 }}>
+                  <label className="field full"><span>Business license #</span><input value={docDraft.business} onChange={(e) => setDocDraft({ ...docDraft, business: e.target.value })} /></label>
+                  <label className="field full"><span>Tobacco license #</span><input value={docDraft.tobacco} onChange={(e) => setDocDraft({ ...docDraft, tobacco: e.target.value })} /></label>
+                  <div className="full modalactions"><Button variant="ghost" onClick={() => setDocEdit(false)}>Cancel</Button><Button variant="primary" onClick={() => { update(cur.id, { businessLicense: docDraft.business.trim() || undefined, tobaccoLicense: docDraft.tobacco.trim() || undefined }); setDocEdit(false); flash("Documents updated"); }}>Save</Button></div>
+                </div>
+              ) : (
+                <div className="doclist">
+                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Business license</div><div className="ds mono">{cur.businessLicense || "—"}</div></div></div>
+                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
+                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
+                  {(cur.docs || []).map((d, i) => (
+                    <div className="docchip" key={i}><span className="di">📎</span><div><div className="dn">{d.label}</div><div className="ds">uploaded {timeAgo(d.uploaded)}</div></div></div>
+                  ))}
+                </div>
+              )}
+              <label className="btn btn-ghost btn-sm uploadbtn" style={{ marginTop: 14 }}>
+                ⤒ Upload document
+                <input type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { update(cur.id, { docs: [...(cur.docs || []), { label: f.name, name: f.name, uploaded: Date.now() }] }); flash("Document uploaded"); } e.target.value = ""; }} />
+              </label>
             </div>
           </aside>
         </div>
@@ -649,7 +900,9 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Trade accounts" sub="Open an account for full store details, documents and order history" />
+      <Head title="Trade accounts" sub="Open an account for full store details, documents and order history">
+        <Button variant="primary" size="sm" onClick={() => setInviting(true)}>+ Invite account</Button>
+      </Head>
       <div className="kpis">
         <KpiCard label="Total accounts" value={customers.length} foot="on file" />
         <KpiCard label="Active" value={stats.filter((c) => c.status === "Active").length} foot="cleared to order" />
@@ -671,6 +924,24 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         rowClassName={(c) => (c.status === "Pending" ? "rowflag" : undefined)}
         empty="No accounts match."
       />
+
+      {inviting && (
+        <div className="modal-overlay" onClick={() => setInviting(false)}>
+          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={sendInvite}>
+            <h3>Invite a trade account</h3>
+            <p className="auth-sub" style={{ marginTop: 0 }}>They&apos;ll be created as Pending until verified and approved.</p>
+            <div className="formgrid">
+              <label className="field full"><span>Store name *</span><input value={inv.store} onChange={(e) => setInv({ ...inv, store: e.target.value })} required placeholder="Jay's Stop & Shop" /></label>
+              <label className="field"><span>Contact</span><input value={inv.contact} onChange={(e) => setInv({ ...inv, contact: e.target.value })} placeholder="Full name" /></label>
+              <label className="field"><span>Email *</span><input type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} required placeholder="buyer@store.com" /></label>
+              <label className="field"><span>Phone</span><input value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="(513) 555-0000" /></label>
+              <label className="field"><span>City</span><input value={inv.city} onChange={(e) => setInv({ ...inv, city: e.target.value })} /></label>
+              <label className="field"><span>Payment terms</span><select value={inv.terms} onChange={(e) => setInv({ ...inv, terms: e.target.value })}><option>Net 15</option><option>Net 30</option><option>COD</option></select></label>
+            </div>
+            <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setInviting(false)}>Cancel</Button><Button variant="primary" type="submit">Send invite</Button></div>
+          </form>
+        </div>
+      )}
     </>
   );
 }

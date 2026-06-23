@@ -66,6 +66,8 @@ export function SettingsTab({ flash }: { flash: Flash }) {
 
   useEffect(() => { setRate(String(settings.taxRate)); setLabel(settings.taxLabel); }, [settings.taxRate, settings.taxLabel]);
 
+  const [tab, setTab] = useState<"company" | "tax" | "policies">("company");
+
   const saveTax = (e: React.FormEvent) => {
     e.preventDefault();
     const r = Number(rate);
@@ -74,49 +76,61 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     flash("Tax settings saved");
   };
 
+  const TABS = [{ k: "company", label: "Company" }, { k: "tax", label: "Tax & invoicing" }, { k: "policies", label: "Warehouse policies" }] as const;
+
   return (
     <>
       <Head title="Settings" sub="Company profile, tax and warehouse policies" />
-      <div className="dash">
-        <div className="panel anim-in">
-          <div className="panel-h"><h3>Company profile</h3></div>
-          <div className="setrows">
-            <div className="setrow"><span>Legal name</span><b>{CONTACT.legalName}</b></div>
-            <div className="setrow"><span>Warehouse</span><b>{CONTACT.address1}, {CONTACT.address2}</b></div>
-            <div className="setrow"><span>Phone</span><b>{CONTACT.phone}</b></div>
-            <div className="setrow"><span>Email</span><b>{CONTACT.email}</b></div>
-            <div className="setrow"><span>Hours</span><b>{CONTACT.hours}</b></div>
-          </div>
-        </div>
+      <div className="tabbar">
+        {TABS.map((t) => <button key={t.k} className={tab === t.k ? "on" : ""} onClick={() => setTab(t.k)}>{t.label}</button>)}
+      </div>
 
-        <div className="panel anim-in">
-          <div className="panel-h"><h3>Tax &amp; invoicing</h3><span className="hint">Applied to orders that aren&apos;t resale-exempt</span></div>
-          <form className="formgrid" onSubmit={saveTax}>
-            <label className="field"><span>Sales tax rate (%)</span>
-              <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
-            </label>
-            <label className="field"><span>Tax label</span>
-              <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="OH sales tax" />
-            </label>
-            <div className="setrow full" style={{ borderBottom: "none" }}>
-              <span>Default for new orders</span><b>Resale-exempt (B2B)</b>
+      <div className="setpane">
+        {tab === "company" && (
+          <div className="panel anim-in" key="company">
+            <div className="panel-h"><h3>Company profile</h3></div>
+            <div className="setrows">
+              <div className="setrow"><span>Legal name</span><b>{CONTACT.legalName}</b></div>
+              <div className="setrow"><span>Warehouse</span><b>{CONTACT.address1}, {CONTACT.address2}</b></div>
+              <div className="setrow"><span>Phone</span><b>{CONTACT.phone}</b></div>
+              <div className="setrow"><span>Email</span><b>{CONTACT.email}</b></div>
+              <div className="setrow"><span>Hours</span><b>{CONTACT.hours}</b></div>
             </div>
-            <div className="modalbtns full" style={{ marginTop: 4 }}>
-              <button className="btn btn-primary btn-sm" type="submit">Save tax settings</button>
-            </div>
-          </form>
-        </div>
-
-        <div className="panel anim-in">
-          <div className="panel-h"><h3>Warehouse policies</h3></div>
-          <div className="setrows">
-            <div className="setrow"><span>Default low-stock threshold</span><b>{LOW_STOCK} cases</b></div>
-            <div className="setrow"><span>PO approval threshold</span><b>{m(PO_APPROVAL_THRESHOLD)}</b></div>
-            <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
-            <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
           </div>
-          <button className="btn btn-ghost btn-sm" style={{ marginTop: 18 }} onClick={async () => { if (await confirm({ title: "Reset demo catalog?", message: "All products revert to the seeded data. Orders and accounts are kept.", confirmLabel: "Reset", danger: true })) { reset(); flash("Catalog reset"); } }}>Reset demo catalog</button>
-        </div>
+        )}
+
+        {tab === "tax" && (
+          <div className="panel anim-in" key="tax">
+            <div className="panel-h"><h3>Tax &amp; invoicing</h3><span className="hint">Applied to orders that aren&apos;t resale-exempt</span></div>
+            <form className="formgrid" onSubmit={saveTax}>
+              <label className="field"><span>Sales tax rate (%)</span>
+                <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
+              </label>
+              <label className="field"><span>Tax label</span>
+                <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="OH sales tax" />
+              </label>
+              <div className="setrow full" style={{ borderBottom: "none" }}>
+                <span>Default for new orders</span><b>Resale-exempt (B2B)</b>
+              </div>
+              <div className="modalbtns full" style={{ marginTop: 4 }}>
+                <button className="btn btn-primary btn-sm" type="submit">Save tax settings</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {tab === "policies" && (
+          <div className="panel anim-in" key="policies">
+            <div className="panel-h"><h3>Warehouse policies</h3></div>
+            <div className="setrows">
+              <div className="setrow"><span>Default low-stock threshold</span><b>{LOW_STOCK} cases</b></div>
+              <div className="setrow"><span>PO approval threshold</span><b>{m(PO_APPROVAL_THRESHOLD)}</b></div>
+              <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
+              <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: 18 }} onClick={async () => { if (await confirm({ title: "Reset demo catalog?", message: "All products revert to the seeded data. Orders and accounts are kept.", confirmLabel: "Reset", danger: true })) { reset(); flash("Catalog reset"); } }}>Reset demo catalog</button>
+          </div>
+        )}
       </div>
     </>
   );
