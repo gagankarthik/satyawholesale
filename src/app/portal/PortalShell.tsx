@@ -9,8 +9,8 @@ import {
 } from "@/lib/store";
 import { useSession } from "@/lib/auth";
 import { Boxes, Gear, Bag, Search, Grid, Receipt, Card, Check } from "@/components/Icons";
+import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
-import { DEPT_SUBCATS } from "./meta";
 
 type Cart = Record<number, number>; // id -> cases
 
@@ -48,7 +48,7 @@ const STORE = "Jay's Stop & Shop";
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { ready: sessionReady, signedIn } = useSession();
+  const { ready: sessionReady, signedIn, signOut } = useSession();
 
   const { products, ready } = useInventory();
   const { orders } = useOrders();
@@ -59,9 +59,12 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const [sub, setSub] = useState("");
   const [cart, setCart] = useState<Cart>({});
   const [toast, setToast] = useState("");
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [productsOpen, setProductsOpen] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  /* restore collapsed preference (after mount to avoid hydration mismatch) */
+  useEffect(() => { setCollapsed(localStorage.getItem("satya.sidebar") === "1"); }, []);
+  const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.sidebar", n ? "1" : "0"); } catch {} return n; });
 
   /* redirect to login when the session is known and signed-out */
   useEffect(() => {
@@ -121,7 +124,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : STORE;
 
   const navItem = (href: string, active: boolean, icon: React.ReactNode, label: string, badge?: number) => (
-    <Link href={href} className={`sitem ${active ? "on" : ""}`} onClick={() => setMobileNav(false)}>
+    <Link href={href} className={`sitem ${active ? "on" : ""}`} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
       <span className="ic">{icon}</span> {label}
       {badge != null ? <span className="cb">{badge}</span> : null}
     </Link>
@@ -137,62 +140,23 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   return (
     <Ctx.Provider value={value}>
-      <div className="app">
+      <div className={`app ${collapsed ? "collapsed" : ""}`}>
         <div className={`sideov ${mobileNav ? "show" : ""}`} onClick={() => setMobileNav(false)} />
         <aside className={`side ${mobileNav ? "open" : ""}`}>
-          <Link href="/" className="side-brand"><Brand dark height={30} /></Link>
+          <div className="side-brand">
+            <Link href="/" className="side-logo" aria-label="Satya Wholesale home"><Brand height={38} /></Link>
+            <button className="side-collapse" onClick={toggleCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
+            </button>
+          </div>
           <div className="snav">
             {navItem("/portal", isDash, <Grid />, "Dashboard")}
 
-            <button className={`sitem ${seg === "products" ? "section-on" : ""}`} onClick={() => { setDept("all"); setSub(""); router.push("/portal/products"); setProductsOpen((o) => !o); setMobileNav(false); }}>
+            <Link href="/portal/products" className={`sitem ${seg === "products" ? "on" : ""}`} title={collapsed ? "Products" : undefined} onClick={() => { setDept("all"); setSub(""); setMobileNav(false); }}>
               <span className="ic"><Boxes /></span> Products <span className="cb">{counts.all}</span>
-              <svg className={`chev ${productsOpen ? "" : "closed"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-            {productsOpen && (
-              <div className="sgroup-items">
-                <button className={`sitem subitem ${seg === "products" && dept === "all" ? "on" : ""}`} onClick={() => { setDept("all"); setSub(""); router.push("/portal/products"); setMobileNav(false); }}>
-                  All products <span className="cb">{counts.all}</span>
-                </button>
-                {DEPTS.map((d) => {
-                  const open = openGroups[d.key];
-                  const subs = DEPT_SUBCATS[d.key] || [];
-                  return (
-                    <div key={d.key}>
-                      <button className={`sitem subitem ${seg === "products" && dept === d.key && !sub ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(""); router.push("/portal/products"); setOpenGroups((s) => ({ ...s, [d.key]: !s[d.key] })); setMobileNav(false); }}>
-                        {d.name} <span className="cb">{counts[d.key]}</span>
-                        {subs.length > 0 && <svg className={`chev ${open ? "" : "closed"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                      </button>
-                      {subs.length > 0 && (
-                        <div className={`sgroup-items ${open ? "" : "closed"}`}>
-                          {subs.map((sc) => {
-                            const n = products.filter((p) => p.dep === d.key && p.name.toLowerCase().includes(sc.q)).length;
-                            return (
-                              <button key={sc.label} className={`sitem subitem deep ${seg === "products" && dept === d.key && sub === sc.q ? "on" : ""}`} onClick={() => { setDept(d.key); setSub(sc.q); router.push("/portal/products"); setMobileNav(false); }}>
-                                {sc.label} <span className="cb">{n}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {navItem("/portal/cart", seg === "cart", <Bag />, "Cart", cases || undefined)}
+            </Link>
             {navItem("/portal/orders", seg === "orders", <Receipt />, "My orders", myOrders.length)}
             {navItem("/portal/payments", seg === "payments", <Card />, "Payments")}
-          </div>
-          <div className="acct">
-            <Link href="/portal/profile" className="who-link" onClick={() => setMobileNav(false)}>
-              <span className="av">JS</span>
-              <div className="who">
-                <div className="nm">Jay&apos;s Stop &amp; Shop</div>
-                <div className="em">buyer@yourstore.com</div>
-              </div>
-            </Link>
-            <Link href="/admin" className="adminlink" title="Admin console" aria-label="Admin console"><Gear /></Link>
           </div>
         </aside>
 
@@ -202,15 +166,21 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
             </button>
             <div className="tt">{title}<small>{subtitle}</small></div>
-            {onProducts && (
-              <div className="search">
-                <Search />
-                <input placeholder="Search by name or item number…" value={query} onChange={(e) => setQuery(e.target.value)} />
-              </div>
-            )}
-            <Link href="/portal/cart" className="cart-btn" aria-label={`Open cart, ${cases} cases`}>
-              <Bag /> Cart <span className="badge">{cases}</span>
+            <form className="search" onSubmit={(e) => { e.preventDefault(); if (!onProducts) router.push("/portal/products"); }}>
+              <Search />
+              <input placeholder="Search products…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search products" />
+            </form>
+            <Link href="/portal/cart" className="cart-mini" aria-label={`Cart, ${cases} item${cases !== 1 ? "s" : ""}`}>
+              <Bag />
+              {cases > 0 && <span className="cart-count">{cases}</span>}
             </Link>
+            <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">JS</span>}>
+              <div className="menu-head"><div className="mh-nm">Jay&apos;s Stop &amp; Shop</div><div className="mh-em">buyer@yourstore.com</div></div>
+              <Link href="/portal/profile" className="menu-item" role="menuitem"><Gear /> Account</Link>
+              <Link href="/admin" className="menu-item" role="menuitem"><Grid /> Admin console</Link>
+              <div className="menu-sep" />
+              <button type="button" className="menu-item danger" role="menuitem" onClick={() => { signOut(); router.replace("/auth/login"); }}>Sign out</button>
+            </Dropdown>
           </div>
 
           <div className="content">{children}</div>

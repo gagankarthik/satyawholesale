@@ -8,7 +8,7 @@ import {
 } from "@/lib/store";
 import { Package, Check } from "@/components/Icons";
 import { Button, EmptyState } from "@/components/ui";
-import { DeptThumb } from "@/components/DeptIcon";
+import Image from "next/image";
 import { usePortal } from "../PortalShell";
 import { ADDRESSES } from "../meta";
 
@@ -51,7 +51,7 @@ export default function CartPage() {
       // No tracking at placement — the warehouse assigns it when the order ships.
       tracking: isPickup ? "PICKUP" : undefined,
       deliveryFee: 0, tax: 0, discount: 0,
-      taxExempt: true, // resale exempt by default
+      taxExempt: false, // sales tax applies unless admin marks resale-exempt
       paymentStatus: payment.includes("Net") ? "Unpaid" : "Paid",
       billing: address, shipping: address,
     };
@@ -81,7 +81,7 @@ export default function CartPage() {
         <div className="cartitems">
           {cartLines.map(({ p, qty }) => (
             <div className="citem" key={p.id}>
-              <DeptThumb dep={p.dep} className="th" />
+              <span className="th"><Image src="/coming-soon.webp" alt="" fill sizes="44px" style={{ objectFit: "contain" }} /></span>
               <div className="cmid">
                 <div className="nm">{p.name}</div>
                 <div className="id mono">#{p.id} · {p.pack} · ${fmt(p.price)}/{p.unit}</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useInventory, useSettings, LOW_STOCK, CONTACT,
 } from "@/lib/store";
@@ -8,6 +8,7 @@ import {
   useStaff, PO_APPROVAL_THRESHOLD, ROLES, type Role,
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
+import { ListToolbar, type ToolbarOption } from "@/components/ui";
 import { Head, m, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
@@ -15,16 +16,35 @@ export function UsersTab({ flash }: { flash: Flash }) {
   const { staff, add, update } = useStaff();
   const [adding, setAdding] = useState(false);
   const [d, setD] = useState(EMPTY_STAFF);
+  const [query, setQuery] = useState("");
+  const [role, setRole] = useState("all");
+  const [sort, setSort] = useState("name");
+
+  const roleOpts: ToolbarOption[] = [{ value: "all", label: "All roles" }, ...ROLES.map((r) => ({ value: r, label: r }))];
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = staff.filter((u) =>
+      (role === "all" || u.role === role) &&
+      (q === "" || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    );
+    return [...list].sort((a, b) => (sort === "role" ? a.role.localeCompare(b.role) : a.name.localeCompare(b.name)));
+  }, [staff, query, role, sort]);
+
   return (
     <>
       <Head title="Users & roles" sub="Staff access and scanner-device assignment">
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
       </Head>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search name or email…" }}
+        filters={[{ label: "Role", value: role, onChange: setRole, options: roleOpts }]}
+        sort={{ value: sort, onChange: setSort, options: [{ value: "name", label: "Name A–Z" }, { value: "role", label: "Role" }] }}
+      />
       <div className="tablewrap">
         <table className="invtable">
           <thead><tr><th>User</th><th>Role</th><th>Scanner</th><th className="r">Status</th><th className="r"></th></tr></thead>
           <tbody>
-            {staff.map((u) => (
+            {rows.map((u) => (
               <tr key={u.id}>
                 <td><div className="prodcell"><span className="avatar">{u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><div><div className="pn">{u.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{u.email}</div></div></div></td>
                 <td><select className="rolesel" value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash("Role updated"); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
@@ -33,6 +53,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
                 <td className="r"><button className="ia" onClick={() => { update(u.id, { status: u.status === "Active" ? "Suspended" : "Active" }); flash("Updated"); }}>{u.status === "Active" ? "Suspend" : "Restore"}</button></td>
               </tr>
             ))}
+            {!rows.length && <tr><td colSpan={5} className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No users match.</td></tr>}
           </tbody>
         </table>
       </div>

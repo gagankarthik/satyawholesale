@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
 import { deptName, fmt, sku, useInventory, LOW_STOCK, type Product } from "@/lib/store";
@@ -54,6 +55,9 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
         </div>
 
         <aside className="detail-side">
+          <div className="panel pd-hero" style={{ minHeight: 210 }}>
+            <Image src="/coming-soon.webp" alt={p.name} fill sizes="360px" style={{ objectFit: "contain" }} />
+          </div>
           <div className="panel">
             <div className="panel-h"><h3>Pricing</h3></div>
             <div className="kvs">

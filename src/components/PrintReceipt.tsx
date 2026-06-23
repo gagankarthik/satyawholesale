@@ -53,7 +53,7 @@ export default function PrintReceipt({ order }: { order: Order }) {
             {order.lines.map((l, i) => (
               <tr key={l.id}>
                 <td>{i + 1}</td>
-                <td>{l.name}</td>
+                <td><span className="pr-item"><Image className="pr-thumb" src="/coming-soon.webp" alt="" width={26} height={26} /> {l.name}</span></td>
                 <td>SW-{l.id}</td>
                 <td className="r">{l.qty}</td>
                 <td className="r">${fmt(l.price)}</td>

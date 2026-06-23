@@ -125,3 +125,15 @@ export const Package = ({ className }: P) => (
 export const Sparkles = ({ className }: P) => (
   <svg {...base} className={className}><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6L12 4ZM19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" /></svg>
 );
+export const Home = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M3 10.4 12 3l9 7.4" /><path d="M5 9v10.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" /><path d="M9.5 20.5V14h5v6.5" /></svg>
+);
+export const Tag = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8a2 2 0 0 1 2-2H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8Z" /><circle cx="7.8" cy="7.8" r="1.2" /></svg>
+);
+export const Table = ({ className }: P) => (
+  <svg {...base} className={className}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9.5h18M3 15h18M9 4v16" /></svg>
+);
+export const GridView = ({ className }: P) => (
+  <svg {...base} className={className}><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></svg>
+);

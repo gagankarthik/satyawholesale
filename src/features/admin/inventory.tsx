@@ -13,6 +13,7 @@ import {
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
 import { Search, Close, Package } from "@/components/Icons";
+import { DataTable, ListToolbar, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
 import { Head, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
@@ -30,6 +31,21 @@ export function POTab({ flash }: { flash: Flash }) {
   const router = useRouter();
 
   const supName = (id: string) => suppliers.find((s) => s.id === id)?.name ?? id;
+
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [view, setView] = useState<ViewMode>("grid");
+
+  const poRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = pos.filter((po) =>
+      (status === "all" || po.status === status) &&
+      (q === "" || po.id.toLowerCase().includes(q) || supName(po.supplierId).toLowerCase().includes(q))
+    );
+    return [...list].sort((a, b) => (sort === "total-desc" ? poTotal(b) - poTotal(a) : sort === "oldest" ? a.created - b.created : b.created - a.created));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos, query, status, sort, suppliers]);
 
   const suggestions = useMemo(() => {
     const low = products.filter((p) => p.stock <= (p.reorderPoint ?? LOW_STOCK) && p.supplierId);
@@ -64,8 +80,30 @@ export function POTab({ flash }: { flash: Flash }) {
           </div>
         </div>
       )}
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search PO # or supplier…" }}
+        filters={[{ label: "Status", value: status, onChange: setStatus, options: [{ value: "all", label: "All statuses" }, ...PO_FLOW.map((s) => ({ value: s, label: s }))] }]}
+        sort={{ value: sort, onChange: setSort, options: [{ value: "newest", label: "Newest first" }, { value: "oldest", label: "Oldest first" }, { value: "total-desc", label: "Highest total" }] }}
+        right={<ViewToggle view={view} onChange={setView} />}
+      />
+      {view === "table" ? (
+        <DataTable
+          columns={[
+            { key: "id", header: "PO", render: (po) => <div><div className="pn mono" style={{ fontSize: 13.5 }}>{po.id}</div><div className="mono muted" style={{ fontSize: 11 }}>{supName(po.supplierId)}</div></div> },
+            { key: "lines", header: "Lines", align: "right", render: (po) => <span className="mono">{po.lines.length}</span> },
+            { key: "recv", header: "Received", align: "right", render: (po) => { const recv = po.lines.reduce((s, l) => s + l.received, 0); const ord = po.lines.reduce((s, l) => s + l.ordered, 0); return <span className="mono">{recv}/{ord}</span>; } },
+            { key: "total", header: "Total", align: "right", render: (po) => <span className="mono">{m(poTotal(po))}</span> },
+            { key: "status", header: "Status", render: (po) => <span className={`pobadge s-${po.status.replace(/\s+/g, "").toLowerCase()}`}>{po.status}</span> },
+            { key: "match", header: "Match", align: "right", render: (po) => { const match = threeWayMatch(po, receipts, invoices); return <span className={`matchbadge ${matchClass(match.status)}`}>{match.status}</span>; } },
+          ] satisfies Column<(typeof poRows)[number]>[]}
+          rows={poRows}
+          rowKey={(po) => po.id}
+          onRowClick={(po) => router.push(`/admin/purchaseorder/${po.id}`)}
+          empty="No purchase orders match."
+        />
+      ) : (
       <div className="orders">
-        {pos.map((po) => {
+        {poRows.map((po) => {
           const total = poTotal(po);
           const recv = po.lines.reduce((s, l) => s + l.received, 0);
           const ord = po.lines.reduce((s, l) => s + l.ordered, 0);
@@ -89,8 +127,9 @@ export function POTab({ flash }: { flash: Flash }) {
             </div>
           );
         })}
-        {pos.length === 0 && <div className="empty"><div className="ei" aria-hidden="true"><Package /></div><h3>No purchase orders</h3><p>Create one from the reorder suggestions above.</p></div>}
+        {poRows.length === 0 && <div className="empty"><div className="ei" aria-hidden="true"><Package /></div><h3>No purchase orders match</h3><p>Adjust the filters, or create one from the reorder suggestions above.</p></div>}
       </div>
+      )}
     </>
   );
 }
@@ -466,6 +505,22 @@ export function InventoryTab({ flash }: { flash: Flash }) {
   const [pid, setPid] = useState("");
   const [qty, setQty] = useState("");
   const [reason, setReason] = useState("cycle count");
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("all");
+  const [sort, setSort] = useState("newest");
+
+  const typeOpts: ToolbarOption[] = useMemo(
+    () => [{ value: "all", label: "All types" }, ...Array.from(new Set(movements.map((mv) => mv.type))).map((t) => ({ value: t, label: t }))],
+    [movements]
+  );
+  const ledger = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = movements.filter((mv) =>
+      (type === "all" || mv.type === type) &&
+      (q === "" || mv.name.toLowerCase().includes(q) || mv.sku.toLowerCase().includes(q) || (mv.ref || "").toLowerCase().includes(q))
+    );
+    return [...list].sort((a, b) => (sort === "oldest" ? a.ts - b.ts : b.ts - a.ts));
+  }, [movements, query, type, sort]);
 
   const adjust = (e: React.FormEvent) => {
     e.preventDefault();
@@ -494,11 +549,16 @@ export function InventoryTab({ flash }: { flash: Flash }) {
           <button className="btn btn-primary btn-sm" type="submit" style={{ height: 46 }}>Post adjustment</button>
         </form>
       </div>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search product, SKU or ref…" }}
+        filters={[{ label: "Type", value: type, onChange: setType, options: typeOpts }]}
+        sort={{ value: sort, onChange: setSort, options: [{ value: "newest", label: "Newest first" }, { value: "oldest", label: "Oldest first" }] }}
+      />
       <div className="tablewrap">
         <table className="invtable">
           <thead><tr><th>Time</th><th>Type</th><th>SKU / Product</th><th>Location</th><th>Ref</th><th className="r">Qty</th></tr></thead>
           <tbody>
-            {movements.map((mv) => (
+            {ledger.map((mv) => (
               <tr key={mv.id}>
                 <td className="muted" style={{ fontSize: 13 }}>{timeAgo(mv.ts)}</td>
                 <td><span className={`movebadge ${mv.type.toLowerCase()}`}>{mv.type}</span></td>
@@ -508,6 +568,7 @@ export function InventoryTab({ flash }: { flash: Flash }) {
                 <td className="r mono" style={{ color: mv.qty < 0 ? "var(--red)" : "var(--green)", fontWeight: 600 }}>{mv.qty > 0 ? "+" : ""}{mv.qty}</td>
               </tr>
             ))}
+            {!ledger.length && <tr><td colSpan={6} className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No movements match.</td></tr>}
           </tbody>
         </table>
       </div>

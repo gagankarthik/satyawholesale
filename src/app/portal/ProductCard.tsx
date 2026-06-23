@@ -1,24 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { DEPT_BG, deptName, fmt, LOW_STOCK, type Product } from "@/lib/store";
-import { DEPT_COLOR, DEPT_ICON } from "./meta";
+import { deptName, fmt, LOW_STOCK, type Product } from "@/lib/store";
 import { usePortal } from "./PortalShell";
 
 export default function ProductCard({ p }: { p: Product }) {
   const { cart, add, changeQty } = usePortal();
   const inCart = cart[p.id] || 0;
   const out = p.stock <= 0;
-  const Thumb = DEPT_ICON[p.dep];
   return (
     <div className="pcard">
-      <Link href={`/portal/products/${p.id}`} className="ph" style={{ background: DEPT_BG[p.dep] }} aria-label={p.name}>
+      <Link href={`/portal/products/${p.id}`} className="ph" aria-label={p.name}>
+        <Image src="/coming-soon.webp" alt={p.name} fill sizes="232px" style={{ objectFit: "contain" }} />
         {p.tag === "new" && <span className="pb new">New</span>}
         {p.tag === "pop" && <span className="pb pop">Popular</span>}
         {(p.tag === "low" || (p.stock <= LOW_STOCK && p.stock > 0)) && <span className="pb low">Low stock</span>}
         {out && <span className="pb oos">Out</span>}
         <span className="stk"><i style={{ background: out ? "var(--red)" : "var(--green)" }} />{p.stock} cs</span>
-        <span className="thumb" style={{ color: DEPT_COLOR[p.dep] }}><Thumb /></span>
       </Link>
       <div className="info">
         <span className="cat">{deptName(p.dep)}</span>

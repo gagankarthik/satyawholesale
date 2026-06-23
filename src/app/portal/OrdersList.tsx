@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fmt, statusSlug, ORDER_FLOW, type Order } from "@/lib/store";
@@ -70,6 +71,12 @@ export default function OrdersList({
                     <span className="oc-total mono">${fmt(o.total)}</span>
                     <span className="ia">View</span>
                   </div>
+                </div>
+                <div className="oc-thumbs" aria-hidden="true">
+                  {o.lines.slice(0, 7).map((l) => (
+                    <span key={l.id} className="oc-th"><Image src="/coming-soon.webp" alt="" fill sizes="46px" style={{ objectFit: "contain" }} /></span>
+                  ))}
+                  {o.lines.length > 7 && <span className="oc-th more">+{o.lines.length - 7}</span>}
                 </div>
                 <div className="oc-track">
                   {cancelled ? (

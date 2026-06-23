@@ -6,6 +6,7 @@ import {
   CONTACT, fmt, orderGrand, useOrders, canCancelOrder, canEditOrder,
   type OrderLine,
 } from "@/lib/store";
+import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
 import { EmptyState } from "@/components/ui";
@@ -137,7 +138,14 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
                   <button className="rl-rm" onClick={() => dropLine(l.id)} disabled={lines.length <= 1} aria-label={`Remove ${l.name}`}><Close /></button>
                 </div>
               ) : (
-                <div className="rl" key={l.id}><span>{l.name}</span><span className="q">×{l.qty} @ ${fmt(l.price)}</span><span className="a">${fmt(l.qty * l.price)}</span></div>
+                <div className="rl" key={l.id}>
+                  <span className="rl-item">
+                    <span className="rl-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="40px" style={{ objectFit: "contain" }} /></span>
+                    {l.name}
+                  </span>
+                  <span className="q">×{l.qty} @ ${fmt(l.price)}</span>
+                  <span className="a">${fmt(l.qty * l.price)}</span>
+                </div>
               )
             )}
           </div>

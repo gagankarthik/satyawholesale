@@ -15,10 +15,10 @@ import {
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close } from "@/components/Icons";
-import { DeptThumb } from "@/components/DeptIcon";
+import Image from "next/image";
 import { useConfirm } from "@/components/Confirm";
 import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { Button, Badge, DataTable, ListToolbar, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { Button, Badge, DataTable, ListToolbar, Menu, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
 const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK ? "warning" : "success");
@@ -133,7 +133,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
       <DataTable
         columns={[
-          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><DeptThumb dep={p.dep} className="th" /><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
+          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th"><Image src="/coming-soon.webp" alt="" fill sizes="36px" style={{ objectFit: "contain" }} /></span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
           { key: "code", header: "Code", render: (p) => <span className="mono muted">{sku(p)}</span> },
           { key: "desc", header: "Description", render: (p) => <span className="muted" style={{ fontSize: 12.5 }}>{p.description || "—"}</span> },
           { key: "cat", header: "Category", render: (p) => <span className="deptpill">{deptName(p.dep)}</span> },
@@ -142,12 +142,15 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
           { key: "price", header: "Unit price", align: "right", render: (p) => <span className="mono" style={{ fontWeight: 600 }}>{m(p.price)}</span> },
           { key: "stock", header: "Stock", align: "right", render: (p) => <Badge tone={stockTone(p.stock)}>{p.stock}</Badge> },
           { key: "created", header: "Created", render: (p) => <span className="muted" style={{ fontSize: 12.5 }}>{fmtDate(p.created)}</span> },
-          { key: "actions", header: "Actions", align: "right", render: (p) => (
-            <div className="rowactions">
-              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>Edit</Button>
-              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); }}>+12</Button>
-              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async (e) => { e.stopPropagation(); if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } }} aria-label="Remove product"><Close /></Button>
-            </div>
+          { key: "actions", header: "", align: "right", render: (p) => (
+            <Menu
+              label={`Actions for ${p.name}`}
+              items={[
+                { label: "Edit product", onSelect: () => openEdit(p) },
+                { label: "Add 12 cases", onSelect: () => { updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); } },
+                { label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } } },
+              ]}
+            />
           ) },
         ] satisfies Column<Product>[]}
         rows={rows}
@@ -414,11 +417,29 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
 export function SuppliersTab({ flash }: { flash: Flash }) {
   const router = useRouter();
   const { suppliers, update } = useSuppliers();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState("name");
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = suppliers.filter((s) =>
+      (status === "all" || s.status === status) &&
+      (q === "" || s.name.toLowerCase().includes(q) || s.contact.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
+    );
+    return [...list].sort((a, b) => (sort === "lead" ? a.leadDays - b.leadDays : a.name.localeCompare(b.name)));
+  }, [suppliers, query, status, sort]);
+
   return (
     <>
       <Head title="Suppliers" sub="Vendor master — lead times, terms and catalog mapping">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/suppliers/new")}>+ Add supplier</Button>
       </Head>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search supplier, contact or email…" }}
+        filters={[{ label: "Status", value: status, onChange: setStatus, options: [{ value: "all", label: "All statuses" }, { value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }] }]}
+        sort={{ value: sort, onChange: setSort, options: [{ value: "name", label: "Name A–Z" }, { value: "lead", label: "Lead time" }] }}
+      />
       <DataTable
         columns={[
           { key: "name", header: "Supplier", render: (s) => <div className="prodcell"><span className="avatar">{s.name.slice(0, 2).toUpperCase()}</span><div><div className="pn">{s.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{s.id}</div></div></div> },
@@ -427,16 +448,19 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
           { key: "lead", header: "Lead time", align: "right", render: (s) => <span className="mono">{s.leadDays}d</span> },
           { key: "status", header: "Status", align: "right", render: (s) => <Badge tone={s.status === "Active" ? "success" : "neutral"}>{s.status}</Badge> },
           { key: "action", header: "", align: "right", render: (s) => (
-            <div className="rowactions" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/suppliers/${s.id}`)}>Edit</Button>
-              <Button variant="ghost" size="sm" onClick={() => { update(s.id, { status: s.status === "Active" ? "Inactive" : "Active" }); flash("Updated"); }}>{s.status === "Active" ? "Disable" : "Enable"}</Button>
-            </div>
+            <Menu
+              label={`Actions for ${s.name}`}
+              items={[
+                { label: "Edit supplier", onSelect: () => router.push(`/admin/suppliers/${s.id}`) },
+                { label: s.status === "Active" ? "Disable supplier" : "Enable supplier", onSelect: () => { update(s.id, { status: s.status === "Active" ? "Inactive" : "Active" }); flash("Updated"); } },
+              ]}
+            />
           ) },
         ] satisfies Column<(typeof suppliers)[number]>[]}
-        rows={suppliers}
+        rows={rows}
         rowKey={(s) => s.id}
         onRowClick={(s) => router.push(`/admin/suppliers/${s.id}`)}
-        empty="No suppliers."
+        empty="No suppliers match."
       />
     </>
   );

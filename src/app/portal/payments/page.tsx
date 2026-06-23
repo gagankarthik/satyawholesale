@@ -58,7 +58,7 @@ export default function PortalPayments() {
 
   return (
     <>
-      <div className="kpis rise-in">
+      <div className="kpis auto rise-in">
         <KpiCard tone={outstanding > 0 ? "danger" : "default"} label="Outstanding balance" value={`$${fmt(outstanding)}`} foot="unpaid & partial" />
         <KpiCard label="Paid" value={`$${fmt(paid)}`} foot="settled invoices" />
         <KpiCard label="Invoices" value={billed.length} foot="all time" />

@@ -1,13 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
-import { DEPT_BG, deptName, fmt, sku, type Product } from "@/lib/store";
+import { deptName, fmt, sku, type Product } from "@/lib/store";
 import { Search } from "@/components/Icons";
 import { EmptyState } from "@/components/ui";
 import { usePortal } from "../../PortalShell";
 import ProductCard from "../../ProductCard";
-import { DEPT_COLOR, DEPT_ICON } from "../../meta";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -23,7 +23,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     );
   }
 
-  const Thumb = DEPT_ICON[p.dep];
   const inCart = cart[p.id] || 0;
   const out = p.stock <= 0;
   const related = products.filter((x) => x.dep === p.dep && x.id !== p.id).slice(0, 4);
@@ -32,8 +31,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     <div className="odetail rise-in">
       <Link className="detail-back" href="/portal/products">← Back to products</Link>
       <div className="od-cols">
-        <div className="panel pd-hero" style={{ background: DEPT_BG[p.dep] }}>
-          <span className="pd-thumb" style={{ color: DEPT_COLOR[p.dep] }}><Thumb /></span>
+        <div className="panel pd-hero">
+          <Image src="/coming-soon.webp" alt={p.name} fill sizes="(max-width:1000px) 100vw, 480px" style={{ objectFit: "contain" }} priority />
         </div>
         <aside className="od-side">
           <div className="panel">

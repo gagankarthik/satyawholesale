@@ -8,6 +8,7 @@ import {
   CONTACT, CUSTOMERS, orderGrand, ORDER_FLOW, statusSlug,
   type DeptKey, type Product, type Tag, type Order, type OrderLine, type OrderStatus, type PayStatus,
 } from "@/lib/store";
+import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
 import {
@@ -20,7 +21,7 @@ import {
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { KpiCard, DataTable, Badge, Button, ListToolbar, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { KpiCard, DataTable, Badge, Button, ListToolbar, Menu, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
 const statusTone = (s: OrderStatus): BadgeTone =>
@@ -155,6 +156,16 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
   }, [stats.cur]);
   const topMax = Math.max(1, ...topProducts.map((p) => p.revenue));
 
+  const deptRevenue = useMemo(() => {
+    const agg: Record<string, number> = {};
+    stats.cur.forEach((o) => o.lines.forEach((l) => {
+      const dep = products.find((x) => x.id === l.id)?.dep ?? "grocery";
+      agg[dep] = (agg[dep] || 0) + l.qty * l.price;
+    }));
+    return Object.entries(agg).map(([dep, revenue]) => ({ dep, revenue })).sort((a, b) => b.revenue - a.revenue);
+  }, [stats.cur, products]);
+  const deptMax = Math.max(1, ...deptRevenue.map((d) => d.revenue));
+
   const invValue = products.reduce((s, p) => s + (p.cost ?? p.price * 0.7) * p.stock, 0);
   const low = products.filter((p) => p.stock <= (p.reorderPoint ?? LOW_STOCK));
   const pending = customers.filter((c) => c.status === "Pending").length;
@@ -191,6 +202,21 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <div className="legend"><span className="lg cur">This period {k(stats.rev)}</span><span className="lg prev">Previous {k(stats.revPrev)}</span></div>
         </div>
         <TrendChart cur={curBuckets} prev={prevBuckets} />
+      </div>
+
+      <div className="panel anim-in" style={{ marginBottom: 18 }}>
+        <div className="panel-h"><h3>Revenue by department</h3><span className="hint">in range</span></div>
+        {deptRevenue.length ? (
+          <div className="toplist">
+            {deptRevenue.map((d) => (
+              <div className="toprow" key={d.dep}>
+                <div className="tp-name">{deptName(d.dep as DeptKey)}</div>
+                <div className="tp-bar"><span style={{ width: `${(d.revenue / deptMax) * 100}%` }} /></div>
+                <div className="tp-val mono">{m(d.revenue)}</div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="muted" style={{ fontSize: 14 }}>No sales in this range.</p>}
       </div>
 
       <div className="dash">
@@ -351,7 +377,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   }
 
   const v = ov(cur);
-  const exempt = cur.taxExempt !== false;
+  const exempt = cur.taxExempt === true;
   const tax = computeTax(cur.total, cur.taxExempt, settings.taxRate);
   const grand = cur.total + (cur.deliveryFee ?? 0) + tax - (cur.discount ?? 0);
 
@@ -437,7 +463,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                   <tbody>
                     {draft.map((l) => (
                       <tr key={l.id}>
-                        <td className="pn" style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></td>
+                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
                         <td className="r">
                           <div className="qstep">
                             <button type="button" onClick={() => setQty(l.id, -1)} aria-label="Decrease">−</button>
@@ -474,7 +500,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                   <tbody>
                     {cur.lines.map((l) => (
                       <tr key={l.id}>
-                        <td className="pn" style={{ fontSize: 13.5 }}>{l.name}</td>
+                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><span style={{ fontSize: 13.5 }}>{l.name}</span></div></td>
                         <td className="mono muted">SW-{l.id}</td>
                         <td className="r mono">{l.qty}</td>
                         <td className="r mono">{m(l.price)}</td>
@@ -561,7 +587,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const [addId, setAddId] = useState("");
   const [fulfilment, setFulfilment] = useState("Next-day delivery");
   const [payment, setPayment] = useState("Net 15 terms");
-  const [taxExempt, setTaxExempt] = useState(true);
+  const [taxExempt, setTaxExempt] = useState(false);
   const [deliv, setDeliv] = useState("");
   const [discKind, setDiscKind] = useState<"amount" | "percent">("amount");
   const [discVal, setDiscVal] = useState("");
@@ -636,7 +662,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                 <tbody>
                   {lines.map((l) => (
                     <tr key={l.id}>
-                      <td className="pn" style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></td>
+                      <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
                       <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}>−</button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}>+</button></div></td>
                       <td className="r mono">{m(l.price)}</td>
                       <td className="r mono">{m(l.qty * l.price)}</td>
@@ -705,11 +731,17 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
 }
 
 export function OrdersTab() {
-  const { orders } = useOrders();
+  const { orders, setStatus } = useOrders();
   const router = useRouter();
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
+  const [view, setView] = useState<ViewMode>("table");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSel = (key: string) => setSelected((s) => { const n = new Set(s); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  const toggleAllSel = (keys: string[], select: boolean) => setSelected((s) => { const n = new Set(s); keys.forEach((k) => (select ? n.add(k) : n.delete(k))); return n; });
+  const bulkStatus = (st: OrderStatus) => { selected.forEach((ref) => setStatus(ref, st)); setSelected(new Set()); };
 
   const rows = useMemo(() => {
     const list = orders.filter((o) =>
@@ -741,14 +773,14 @@ export function OrdersTab() {
 
   /* ---------- list ---------- */
   const columns: Column<Order>[] = [
-    { key: "ref", header: "Order", render: (o) => <span className="mono" style={{ fontWeight: 600 }}>{o.ref}</span> },
-    { key: "store", header: "Store", render: (o) => o.store },
-    { key: "placed", header: "Placed", render: (o) => <span className="muted" style={{ fontSize: 13 }}>{timeAgo(o.placed)}</span> },
-    { key: "cases", header: "Cases", align: "right", render: (o) => <span className="mono">{o.cases}</span> },
-    { key: "total", header: "Total", align: "right", render: (o) => <span className="mono">{m(ov(o).grand)}</span> },
-    { key: "payment", header: "Payment", render: (o) => <Badge tone={payTone(ov(o).paymentStatus)}>{ov(o).paymentStatus}</Badge> },
-    { key: "status", header: "Status", render: (o) => <Badge tone={statusTone(o.status)}>{o.status}</Badge> },
-    { key: "open", header: "", align: "right", render: (o) => <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/admin/orders/${o.ref}`); }}>Open</Button> },
+    { key: "ref", header: "Order", sortValue: (o) => o.ref, render: (o) => <span className="mono" style={{ fontWeight: 600 }}>{o.ref}</span> },
+    { key: "store", header: "Store", sortValue: (o) => o.store.toLowerCase(), render: (o) => o.store },
+    { key: "placed", header: "Placed", sortValue: (o) => o.placed, render: (o) => <span className="muted" style={{ fontSize: 13 }}>{new Date(o.placed).toLocaleDateString()}</span> },
+    { key: "cases", header: "Cases", align: "right", sortValue: (o) => o.cases, render: (o) => <span className="mono">{o.cases}</span> },
+    { key: "total", header: "Total", align: "right", sortValue: (o) => ov(o).grand, render: (o) => <span className="mono">{m(ov(o).grand)}</span> },
+    { key: "payment", header: "Payment", sortValue: (o) => ov(o).paymentStatus, render: (o) => <Badge tone={payTone(ov(o).paymentStatus)}>{ov(o).paymentStatus}</Badge> },
+    { key: "status", header: "Status", sortValue: (o) => o.status, render: (o) => <Badge tone={statusTone(o.status)}>{o.status}</Badge> },
+    { key: "shipto", header: "Ship to", sortValue: (o) => (o.shipping || o.store).toLowerCase(), render: (o) => <span className="shipcell" title={o.shipping || o.store}>{o.shipping || o.store}</span> },
   ];
 
   return (
@@ -767,15 +799,52 @@ export function OrdersTab() {
         search={{ value: query, onChange: setQuery, placeholder: "Search order # or store…" }}
         filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as OrderStatus | "all"), options: STATUS_OPTS }]}
         sort={{ value: sort, onChange: setSort, options: SORT_OPTS }}
+        right={<ViewToggle view={view} onChange={setView} />}
       />
 
-      <DataTable
-        columns={columns}
-        rows={rows}
-        rowKey={(o) => o.ref}
-        onRowClick={(o) => router.push(`/admin/orders/${o.ref}`)}
-        empty="No orders match."
-      />
+      {view === "table" && selected.size > 0 && (
+        <div className="bulkbar">
+          <span className="bulk-count">{selected.size} selected</span>
+          <label className="bulk-set">Set status
+            <select value="" onChange={(e) => { if (e.target.value) bulkStatus(e.target.value as OrderStatus); }}>
+              <option value="">Choose…</option>
+              {O_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <button type="button" className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => bulkStatus("Cancelled")}>Cancel selected</button>
+          <button type="button" className="bulk-clear" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
+
+      {view === "table" ? (
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(o) => o.ref}
+          onRowClick={(o) => router.push(`/admin/orders/${o.ref}`)}
+          empty="No orders match."
+          selectable
+          selected={selected}
+          onToggle={toggleSel}
+          onToggleAll={toggleAllSel}
+        />
+      ) : rows.length === 0 ? (
+        <div className="empty light"><div className="ei" aria-hidden="true"><Search /></div><h3>No orders match</h3></div>
+      ) : (
+        <div className="ocg">
+          {rows.map((o) => {
+            const v = ov(o);
+            return (
+              <div key={o.ref} className="ocg-card" role="button" tabIndex={0} onClick={() => router.push(`/admin/orders/${o.ref}`)} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/admin/orders/${o.ref}`); }}>
+                <div className="ocg-top"><span className="ocg-ref">{o.ref}</span><Badge tone={statusTone(o.status)}>{o.status}</Badge></div>
+                <div className="ocg-store">{o.store}</div>
+                <div className="ocg-meta">{o.cases} cases · {timeAgo(o.placed)}</div>
+                <div className="ocg-foot"><span className="ocg-total">{m(v.grand)}</span><Badge tone={payTone(v.paymentStatus)}>{v.paymentStatus}</Badge></div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -935,7 +1004,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                 </div>
               )}
               <label className="btn btn-ghost btn-sm uploadbtn" style={{ marginTop: 14 }}>
-                ⤒ Upload document
+                <Paperclip /> Upload document
                 <input type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { update(cur.id, { docs: [...(cur.docs || []), { label: f.name, name: f.name, uploaded: Date.now() }] }); flash("Document uploaded"); } e.target.value = ""; }} />
               </label>
             </div>
@@ -958,11 +1027,15 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     { key: "orders", header: "Orders", align: "right", render: (c) => <span className="mono">{c.orders}</span> },
     { key: "spend", header: "Spend", align: "right", render: (c) => <span className="mono">{m(c.spend)}</span> },
     { key: "status", header: "Status", align: "right", render: (c) => <Badge tone={acctTone(c.status)}>{c.status}</Badge> },
-    { key: "action", header: "Action", align: "right", render: (c) => (
-      <div className="rowactions" onClick={(e) => e.stopPropagation()}>
-        <Button variant="ghost" size="sm" onClick={() => setOpenId(c.id)}>Open</Button>
-        {c.status !== "Active" && <Button variant="primary" size="sm" onClick={() => { setStatus(c.id, "Active"); flash("Account approved"); }}>Approve</Button>}
-      </div>
+    { key: "action", header: "", align: "right", render: (c) => (
+      <Menu
+        label={`Actions for ${c.store}`}
+        items={[
+          { label: "Open account", onSelect: () => setOpenId(c.id) },
+          ...(c.status !== "Active" ? [{ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } }] : []),
+          ...(c.status !== "Hold" ? [{ label: "Place on hold", onSelect: () => { setStatus(c.id, "Hold"); flash("Account on hold"); } }] : []),
+        ]}
+      />
     ) },
   ];
 

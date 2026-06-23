@@ -37,6 +37,7 @@
   --r: 16px;
   --rs: 11px;
   --rx: 26px;
+  --hh: 72px; /* shared header height — sidebar logo bar + content topbar align on one line */
   --shadow: 0 1px 2px rgba(14, 19, 64, 0.05), 0 12px 30px -10px rgba(14, 19, 64, 0.12);
   --shadow-lg: 0 30px 70px -22px rgba(14, 19, 64, 0.32);
   --maxw: 1220px;

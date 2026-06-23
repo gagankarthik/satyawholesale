@@ -374,8 +374,9 @@ export function useSettings() {
 }
 
 /* sales tax for an order: 0 when resale-exempt, else subtotal × rate% */
+/** Tax applies to everyone by default; only an explicit resale exemption skips it. */
 export const computeTax = (subtotal: number, exempt: boolean | undefined, ratePct: number) =>
-  exempt === false ? Math.round(subtotal * ratePct) / 100 : 0;
+  exempt === true ? 0 : Math.round(subtotal * ratePct) / 100;
 
 /* decrement stock when an order is submitted */
 export function commitStockForOrder(lines: OrderLine[]) {

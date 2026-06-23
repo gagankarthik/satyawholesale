@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useInventory, useOrders, CUSTOMERS } from "@/lib/store";
 import { usePurchaseOrders, useCustomers } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card, Home } from "@/components/Icons";
+import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
 import { type Tab, type Flash } from "@/features/admin/shared";
@@ -44,6 +45,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => { setCollapsed(localStorage.getItem("satya.sidebar") === "1"); }, []);
+  const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.sidebar", n ? "1" : "0"); } catch {} return n; });
 
   const flash: Flash = (msg) => {
     setToast(msg);
@@ -62,45 +67,59 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const GROUPS: { label: string; items: { path: string; label: string; Icon: typeof Grid; badge?: number; soon?: boolean }[] }[] = [
     { label: "Sales", items: [
-      { path: "/admin/orders", label: "Orders", Icon: Receipt, badge: orders.length },
       { path: "/admin/dashboard", label: "Dashboard", Icon: Grid },
+      { path: "/admin/orders", label: "Orders", Icon: Receipt, badge: orders.length },
       { path: "/admin/accounts", label: "Accounts", Icon: Users, badge: pendingAccounts || undefined },
     ] },
     { label: "Catalog", items: [
       { path: "/admin/products", label: "Products", Icon: Boxes, badge: products.length },
-      { path: "/admin/import", label: "Bulk import", Icon: Receipt },
-      { path: "/admin/categories", label: "Categories", Icon: Grid },
+      { path: "/admin/import", label: "Bulk import", Icon: Inbox },
+      { path: "/admin/categories", label: "Categories", Icon: Tag },
       { path: "/admin/suppliers", label: "Suppliers", Icon: Truck },
-      { path: "/admin/promotions", label: "Promotions", Icon: Store },
+      { path: "/admin/promotions", label: "Promotions", Icon: Sparkles },
     ] },
     { label: "Inventory", items: [
       { path: "/admin/inventory", label: "Stock ledger", Icon: Refresh },
-      { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Receipt, badge: openPOs },
+      { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package, badge: openPOs },
       { path: "/admin/warehouse", label: "Warehouse", Icon: Store },
     ] },
     { label: "Admin", items: [
       { path: "/admin/users", label: "Users & roles", Icon: Shield },
-      { path: "/admin/settings", label: "Settings", Icon: Grid },
-      { path: "/admin/possync", label: "POS sync", Icon: Store, soon: true },
+      { path: "/admin/settings", label: "Settings", Icon: Gear },
+      { path: "/admin/possync", label: "POS sync", Icon: Card, soon: true },
     ] },
   ];
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
+  const activeGroup = GROUPS.find((g) => g.items.some((it) => isActive(it.path)));
+  const activeItem = activeGroup?.items.find((it) => isActive(it.path));
+  const pageTitle = activeItem?.label ?? "Dashboard";
+
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const destinations = GROUPS.flatMap((g) => g.items.filter((it) => !it.soon).map((it) => ({ path: it.path, label: it.label, group: g.label })));
+  const results = q.trim() ? destinations.filter((d) => d.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : [];
+
   return (
     <ConfirmProvider>
       <Ctx.Provider value={{ flash, go }}>
-        <div className="admin">
+        <div className={`admin ${collapsed ? "collapsed" : ""}`}>
           <div className={`sideov ${mobileNav ? "show" : ""}`} onClick={() => setMobileNav(false)} />
           <aside className={`aside-dark ${mobileNav ? "open" : ""}`}>
-            <Link href="/" className="side-brand"><Brand dark height={30} /></Link>
+            <div className="side-brand">
+              <Link href="/" className="side-logo" aria-label="Satya Wholesale home"><Brand height={40} /></Link>
+              <button className="side-collapse" onClick={toggleCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
+              </button>
+            </div>
             <div className="adminrole mono">WAREHOUSE CONSOLE</div>
             <nav className="anav scroll">
               {GROUPS.map((g) => (
                 <div key={g.label} className="anav-group">
                   <div className="anav-label">{g.label}</div>
                   {g.items.map(({ path, label, Icon, badge, soon }) => (
-                    <Link key={path} href={path} className={isActive(path) ? "on" : ""} onClick={() => setMobileNav(false)}>
+                    <Link key={path} href={path} className={isActive(path) ? "on" : ""} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
                       <Icon className="nicon" /> {label}
                       {badge ? <span className="cb">{badge}</span> : null}
                       {soon && <span className="soon">soon</span>}
@@ -109,9 +128,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </div>
               ))}
             </nav>
-            <div className="aside-foot">
-              <Link href="/portal" className="aside-link">→ Order portal</Link>
-            </div>
           </aside>
 
           <div className="adminmain">
@@ -119,9 +135,40 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
               </button>
-              <Brand height={28} />
+              <span className="atb-brand"><Brand height={26} /></span>
+              <nav className="crumbs" aria-label="Breadcrumb">
+                <Link href="/admin/dashboard" className="crumb crumb-home" aria-label="Console home"><Home /></Link>
+                {activeGroup && <><span className="crumb-sep" aria-hidden="true">/</span><span className="crumb">{activeGroup.label}</span></>}
+                <span className="crumb-sep" aria-hidden="true">/</span>
+                <span className="crumb crumb-cur" aria-current="page">{pageTitle}</span>
+              </nav>
+              <div className="atb-search">
+                <Search />
+                <input
+                  placeholder="Search console…"
+                  value={q}
+                  onChange={(e) => { setQ(e.target.value); setSearchOpen(true); }}
+                  onFocus={() => setSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                  aria-label="Search console"
+                />
+                {searchOpen && results.length > 0 && (
+                  <div className="atb-results" role="listbox">
+                    {results.map((r) => (
+                      <button key={r.path} type="button" role="option" className="atb-result" onMouseDown={() => { router.push(r.path); setQ(""); setSearchOpen(false); }}>
+                        <span className="atb-r-label">{r.label}</span><span className="atb-r-grp">{r.group}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
+                <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">Satya Wholesale</div></div>
+                <Link href="/admin/settings" className="menu-item" role="menuitem"><Grid /> Settings</Link>
+                <Link href="/portal" className="menu-item" role="menuitem"><Store /> Order portal</Link>
+              </Dropdown>
             </div>
-            {children}
+            <div className="admincontent">{children}</div>
           </div>
 
           {toast && <div className="toast show"><Check /> {toast}</div>}
