@@ -6,10 +6,10 @@ export default function Departments() {
       <div className="wrap">
         <div className="shead reveal">
           <div className="tag">What we distribute</div>
-          <h2 className="sx">Everything behind<br />the counter.</h2>
+          <h2 className="sx">What we keep<br />in stock.</h2>
           <p>
-            A brief look at the categories Satya supplies. Live catalog, case pricing and ordering
-            are reserved for verified trade accounts inside the order portal.
+            The categories we carry for convenience retailers. Live catalog, case pricing and ordering
+            are reserved for verified trade accounts in the order portal.
           </p>
         </div>
         <div className="capi-grid">

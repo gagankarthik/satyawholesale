@@ -33,7 +33,7 @@ export default function Contact() {
             {sent ? (
               <div style={{ marginTop: 24 }}>
                 <div className="modal-check" style={{ margin: "0 0 14px" }}><Check /></div>
-                <p style={{ marginTop: 0 }}>Thanks — we&apos;ve received your request and will reach out shortly. For anything urgent, call {CONTACT.phone}.</p>
+                <p style={{ marginTop: 0 }}>Thanks, we&apos;ve received your request and will follow up shortly. For anything urgent, call {CONTACT.phone}.</p>
               </div>
             ) : (
               <form

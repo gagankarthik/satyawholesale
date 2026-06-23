@@ -27,14 +27,14 @@ export default function Hero() {
       <div className="wrap hero-in">
         <div className="hero-copy">
           <h1 className="headline reveal">
-            One distributor<br />
-            for the <span className="or">whole</span><br />
-            convenience store.
+            Wholesale for the<br />
+            independent <span className="or">c-store.</span>
           </h1>
           <p className="sub reveal">
-            Satya Wholesale is a licensed cash-and-carry distributor in Cincinnati, supplying
-            independent convenience retailers across Greater Cincinnati — the whole front counter on
-            one account, with consistent stock, one invoice and one delivery.
+            Satya Wholesale is a licensed cash-and-carry distributor on Reading Road in Cincinnati.
+            We supply independent convenience stores across the Tri-State with tobacco, vape, grocery,
+            candy, health and beauty, and automotive. Pick up at the warehouse or have it delivered to
+            your store.
           </p>
           <div className="hero-actions reveal">
             <a className="btn btn-primary" href="#account">Open a trade account <Arrow /></a>

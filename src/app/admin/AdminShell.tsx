@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useState } from "react";
 import { useInventory, useOrders, CUSTOMERS } from "@/lib/store";
 import { usePurchaseOrders, useCustomers } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check } from "@/components/Icons";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
 import { type Tab, type Flash } from "@/features/admin/shared";
@@ -124,7 +124,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             {children}
           </div>
 
-          {toast && <div className="toast show">✓ {toast}</div>}
+          {toast && <div className="toast show"><Check /> {toast}</div>}
         </div>
       </Ctx.Provider>
     </ConfirmProvider>

@@ -56,15 +56,24 @@ export interface OrderLine {
 }
 
 export type OrderStatus =
-  | "Pending" | "Processing" | "At Local Facility" | "Out for delivery" | "Completed";
+  | "Pending" | "Processing" | "At Local Facility" | "Out for delivery" | "Completed" | "Cancelled";
 export type PayStatus = "Unpaid" | "Paid" | "Partial" | "Refunded";
 
-/** Ordered fulfilment lifecycle — shared by the portal tracker and admin console. */
+/** Ordered fulfilment lifecycle — shared by the portal tracker and admin console.
+ *  "Cancelled" is a terminal off-flow state, deliberately excluded here. */
 export const ORDER_FLOW: OrderStatus[] = [
   "Pending", "Processing", "At Local Facility", "Out for delivery", "Completed",
 ];
 /** css-safe slug for a status, e.g. "Out for delivery" -> "outfordelivery". */
 export const statusSlug = (s: OrderStatus) => s.replace(/\s+/g, "").toLowerCase();
+
+/** A customer may cancel only before the order leaves the building.
+ *  Note: cancel/edit are status/field changes only — inventory is not
+ *  reconciled, mirroring the admin line-edit behavior. */
+export const CANCELLABLE_STATUSES: OrderStatus[] = ["Pending", "Processing"];
+export const canCancelOrder = (s: OrderStatus) => CANCELLABLE_STATUSES.includes(s);
+/** Items & delivery details stay editable only while the order is still Pending. */
+export const canEditOrder = (s: OrderStatus) => s === "Pending";
 
 export interface Order {
   ref: string;

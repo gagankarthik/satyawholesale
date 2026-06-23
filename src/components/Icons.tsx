@@ -91,3 +91,37 @@ export const Bag = ({ className }: P) => (
 export const Search = ({ className }: P) => (
   <svg {...base} className={className}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
 );
+export const Card = ({ className }: P) => (
+  <svg {...base} className={className}><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 9.5h19" /><path d="M6 14.5h4" /></svg>
+);
+
+/* functional UI glyphs — replace emoji across the portal & admin so the
+   whole app shares one icon language (emoji render per-OS and break the
+   enterprise look). All inherit currentColor + 1.8 stroke from `base`. */
+export const Close = ({ className }: P) => (
+  <svg {...base} className={className} strokeWidth={2.1}><path d="M6 6l12 12M18 6 6 18" /></svg>
+);
+export const Plus = ({ className }: P) => (
+  <svg {...base} className={className} strokeWidth={2.1}><path d="M12 5v14M5 12h14" /></svg>
+);
+export const Minus = ({ className }: P) => (
+  <svg {...base} className={className} strokeWidth={2.1}><path d="M5 12h14" /></svg>
+);
+export const Trash = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m2 0-.7 12a2 2 0 0 1-2 1.9H7.7a2 2 0 0 1-2-1.9L5 7M10 11v6M14 11v6" /></svg>
+);
+export const Inbox = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M3 13.5 6 5h12l3 8.5M3 13.5V19a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-5.5M3 13.5h5l1.2 2.5h5.6L16 13.5h5" /></svg>
+);
+export const Chat = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M21 11.5a8 8 0 0 1-11.6 7.1L3 20.5l1.9-6A8 8 0 1 1 21 11.5Z" /></svg>
+);
+export const Paperclip = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M21 11.5 12.3 20a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.6 1.6 0 0 1-2.3-2.3l7.8-7.8" /></svg>
+);
+export const Package = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M21 8 12 3 3 8m18 0v8l-9 5m9-13-9 5m0 8-9-5V8m9 13v-8m0 0L3 8m4.5-2.5 9 5" /></svg>
+);
+export const Sparkles = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6L12 4ZM19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" /></svg>
+);

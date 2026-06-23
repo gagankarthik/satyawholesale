@@ -1,9 +1,9 @@
-import {
-  DeptLeaf, DeptDrop, DeptFlame, DeptPlus, DeptCart, DeptCar, DeptPhone,
-} from "@/components/Icons";
 import type { DeptKey } from "@/lib/store";
 
 /* Non-routable portal metadata shared by the shell and route pages. */
+
+/* department iconography now lives in the shared component so admin reuses it */
+export { DEPT_ICON, DEPT_COLOR } from "@/components/DeptIcon";
 
 /* saved ship-to addresses for the signed-in trade account */
 export const ADDRESSES = [
@@ -52,16 +52,6 @@ export const DEPT_SUBCATS: Record<DeptKey, { label: string; q: string }[]> = {
     { label: "Fashion", q: "sunglasses" },
     { label: "Utility", q: "jar" },
   ],
-};
-
-export const DEPT_ICON: Record<DeptKey, (p: { className?: string }) => React.ReactElement> = {
-  tobacco: DeptLeaf, vape: DeptDrop, smoke: DeptFlame, hba: DeptPlus,
-  grocery: DeptCart, auto: DeptCar, acc: DeptPhone,
-};
-
-export const DEPT_COLOR: Record<DeptKey, string> = {
-  tobacco: "#a85a2c", vape: "#2f6fd8", smoke: "#d6560f", hba: "#6b4ed8",
-  grocery: "#b07d00", auto: "#2f6fd8", acc: "#2f9e44",
 };
 
 /* "3m ago" / "2h ago" / "5d ago" */

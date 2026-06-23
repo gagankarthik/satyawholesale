@@ -17,14 +17,14 @@ import {
   ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { KpiCard, DataTable, Badge, Button, type Column, type BadgeTone } from "@/components/ui";
+import { KpiCard, DataTable, Badge, Button, ListToolbar, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
 const statusTone = (s: OrderStatus): BadgeTone =>
-  s === "Completed" ? "success" : s === "Out for delivery" || s === "At Local Facility" ? "info" : s === "Processing" ? "warning" : "brand";
+  s === "Completed" ? "success" : s === "Cancelled" ? "danger" : s === "Out for delivery" || s === "At Local Facility" ? "info" : s === "Processing" ? "warning" : "brand";
 const payTone = (p: PayStatus): BadgeTone =>
   p === "Paid" ? "success" : p === "Partial" ? "warning" : p === "Refunded" ? "neutral" : "danger";
 const acctTone = (s: "Active" | "Pending" | "Hold"): BadgeTone =>
@@ -300,25 +300,30 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
     <div className="panel anim-in">
       <div className="panel-h"><h3>Adjustments</h3></div>
       <div className="adjform">
-        <label className="field"><span>Delivery fee ($)</span>
-          <div className="inline-apply"><input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} /><Button variant="ghost" size="sm" onClick={applyDeliv}>Apply</Button></div>
-        </label>
-        <div className="field"><span>Discount</span>
+        <div className="adjsec">
+          <div className="adjsec-h"><span>Delivery fee</span>{order.deliveryFee ? <span className="adjval">{m(order.deliveryFee)}</span> : <span className="adjval none">None</span>}</div>
+          <div className="inline-apply"><input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} placeholder="0.00" /><Button variant="ghost" size="sm" onClick={applyDeliv}>Apply</Button></div>
+        </div>
+
+        <div className="adjsec">
+          <div className="adjsec-h"><span>Discount</span>{order.discount ? <span className="adjval cut">−{m(order.discount)}</span> : <span className="adjval none">None</span>}</div>
           <div className="discrow">
             <select value={dkind} onChange={(e) => setDkind(e.target.value as "amount" | "percent")}><option value="amount">$ amount</option><option value="percent">% percent</option></select>
             <input type="number" min={0} step="0.01" value={dval} onChange={(e) => setDval(e.target.value)} placeholder={dkind === "percent" ? "10" : "25.00"} />
           </div>
+          <input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Reason — loyalty, damaged case, promo…" />
+          <div className="adjbtns">
+            {order.discount ? <Button variant="ghost" size="sm" onClick={clearDisc}>Clear</Button> : null}
+            <Button variant="primary" size="sm" onClick={applyDisc}>Apply discount</Button>
+          </div>
         </div>
-        <label className="field"><span>Reason</span><input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Loyalty, damaged case, promo…" /></label>
-        <div className="modalbtns" style={{ marginTop: 2 }}>
-          {order.discount ? <Button variant="ghost" size="sm" onClick={clearDisc}>Clear</Button> : null}
-          <Button variant="primary" size="sm" onClick={applyDisc}>Apply discount</Button>
-        </div>
-        {order.status === "Out for delivery" && (
-          <label className="field" style={{ marginTop: 12, borderTop: "1px dashed var(--kraft-edge)", paddingTop: 14 }}><span>Tracking number</span>
+
+        {order.tracking !== "PICKUP" && order.status !== "Pending" && order.status !== "Cancelled" && (
+          <div className="adjsec">
+            <div className="adjsec-h"><span>Tracking number</span>{order.tracking ? <span className="adjval">{order.tracking}</span> : <span className="adjval none">Not shipped</span>}</div>
             <div className="inline-apply"><input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="1Z…" /><Button variant="ghost" size="sm" onClick={applyTrack}>Save</Button></div>
-            <small className="muted" style={{ fontSize: 11.5 }}>Shown to the customer on their order page.</small>
-          </label>
+            <small className="muted" style={{ fontSize: 11.5 }}>Added by the warehouse — shown to the customer once saved.</small>
+          </div>
         )}
       </div>
     </div>
@@ -340,7 +345,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
     return (
       <>
         <button className="detail-back" onClick={() => router.push("/admin/orders")}>← All orders</button>
-        <div className="empty"><div className="ei">🔍</div><h3>Order not found</h3><p>It may have been deleted.</p></div>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Order not found</h3><p>It may have been deleted.</p></div>
       </>
     );
   }
@@ -382,6 +387,20 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
         <div><h1>{cur.ref}</h1><p>{cur.store} · placed {new Date(cur.placed).toLocaleString()}</p></div>
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" size="sm" onClick={() => window.print()}>Print receipt</Button>
+          {cur.status !== "Cancelled" && cur.status !== "Completed" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              style={{ color: "var(--red)" }}
+              onClick={async () => {
+                if (await confirm({ title: "Cancel order?", message: `Order ${cur.ref} will be marked cancelled and removed from the active fulfilment queue.`, confirmLabel: "Cancel order", danger: true })) {
+                  setStatus(cur.ref, "Cancelled"); flash("Order cancelled");
+                }
+              }}
+            >
+              Cancel order
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -428,7 +447,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                         </td>
                         <td className="r mono">{m(l.price)}</td>
                         <td className="r mono">{m(l.qty * l.price)}</td>
-                        <td className="r"><button type="button" className="ia del" onClick={() => dropLine(l.id)} aria-label="Remove line">✕</button></td>
+                        <td className="r"><button type="button" className="ia del" onClick={() => dropLine(l.id)} aria-label="Remove line"><Close /></button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -484,9 +503,13 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               <div className="kv2"><span>Tracking</span><b className="mono">{v.tracking}</b></div>
               <div className="kv2"><span>Method</span><b>{cur.fulfilment || "Next-day delivery"}</b></div>
               <div className="kv2"><span>Update status</span>
-                <select aria-label="Order status" className={`statussel s-${statusSlug(cur.status)}`} value={cur.status} onChange={(e) => { setStatus(cur.ref, e.target.value as OrderStatus); flash("Status updated"); }}>
-                  {O_STATUSES.map((s) => <option key={s}>{s}</option>)}
-                </select>
+                {cur.status === "Cancelled" ? (
+                  <Button variant="ghost" size="sm" onClick={() => { setStatus(cur.ref, "Pending"); flash("Order reinstated"); }}>Reinstate order</Button>
+                ) : (
+                  <select aria-label="Order status" className={`statussel s-${statusSlug(cur.status)}`} value={cur.status} onChange={(e) => { setStatus(cur.ref, e.target.value as OrderStatus); flash("Status updated"); }}>
+                    {O_STATUSES.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                )}
               </div>
               <div className="kv2 col"><span>Message to customer</span>
                 <textarea className="msgbox" rows={3} placeholder="e.g. Out for delivery — arriving before 2 PM." defaultValue={cur.adminNote || ""} key={cur.ref} onBlur={(e) => { const t = e.target.value.trim(); if (t !== (cur.adminNote || "")) { patchOrder(cur.ref, { adminNote: t || undefined }); flash("Message saved"); } }} />
@@ -617,7 +640,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                       <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}>−</button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}>+</button></div></td>
                       <td className="r mono">{m(l.price)}</td>
                       <td className="r mono">{m(l.qty * l.price)}</td>
-                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.id)}>✕</button></td>
+                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.id)} aria-label="Remove line"><Close /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -686,12 +709,35 @@ export function OrdersTab() {
   const router = useRouter();
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("newest");
 
-  const rows = orders.filter((o) =>
-    (filter === "all" || o.status === filter) &&
-    (query.trim() === "" || o.ref.toLowerCase().includes(query.toLowerCase()) || o.store.toLowerCase().includes(query.toLowerCase()))
-  );
+  const rows = useMemo(() => {
+    const list = orders.filter((o) =>
+      (filter === "all" || o.status === filter) &&
+      (query.trim() === "" || o.ref.toLowerCase().includes(query.toLowerCase()) || o.store.toLowerCase().includes(query.toLowerCase()))
+    );
+    return [...list].sort((a, b) => {
+      switch (sort) {
+        case "oldest": return a.placed - b.placed;
+        case "total-desc": return b.total - a.total;
+        case "cases-desc": return b.cases - a.cases;
+        default: return b.placed - a.placed;
+      }
+    });
+  }, [orders, filter, query, sort]);
   const rev = orders.reduce((s, o) => s + o.total, 0);
+
+  const STATUS_OPTS: ToolbarOption[] = [
+    { value: "all", label: "All statuses" },
+    ...O_STATUSES.map((s) => ({ value: s, label: s })),
+    { value: "Cancelled", label: "Cancelled" },
+  ];
+  const SORT_OPTS: ToolbarOption[] = [
+    { value: "newest", label: "Newest first" },
+    { value: "oldest", label: "Oldest first" },
+    { value: "total-desc", label: "Highest total" },
+    { value: "cases-desc", label: "Most cases" },
+  ];
 
   /* ---------- list ---------- */
   const columns: Column<Order>[] = [
@@ -717,16 +763,11 @@ export function OrdersTab() {
         <KpiCard label="Cases shipped" value={orders.reduce((s, o) => s + o.cases, 0)} foot="all time" />
       </div>
 
-      <div className="adminctl">
-        <div className="search small">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" strokeLinecap="round" /></svg>
-          <input placeholder="Search order # or store…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search orders" />
-        </div>
-        <div className="fchips">
-          <button className={filter === "all" ? "on" : ""} onClick={() => setFilter("all")}>All</button>
-          {O_STATUSES.map((s) => <button key={s} className={filter === s ? "on" : ""} onClick={() => setFilter(s)}>{s}</button>)}
-        </div>
-      </div>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search order # or store…" }}
+        filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as OrderStatus | "all"), options: STATUS_OPTS }]}
+        sort={{ value: sort, onChange: setSort, options: SORT_OPTS }}
+      />
 
       <DataTable
         columns={columns}
@@ -748,6 +789,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   const { orders } = useOrders();
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Hold">("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("name");
   const [openId, setOpenId] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -775,7 +818,32 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     return { ...c, orders: theirs.length, spend: theirs.reduce((s, o) => s + o.total, 0), history: theirs };
   });
   const pending = stats.filter((c) => c.status === "Pending");
-  const rows = stats.filter((c) => filter === "all" || c.status === filter);
+  const rows = (() => {
+    const q = query.trim().toLowerCase();
+    const list = stats.filter(
+      (c) =>
+        (filter === "all" || c.status === filter) &&
+        (q === "" || c.store.toLowerCase().includes(q) || c.contact.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+    );
+    return [...list].sort((a, b) => {
+      switch (sort) {
+        case "orders-desc": return b.orders - a.orders;
+        case "spend-desc": return b.spend - a.spend;
+        default: return a.store.localeCompare(b.store);
+      }
+    });
+  })();
+  const ACCT_STATUS_OPTS: ToolbarOption[] = [
+    { value: "all", label: "All statuses" },
+    { value: "Pending", label: "Pending" },
+    { value: "Active", label: "Active" },
+    { value: "Hold", label: "Hold" },
+  ];
+  const ACCT_SORT_OPTS: ToolbarOption[] = [
+    { value: "name", label: "Store A–Z" },
+    { value: "orders-desc", label: "Most orders" },
+    { value: "spend-desc", label: "Highest spend" },
+  ];
   const cur = stats.find((s) => s.id === openId) || null;
 
   const startEdit = () => { if (cur) { setDraft({ store: cur.store, contact: cur.contact, email: cur.email, phone: cur.phone || "", address: cur.address || "", terms: cur.terms || "Net 15" }); setEdit(true); } };
@@ -858,11 +926,11 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                 </div>
               ) : (
                 <div className="doclist">
-                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Business license</div><div className="ds mono">{cur.businessLicense || "—"}</div></div></div>
-                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
-                  <div className="docchip"><span className="di">✓</span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
+                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Business license</div><div className="ds mono">{cur.businessLicense || "—"}</div></div></div>
+                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
+                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
                   {(cur.docs || []).map((d, i) => (
-                    <div className="docchip" key={i}><span className="di">📎</span><div><div className="dn">{d.label}</div><div className="ds">uploaded {timeAgo(d.uploaded)}</div></div></div>
+                    <div className="docchip" key={i}><span className="di" aria-hidden="true"><Paperclip /></span><div><div className="dn">{d.label}</div><div className="ds">uploaded {timeAgo(d.uploaded)}</div></div></div>
                   ))}
                 </div>
               )}
@@ -909,13 +977,11 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         <KpiCard tone="danger" label="Pending approval" value={pending.length} foot="submitted from the site" />
         <KpiCard label="Lifetime sales" value={k(stats.reduce((s, c) => s + c.spend, 0))} foot="across accounts" />
       </div>
-      <div className="adminctl">
-        <div className="fchips">
-          {(["all", "Pending", "Active", "Hold"] as const).map((f) => (
-            <button key={f} className={filter === f ? "on" : ""} onClick={() => setFilter(f)}>{f === "all" ? "All" : f}</button>
-          ))}
-        </div>
-      </div>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search store, contact or email…" }}
+        filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as "all" | "Pending" | "Active" | "Hold"), options: ACCT_STATUS_OPTS }]}
+        sort={{ value: sort, onChange: setSort, options: ACCT_SORT_OPTS }}
+      />
       <DataTable
         columns={acctColumns}
         rows={rows}

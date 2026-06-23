@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { CUSTOMERS } from "@/lib/store";
 import { useSession } from "@/lib/auth";
+import { Button } from "@/components/ui";
 import { ADDRESSES } from "../meta";
 
 export default function PortalProfile() {
@@ -11,7 +12,7 @@ export default function PortalProfile() {
   const router = useRouter();
 
   return (
-    <div className="od-cols">
+    <div className="od-cols rise-in">
       <div className="panel">
         <div className="panel-h"><h3>Account</h3><span className="hint">{me.id}</span></div>
         <div className="kvs">
@@ -24,7 +25,7 @@ export default function PortalProfile() {
           <div className="kv2"><span>Business license</span><b className="mono">{me.businessLicense}</b></div>
           <div className="kv2"><span>Tobacco license</span><b className="mono">{me.tobaccoLicense}</b></div>
         </div>
-        <button className="btn btn-ghost" style={{ marginTop: 16 }} onClick={() => { signOut(); router.replace("/auth/login"); }}>Sign out</button>
+        <Button variant="ghost" style={{ marginTop: 16 }} onClick={() => { signOut(); router.replace("/auth/login"); }}>Sign out</Button>
       </div>
       <aside className="od-side">
         <div className="panel">

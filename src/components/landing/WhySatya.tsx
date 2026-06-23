@@ -11,10 +11,10 @@ export default function WhySatya() {
       <div className="wrap split">
         <div className="reveal">
           <div className="tag">Why partner with Satya</div>
-          <h2 className="sx">Built to be your<br />single source.</h2>
+          <h2 className="sx">One account for<br />most of your shelf.</h2>
           <p style={{ marginTop: 16, color: "var(--slate)", fontSize: 17, lineHeight: 1.62 }}>
-            Independent retailers do best with fewer, stronger supplier relationships. Satya is built
-            to be the one that covers nearly the entire store.
+            Independent stores run better with fewer suppliers to manage. Satya covers most of your
+            shelf from a single account, so you spend less time placing orders and reconciling invoices.
           </p>
           <div className="feat-list">
             {STRENGTHS.map((f) => (

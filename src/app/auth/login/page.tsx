@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { CONTACT } from "@/lib/store";
 import { useSession } from "@/lib/auth";
 import { Check } from "@/components/Icons";
+import { Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 
 export default function Login() {
@@ -67,9 +68,7 @@ export default function Login() {
           <label className="auth-check">
             <input type="checkbox" defaultChecked /> Keep me signed in on this device
           </label>
-          <button className="btn btn-primary" type="submit" style={{ width: "100%", justifyContent: "center" }}>
-            Enter order portal →
-          </button>
+          <Button variant="primary" type="submit" fullWidth>Enter order portal →</Button>
           <div className="auth-alt">
             No account yet? <Link href="/#account">Request trade access →</Link>
           </div>

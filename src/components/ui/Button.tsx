@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type MouseEventHandler, type ReactNode } from "react";
 import { cx } from "./cx";
 import { Spinner } from "./Spinner";
 
@@ -45,8 +45,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   );
 
   if (href && !disabled && !loading) {
+    // Forward the props that make sense on an anchor so link-buttons stay
+    // as capable as button-buttons (onClick side-effects, layout style, a11y).
+    const { style, title, onClick, tabIndex, ["aria-label"]: ariaLabel } = rest;
     return (
-      <Link href={href} className={cls}>
+      <Link
+        href={href}
+        className={cls}
+        style={style}
+        title={title}
+        tabIndex={tabIndex}
+        aria-label={ariaLabel}
+        onClick={onClick as unknown as MouseEventHandler<HTMLAnchorElement>}
+      >
         {content}
       </Link>
     );

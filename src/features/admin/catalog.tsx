@@ -14,10 +14,11 @@ import {
   ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close } from "@/components/Icons";
+import { DeptThumb } from "@/components/DeptIcon";
 import { useConfirm } from "@/components/Confirm";
 import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { Button, Badge, DataTable, type Column, type BadgeTone } from "@/components/ui";
+import { Button, Badge, DataTable, ListToolbar, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
 const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK ? "warning" : "success");
@@ -34,6 +35,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
   const { categories } = useCategories();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<DeptKey | "all">("all");
+  const [sort, setSort] = useState("name");
   const [adding, setAdding] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [draft, setDraft] = useState(EMPTY_PRODUCT);
@@ -42,11 +44,27 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return products.filter((p) =>
+    const list = products.filter((p) =>
       (filter === "all" || p.dep === filter) &&
       (q === "" || p.name.toLowerCase().includes(q) || String(p.id).includes(q) || (p.gtin || "").includes(q))
     );
-  }, [products, query, filter]);
+    return [...list].sort((a, b) => {
+      switch (sort) {
+        case "price-desc": return b.price - a.price;
+        case "stock-asc": return a.stock - b.stock;
+        case "newest": return (b.created ?? 0) - (a.created ?? 0);
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+  }, [products, query, filter, sort]);
+
+  const CAT_OPTS: ToolbarOption[] = [{ value: "all", label: "All categories" }, ...DEPTS.map((d) => ({ value: d.key, label: d.name }))];
+  const SORT_OPTS: ToolbarOption[] = [
+    { value: "name", label: "Name A–Z" },
+    { value: "price-desc", label: "Highest price" },
+    { value: "stock-asc", label: "Lowest stock" },
+    { value: "newest", label: "Newest" },
+  ];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,20 +125,15 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
         </div>
       </Head>
 
-      <div className="adminctl">
-        <div className="search small">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" strokeLinecap="round" /></svg>
-          <input placeholder="Search name, SKU or barcode…" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </div>
-        <div className="fchips">
-          <button className={filter === "all" ? "on" : ""} onClick={() => setFilter("all")}>All</button>
-          {DEPTS.map((d) => <button key={d.key} className={filter === d.key ? "on" : ""} onClick={() => setFilter(d.key)}>{d.name}</button>)}
-        </div>
-      </div>
+      <ListToolbar
+        search={{ value: query, onChange: setQuery, placeholder: "Search name, SKU or barcode…" }}
+        filters={[{ label: "Category", value: filter, onChange: (v) => setFilter(v as DeptKey | "all"), options: CAT_OPTS }]}
+        sort={{ value: sort, onChange: setSort, options: SORT_OPTS }}
+      />
 
       <DataTable
         columns={[
-          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th" style={{ background: DEPT_BG[p.dep] }}>{p.emoji}</span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
+          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><DeptThumb dep={p.dep} className="th" /><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
           { key: "code", header: "Code", render: (p) => <span className="mono muted">{sku(p)}</span> },
           { key: "desc", header: "Description", render: (p) => <span className="muted" style={{ fontSize: 12.5 }}>{p.description || "—"}</span> },
           { key: "cat", header: "Category", render: (p) => <span className="deptpill">{deptName(p.dep)}</span> },
@@ -133,7 +146,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
             <div className="rowactions">
               <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>Edit</Button>
               <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); }}>+12</Button>
-              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async (e) => { e.stopPropagation(); if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } }}>✕</Button>
+              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async (e) => { e.stopPropagation(); if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } }} aria-label="Remove product"><Close /></Button>
             </div>
           ) },
         ] satisfies Column<Product>[]}
@@ -294,7 +307,7 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
             <div className="rowactions" onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/categories/${c.key}`)}>Edit</Button>
               <Button variant="ghost" size="sm" onClick={() => { update(c.key, { active: !c.active }); flash("Updated"); }}>{c.active ? "Hide" : "Show"}</Button>
-              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (count(c.key) > 0) { flash("Category has products — reassign first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash("Deleted"); } }}>✕</Button>
+              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (count(c.key) > 0) { flash("Category has products — reassign first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash("Deleted"); } }} aria-label="Delete category"><Close /></Button>
             </div>
           ) },
         ] satisfies Column<(typeof categories)[number]>[]}
@@ -327,7 +340,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
     return (
       <>
         <button className="detail-back" onClick={() => router.push("/admin/categories")}>← All categories</button>
-        <div className="empty"><div className="ei">🔍</div><h3>Category not found</h3></div>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Category not found</h3></div>
       </>
     );
   }
@@ -447,7 +460,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
     return (
       <>
         <button className="detail-back" onClick={() => router.push("/admin/suppliers")}>← All suppliers</button>
-        <div className="empty"><div className="ei">🔍</div><h3>Supplier not found</h3></div>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Supplier not found</h3></div>
       </>
     );
   }
@@ -529,7 +542,7 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
               <div className="rowactions" style={{ marginTop: 12 }}>
                 <button className="ia" onClick={() => openEdit(p.id)}>Edit</button>
                 <button className="ia" onClick={() => { update(p.id, { active: !p.active }); flash(p.active ? "Hidden from portal" : "Live on portal"); }}>{p.active ? "Unpublish" : "Publish"}</button>
-                <button className="ia del" onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Deleted"); } }}>✕</button>
+                <button className="ia del" onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Deleted"); } }} aria-label="Delete promotion"><Close /></button>
               </div>
             </div>
           </div>

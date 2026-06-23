@@ -19,10 +19,10 @@ export default function AccountGate() {
           </div>
           <div className="gate-body">
             <div className="tag">Trade accounts</div>
-            <h2>Apply once.<br />Order forever.</h2>
+            <h2>Apply once,<br />order anytime.</h2>
             <p>
-              The order portal is for verified retailers only. Submit your details once — approval is
-              typically same business day, then the full catalog and pricing open up.
+              The order portal is open to verified retailers only. Submit your details once and we&apos;ll
+              review the same business day. Once you&apos;re approved, the full catalog and case pricing open up.
             </p>
             <div className="reqlist">
               <div className="reqlabel mono">What you&apos;ll need</div>

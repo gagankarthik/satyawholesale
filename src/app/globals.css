@@ -41,6 +41,14 @@
   --shadow-lg: 0 30px 70px -22px rgba(14, 19, 64, 0.32);
   --maxw: 1220px;
 
+  /* motion tokens — one easing/timing vocabulary for the whole app
+     (Doherty: keep interactions <400ms; Consistency: same curve everywhere) */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --t-fast: 0.15s;
+  --t-mid: 0.25s;
+  --t-slow: 0.4s;
+
   --font-disp: var(--font-display), "Bricolage Grotesque", sans-serif;
   --font-body-f: var(--font-body), system-ui, sans-serif;
   --font-mono-f: var(--font-mono), "IBM Plex Mono", monospace;
@@ -110,6 +118,17 @@ img {
   max-width: var(--maxw);
   margin: 0 auto;
   padding: 0 28px;
+}
+
+/* ---------- reusable motion utilities ---------- */
+/* Add `.rise-in` to a container; children fade+rise in sequence (Serial Position
+   draws the eye top-down). Honors reduced-motion. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.rise-in { animation: rise-in var(--t-slow) var(--ease) both; }
+.fade-in { animation: fade-in var(--t-mid) var(--ease) both; }
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .fade-in { animation: none; }
 }
 
 /* ---------- buttons ---------- */

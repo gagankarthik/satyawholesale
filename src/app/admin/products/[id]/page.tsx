@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use } from "react";
 import { deptName, fmt, sku, useInventory, LOW_STOCK, type Product } from "@/lib/store";
 import { Badge } from "@/components/ui";
+import { Search } from "@/components/Icons";
 
 export default function AdminProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -14,7 +15,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
     return (
       <>
         <button className="detail-back" onClick={() => history.back()}>← Products</button>
-        <div className="empty"><div className="ei">🔍</div><h3>Product not found</h3><p>It may have been removed from the catalog.</p></div>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Product not found</h3><p>It may have been removed from the catalog.</p></div>
       </>
     );
   }

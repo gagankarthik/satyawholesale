@@ -12,6 +12,7 @@ import {
   type POLine,
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
+import { Search, Close, Package } from "@/components/Icons";
 import { Head, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
@@ -88,7 +89,7 @@ export function POTab({ flash }: { flash: Flash }) {
             </div>
           );
         })}
-        {pos.length === 0 && <div className="empty"><div className="ei">📦</div><h3>No purchase orders</h3><p>Create one from the reorder suggestions above.</p></div>}
+        {pos.length === 0 && <div className="empty"><div className="ei" aria-hidden="true"><Package /></div><h3>No purchase orders</h3><p>Create one from the reorder suggestions above.</p></div>}
       </div>
     </>
   );
@@ -123,7 +124,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
     return (
       <>
         <button className="detail-back" onClick={() => router.push("/admin/purchaseorder")}>← All purchase orders</button>
-        <div className="empty"><div className="ei">🔍</div><h3>Purchase order not found</h3><p>It may have been closed or removed.</p></div>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Purchase order not found</h3><p>It may have been closed or removed.</p></div>
       </>
     );
   }
@@ -239,7 +240,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
                           <td className="r"><input className="cellinput" type="number" min={1} value={l.ordered} onChange={(e) => setLineField(l.sku, "ordered", e.target.value)} /></td>
                           <td className="r"><input className="cellinput" type="number" min={0} step="0.01" value={l.cost} onChange={(e) => setLineField(l.sku, "cost", e.target.value)} /></td>
                           <td className="r mono">{m(l.ordered * l.cost)}</td>
-                          <td className="r"><button type="button" className="ia del" onClick={() => dropLine(l.sku)} disabled={l.received > 0} title={l.received > 0 ? "Already received" : "Remove"}>✕</button></td>
+                          <td className="r"><button type="button" className="ia del" onClick={() => dropLine(l.sku)} disabled={l.received > 0} title={l.received > 0 ? "Already received" : "Remove"} aria-label="Remove line"><Close /></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -415,7 +416,7 @@ export function AdminPOCreate({ flash }: { flash: Flash }) {
                       <td className="r"><input className="cellinput" type="number" min={1} value={l.ordered} onChange={(e) => setField(l.sku, "ordered", e.target.value)} /></td>
                       <td className="r"><input className="cellinput" type="number" min={0} step="0.01" value={l.cost} onChange={(e) => setField(l.sku, "cost", e.target.value)} /></td>
                       <td className="r mono">{m(l.ordered * l.cost)}</td>
-                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.sku)}>✕</button></td>
+                      <td className="r"><button type="button" className="ia del" onClick={() => drop(l.sku)} aria-label="Remove line"><Close /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -562,7 +563,7 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
                   <td className="mono">{l.id}</td><td>{l.zone}</td><td>{l.aisle}</td><td>{l.rack}</td>
                   <td><div className="capbar"><span className={`capfill ${pct >= 85 ? "hot" : pct >= 60 ? "mid" : ""}`} style={{ width: `${pct}%` }} /></div></td>
                   <td className="r mono muted">{l.used} / {l.capacity}</td>
-                  <td className="r" onClick={(e) => e.stopPropagation()}><button className="ia del" onClick={async () => { if (await confirm({ title: "Remove bin?", message: `${l.id} will be removed.`, confirmLabel: "Remove", danger: true })) { remove(l.id); flash("Bin removed"); } }}>✕</button></td>
+                  <td className="r" onClick={(e) => e.stopPropagation()}><button className="ia del" onClick={async () => { if (await confirm({ title: "Remove bin?", message: `${l.id} will be removed.`, confirmLabel: "Remove", danger: true })) { remove(l.id); flash("Bin removed"); } }} aria-label="Remove bin"><Close /></button></td>
                 </tr>
               );
             })}

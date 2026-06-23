@@ -17,7 +17,7 @@ export default function ProductCard({ p }: { p: Product }) {
         {p.tag === "pop" && <span className="pb pop">Popular</span>}
         {(p.tag === "low" || (p.stock <= LOW_STOCK && p.stock > 0)) && <span className="pb low">Low stock</span>}
         {out && <span className="pb oos">Out</span>}
-        <span className="stk"><i style={{ background: out ? "#d8401f" : "#2f9e44" }} />{p.stock} cs</span>
+        <span className="stk"><i style={{ background: out ? "var(--red)" : "var(--green)" }} />{p.stock} cs</span>
         <span className="thumb" style={{ color: DEPT_COLOR[p.dep] }}><Thumb /></span>
       </Link>
       <div className="info">

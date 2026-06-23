@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fmt, statusSlug } from "@/lib/store";
 import { usePromotions } from "@/lib/wms";
+import { Package } from "@/components/Icons";
+import { EmptyState, KpiCard } from "@/components/ui";
 import { usePortal } from "./PortalShell";
 import ProductCard from "./ProductCard";
 import { ago } from "./meta";
@@ -37,11 +39,11 @@ export default function PortalDashboard() {
         </div>
       )}
 
-      <div className="kpis">
-        <div className="kpi accent"><div className="kl">Open orders</div><div className="kv">{myOrders.filter((o) => o.status !== "Completed").length}</div><div className="kf">in fulfillment</div></div>
-        <div className="kpi"><div className="kl">Orders placed</div><div className="kv">{myOrders.length}</div><div className="kf">all time</div></div>
-        <div className="kpi"><div className="kl">Lifetime spend</div><div className="kv">${fmt(myOrders.reduce((s, o) => s + o.total, 0))}</div><div className="kf">across orders</div></div>
-        <div className="kpi"><div className="kl">Cases ordered</div><div className="kv">{myOrders.reduce((s, o) => s + o.cases, 0)}</div><div className="kf">all time</div></div>
+      <div className="kpis rise-in">
+        <KpiCard tone="accent" label="Open orders" value={myOrders.filter((o) => o.status !== "Completed").length} foot="in fulfillment" />
+        <KpiCard label="Orders placed" value={myOrders.length} foot="all time" />
+        <KpiCard label="Lifetime spend" value={`$${fmt(myOrders.reduce((s, o) => s + o.total, 0))}`} foot="across orders" />
+        <KpiCard label="Cases ordered" value={myOrders.reduce((s, o) => s + o.cases, 0)} foot="all time" />
       </div>
 
       <section className="catrow">
@@ -58,7 +60,7 @@ export default function PortalDashboard() {
               <span className={`pobadge s-${statusSlug(o.status)}`}>{o.status}</span>
               <span className="oamt mono">${fmt(o.total)}</span>
             </Link>
-          )) : <div className="empty"><div className="ei">📦</div><h3>No orders yet</h3><p>Build your first order from Products.</p></div>}
+          )) : <EmptyState icon={<Package />} title="No orders yet" description="Build your first order from Products." />}
         </div>
       </section>
     </>
