@@ -8,13 +8,13 @@ export const ush = (id: string, w = 1000) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=70`;
 
 export const DEPARTMENTS = [
-  { Icon: DeptLeaf, name: "Tobacco", img: "1586528116311-ad8dd3c8310d", desc: "Cigarettes, cigars, cigarillos, chew, hookah and pipe tobacco. Your highest-volume category, kept deep and restocked every week." },
-  { Icon: DeptDrop, name: "Vape", img: "1601584115197-04ecc0da31d7", desc: "Disposables, pods and e-liquids across the brands your regulars ask for, with new releases added as they come in." },
-  { Icon: DeptFlame, name: "Smoking Accessories", img: "1567861911437-538298e4232c", desc: "Lighters, glass, rolling papers, butane and charcoal, plus the impulse buys that sell right beside them." },
-  { Icon: DeptPlus, name: "Health & Beauty", img: "1556228578-8c89e6adf883", desc: "OTC medicine, energy shots, supplements and personal care for a fast-moving, high-margin aisle." },
-  { Icon: DeptCart, name: "Grocery & Candy", img: "1604719312566-8912e9227c6a", desc: "Candy, snacks, beverages and household staples to fill out your center store in a single stop." },
-  { Icon: DeptCar, name: "Automotive", img: "1486262715619-67b85e0b08d3", desc: "Air fresheners, motor oil, windshield fluid and the road essentials drivers grab at the register." },
-  { Icon: DeptPhone, name: "Phone & Accessories", img: "1511707171634-5f897ff02aa9", desc: "Charging cables, earbuds, phone accessories and general merchandise to round out the front counter." },
+  { Icon: DeptLeaf, name: "Tobacco", img: "1622708037376-5cba1a57f735", desc: "Cigarettes, cigars, cigarillos, chew, hookah and pipe tobacco. Your highest-volume category, kept deep and restocked every week." },
+  { Icon: DeptDrop, name: "Vape", img: "1594177914682-d408d96e458b", desc: "Disposables, pods and e-liquids across the brands your regulars ask for, with new releases added as they come in." },
+  { Icon: DeptFlame, name: "Smoking Accessories", img: "1576969500732-12cc9992a5f4", desc: "Lighters, glass, rolling papers, butane and charcoal, plus the impulse buys that sell right beside them." },
+  { Icon: DeptPlus, name: "Health & Beauty", img: "1611072965169-e1534f6f300c", desc: "OTC medicine, energy shots, supplements and personal care for a fast-moving, high-margin aisle." },
+  { Icon: DeptCart, name: "Grocery & Candy", img: "1629430864843-6df13c168b35", desc: "Candy, snacks, beverages and household staples to fill out your center store in a single stop." },
+  { Icon: DeptCar, name: "Automotive", img: "1542238060-646c7ed65622", desc: "Air fresheners, motor oil, windshield fluid and the road essentials drivers grab at the register." },
+  { Icon: DeptPhone, name: "Phone & Accessories", img: "1573739022854-abceaeb585dc", desc: "Charging cables, earbuds, phone accessories and general merchandise to round out the front counter." },
 ];
 
 export const HERO_IMAGES = [

@@ -8,8 +8,8 @@ export default function ContactBar() {
     <div className="contactbar">
       <div className="wrap contactbar-in">
         <a href={CONTACT.phoneHref}><Phone /> {CONTACT.phone}</a>
-        <a href={`mailto:${CONTACT.email}`} className="hideSm"><Mail /> {CONTACT.email}</a>
-        <span className="hideSm"><Clock /> {CONTACT.hours}</span>
+        <a href={`mailto:${CONTACT.email}`}><Mail /> {CONTACT.email}</a>
+        <span><Clock /> {CONTACT.hours}</span>
         <span className="right"><i /> 21+ only · Sales comply with state &amp; federal law</span>
       </div>
     </div>

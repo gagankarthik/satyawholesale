@@ -31,7 +31,6 @@
 .contactbar svg { width: 13px; height: 13px; }
 .contactbar .right { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--green); }
 .contactbar .right i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-.contactbar .hideSm { display: inline-flex; }
 
 /* ---------- hero dossier (legal-safe signature: capability sheet) ---------- */
 .dossier {
@@ -288,9 +287,12 @@
 /* mobile menu (landing) */
 .mobmenu { display: none; }
 @media (max-width: 860px) {
-  .contactbar .hideSm { display: none; }
+  .contactbar-in { flex-wrap: nowrap; overflow-x: auto; gap: 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .contactbar-in::-webkit-scrollbar { display: none; }
+  .contactbar a, .contactbar span { white-space: nowrap; flex: none; }
+  .contactbar .right { margin-left: 0; }
   .contactbar .right { display: none; }
-  .contactbar-in { justify-content: center; }
+  .contactbar-in { justify-content: flex-start; }
   .nav-links { display: none; }
   .nav-cta .btn { display: none; }
   .nav-in { gap: 12px; justify-content: space-between; }
@@ -328,7 +330,7 @@
   .about-panel { padding: 30px 24px; }
 }
 @media (max-width: 560px) {
-  .contactbar-in { justify-content: center; }
+  .contactbar-in { justify-content: flex-start; }
   .contactbar .right { margin-left: 0; }
   .contact-card { padding: 28px 22px; }
   .contact-form .row2 { grid-template-columns: 1fr; }
