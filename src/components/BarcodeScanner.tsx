@@ -11,10 +11,11 @@ type DetectorCtor = new (opts?: { formats?: string[] }) => DetectorLike;
 const FORMATS = ["upc_a", "upc_e", "ean_13", "ean_8"];
 
 /**
- * Camera barcode reader for UPC/EAN. Renders a "Scan" button; on phones with a
- * rear camera and the BarcodeDetector API it opens a live scanner and calls
- * `onDetect` with the digits. Falls back to a clear message so manual entry
- * always works.
+ * Camera barcode reader for UPC/EAN. Renders a "Scan" button; on any browser
+ * with camera access it opens a live scanner and calls `onDetect` with the
+ * digits. Uses the native BarcodeDetector API where available (Chrome/Edge/
+ * Android) and falls back to the ZXing decoder everywhere else (Firefox,
+ * Safari, …). A clear message keeps manual entry working if no camera exists.
  */
 export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: string) => void; label?: string }) {
   const [open, setOpen] = useState(false);
@@ -26,17 +27,27 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
+    let zxingControls: { stop: () => void } | null = null;
 
     const stop = () => {
       cancelAnimationFrame(rafRef.current);
+      zxingControls?.stop();
+      zxingControls = null;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
 
+    const done = (raw: string | undefined) => {
+      const digits = raw?.replace(/\D/g, "");
+      if (digits) { onDetect(digits); cancelled = true; stop(); setOpen(false); }
+    };
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErr("No camera available — type the barcode in manually.");
+      return stop;
+    }
+
     const Ctor = (window as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
-    if (!Ctor) { setErr("This browser can't scan barcodes — type it in manually below."); return stop; }
-    if (!navigator.mediaDevices?.getUserMedia) { setErr("No camera available — type the barcode in manually."); return stop; }
-    const detector = new Ctor({ formats: FORMATS });
 
     (async () => {
       try {
@@ -46,18 +57,30 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
         const v = videoRef.current;
         if (v) { v.srcObject = stream; await v.play().catch(() => {}); }
 
-        const scan = async () => {
-          if (cancelled || !videoRef.current) return;
-          try {
-            const found = await detector.detect(videoRef.current);
-            const digits = found[0]?.rawValue?.replace(/\D/g, "");
-            if (digits) { onDetect(digits); cancelled = true; stop(); setOpen(false); return; }
-          } catch { /* frame not ready — keep scanning */ }
+        if (Ctor) {
+          // Fast path — native detector.
+          const detector = new Ctor({ formats: FORMATS });
+          const scan = async () => {
+            if (cancelled || !videoRef.current) return;
+            try {
+              const found = await detector.detect(videoRef.current);
+              if (found[0]?.rawValue) { done(found[0].rawValue); return; }
+            } catch { /* frame not ready — keep scanning */ }
+            rafRef.current = requestAnimationFrame(scan);
+          };
           rafRef.current = requestAnimationFrame(scan);
-        };
-        rafRef.current = requestAnimationFrame(scan);
+          return;
+        }
+
+        // Fallback — ZXing decoder (works on browsers without BarcodeDetector).
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        if (cancelled) return;
+        const reader = new BrowserMultiFormatReader();
+        zxingControls = await reader.decodeFromStream(stream, videoRef.current!, (result) => {
+          if (result) done(result.getText());
+        });
       } catch {
-        setErr("Couldn't access the camera. Allow permission or type it in manually.");
+        if (!cancelled) setErr("Couldn't access the camera. Allow permission or type it in manually.");
       }
     })();
 

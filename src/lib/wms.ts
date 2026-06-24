@@ -512,5 +512,6 @@ export function rowToProduct(r: ImportRow, id: number): Product {
     maxStock: Number(r.maxStock) || undefined,
     supplierId: r.supplierId || undefined,
     active: true,
+    onArrivals: true,
   };
 }

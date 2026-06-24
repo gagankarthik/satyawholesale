@@ -38,9 +38,25 @@ export interface Product {
   description?: string;
   mrp?: number; // suggested retail
   created?: number;
+  image?: string; // product photo (data URL / remote); falls back to the placeholder
+  onArrivals?: boolean; // feature on the portal "New arrivals" page
+  onOffers?: boolean; // feature on the portal "Offers" page
+  offerPrice?: number; // discounted price while featured on Offers
 }
 
 export const sku = (p: Product) => p.sku || `SW-${p.id}`;
+
+/** True when a product has a live offer (featured on Offers with a lower price). */
+export const offerActive = (p: Pick<Product, "onOffers" | "offerPrice" | "price">) =>
+  !!(p.onOffers && p.offerPrice && p.offerPrice < p.price);
+/** The price a buyer actually pays — the offer price when one is live, else the list price. */
+export const effPrice = (p: Pick<Product, "onOffers" | "offerPrice" | "price">) =>
+  offerActive(p) ? p.offerPrice! : p.price;
+
+/** Shared placeholder shown until a product photo is uploaded. */
+export const PRODUCT_PLACEHOLDER = "/coming-soon.webp";
+/** A product's image, or the shared placeholder when none has been set. */
+export const productImg = (p: { image?: string }) => p.image || PRODUCT_PLACEHOLDER;
 
 export interface Dept {
   key: DeptKey;

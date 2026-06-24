@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
-import { deptName, fmt, sku, type Product } from "@/lib/store";
+import { fmt, sku, productImg, offerActive, effPrice, type Product } from "@/lib/store";
 import { Search } from "@/components/Icons";
 import { EmptyState } from "@/components/ui";
 import { usePortal } from "../../PortalShell";
@@ -11,7 +11,7 @@ import ProductCard from "../../ProductCard";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { products, cart, add, changeQty } = usePortal();
+  const { products, cart, add, changeQty, catName } = usePortal();
   const p = products.find((x) => String(x.id) === id) as Product | undefined;
 
   if (!p) {
@@ -32,14 +32,15 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       <Link className="detail-back" href="/portal/products">← Back to products</Link>
       <div className="od-cols">
         <div className="panel pd-hero">
-          <Image src="/coming-soon.webp" alt={p.name} fill sizes="(max-width:1000px) 100vw, 480px" style={{ objectFit: "contain" }} priority />
+          <Image src={productImg(p)} alt={p.name} fill sizes="(max-width:1000px) 100vw, 480px" style={{ objectFit: "contain" }} priority />
         </div>
         <aside className="od-side">
           <div className="panel">
-            <span className="cat">{deptName(p.dep)}</span>
+            <span className="cat">{catName(p.dep)}</span>
             <h2 className="od-ref" style={{ fontSize: 24, marginTop: 4 }}>{p.name}</h2>
             <div className="pricerow" style={{ margin: "12px 0 16px" }}>
-              <span className="pr" style={{ fontSize: 26 }}>${fmt(p.price)}</span>
+              <span className="pr" style={{ fontSize: 26 }}>${fmt(effPrice(p))}</span>
+              {offerActive(p) && <span className="was">${fmt(p.price)}</span>}
               <span className="un">/ {p.unit}</span>
             </div>
             <div className="kvs">
@@ -71,7 +72,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
       {related.length > 0 && (
         <section className="catrow">
-          <div className="catrow-head"><h3>More in {deptName(p.dep)}</h3><Link className="viewall" href="/portal/products">Browse all →</Link></div>
+          <div className="catrow-head"><h3>More in {catName(p.dep)}</h3><Link className="viewall" href="/portal/products">Browse all →</Link></div>
           <div className="catrow-scroll">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
         </section>
       )}

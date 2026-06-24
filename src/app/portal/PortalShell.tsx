@@ -3,16 +3,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  DEPTS, deptName, fmt, CONTACT, useInventory, useOrders,
+  deptName, fmt, productImg, effPrice, useInventory, useOrders,
   type DeptKey, type Product, type Order,
 } from "@/lib/store";
+import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
-import { Bag, Search, Grid, GridView, Receipt, Card, Check, User, LogOut, Shield, Pin, Sparkles, Tag, Phone, Mail, Clock } from "@/components/Icons";
+import { Bag, Search, Grid, GridView, Receipt, Card, Check, User, LogOut, Shield, Pin, Sparkles, Tag } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
-import { DEPT_SUBCATS } from "./meta";
+import HelpFlyout from "./HelpFlyout";
 
 type Cart = Record<number, number>; // id -> cases
 
@@ -23,8 +24,16 @@ interface PortalCtx {
   myOrders: Order[];
   STORE: string;
   counts: Record<string, number>;
-  dept: DeptKey | "all";
-  setDept: (d: DeptKey | "all") => void;
+  /** Active top-level categories (admin-managed). */
+  depts: Category[];
+  /** Active sub-categories whose parent is the given department key. */
+  subsFor: (deptKey: string) => Category[];
+  /** Display name for any category/sub-category key. */
+  catName: (key: string) => string;
+  /** True when a product's category belongs to the given department (directly or via a sub-category). */
+  matchDept: (productDep: string, deptKey: string) => boolean;
+  dept: string | "all";
+  setDept: (d: string) => void;
   sub: string;
   setSub: (s: string) => void;
   query: string;
@@ -54,9 +63,31 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const { products, ready } = useInventory();
   const { orders } = useOrders();
+  const { categories } = useCategories();
   const myOrders = orders.filter((o) => o.store === STORE);
 
-  const [dept, setDept] = useState<DeptKey | "all">("all");
+  /* ---- admin-managed catalog taxonomy (departments + sub-categories) ---- */
+  const depts = useMemo(() => categories.filter((c) => c.parent === null && c.active), [categories]);
+  const subKeysByParent = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    categories.forEach((c) => { if (c.parent && c.active) (m[c.parent] ||= []).push(c.key); });
+    return m;
+  }, [categories]);
+  const subsFor = useCallback(
+    (deptKey: string) => categories.filter((c) => c.parent === deptKey && c.active),
+    [categories]
+  );
+  const catName = useCallback(
+    (key: string) => categories.find((c) => c.key === key)?.name ?? deptName(key as DeptKey),
+    [categories]
+  );
+  /* a product belongs to a department if assigned to it directly or to one of its sub-categories */
+  const matchDept = useCallback(
+    (productDep: string, deptKey: string) => productDep === deptKey || (subKeysByParent[deptKey] ?? []).includes(productDep),
+    [subKeysByParent]
+  );
+
+  const [dept, setDept] = useState<string | "all">("all");
   const [query, setQuery] = useState("");
   const [sub, setSub] = useState("");
   const [cart, setCart] = useState<Cart>({});
@@ -75,9 +106,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: products.length };
-    DEPTS.forEach((d) => (c[d.key] = products.filter((p) => p.dep === d.key).length));
+    depts.forEach((d) => (c[d.key] = products.filter((p) => matchDept(p.dep, d.key)).length));
     return c;
-  }, [products]);
+  }, [products, depts, matchDept]);
 
   const cases = useMemo(() => Object.values(cart).reduce((s, n) => s + n, 0), [cart]);
 
@@ -122,7 +153,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const isDash = pathname === "/portal";
   const isDetail = pathname.split("/").filter(Boolean).length > 2; // e.g. /portal/orders/SW-123
   const title =
-    seg === "products" ? (dept === "all" ? "All products" : deptName(dept))
+    seg === "products" ? (dept === "all" ? "All products" : catName(dept))
     : seg === "arrivals" ? "New arrivals"
     : seg === "offers" ? "Offers & promotions"
     : seg === "cart" ? "Your cart"
@@ -132,7 +163,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : seg === "profile" ? "Profile"
     : "Dashboard";
   const subtitle =
-    seg === "products" ? (dept === "all" ? "Browse the full catalog" : `${counts[dept]} SKUs in ${deptName(dept)}`)
+    seg === "products" ? (dept === "all" ? "Browse the full catalog" : `${counts[dept] ?? 0} SKUs in ${catName(dept)}`)
     : seg === "arrivals" ? "The latest products, freshly landed"
     : seg === "offers" ? "Current deals and promotions"
     : seg === "cart" ? (cases ? `${cases} case${cases !== 1 ? "s" : ""} ready to order` : "Your cart is empty")
@@ -151,11 +182,12 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const value: PortalCtx = {
     products, ready, orders, myOrders, STORE, counts,
+    depts, subsFor, catName, matchDept,
     dept, setDept, sub, setSub, query, setQuery,
     cart, add, changeQty, removeLine, clearCart, cases, flash,
   };
 
-  const goDept = (d: DeptKey | "all", q = "") => { setDept(d); setSub(q); router.push("/portal/products"); setMobileNav(false); };
+  const goDept = (d: string, sk = "") => { setDept(d); setSub(sk); router.push("/portal/products"); setMobileNav(false); };
 
   if (sessionReady && !signedIn) return <div className="papp" />;
 
@@ -194,12 +226,12 @@ export default function PortalShell({ children }: { children: React.ReactNode })
                         aria-selected="false"
                         onMouseDown={(e) => { e.preventDefault(); setSearchFocus(false); router.push(`/portal/products/${p.id}`); }}
                       >
-                        <span className="ss-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="44px" style={{ objectFit: "contain" }} /></span>
+                        <span className="ss-thumb"><Image src={productImg(p)} alt="" fill sizes="44px" style={{ objectFit: "contain" }} /></span>
                         <span className="ss-info">
                           <span className="ss-nm">{p.name}</span>
-                          <span className="ss-meta">{deptName(p.dep)} · #{p.id} · {p.stock} cs</span>
+                          <span className="ss-meta">{catName(p.dep)} · #{p.id} · {p.stock} cs</span>
                         </span>
-                        <span className="ss-price">${fmt(p.price)}</span>
+                        <span className="ss-price">${fmt(effPrice(p))}</span>
                       </button>
                     ))}
                     <button type="button" className="ss-all" onMouseDown={(e) => { e.preventDefault(); goSearch(); }}>
@@ -231,25 +263,33 @@ export default function PortalShell({ children }: { children: React.ReactNode })
         {/* full-width browse line — every department inline, each a sub-category menu */}
         <nav className="pcatline" aria-label="Browse departments">
           <div className="pcatline-in">
-            <Link href="/portal/products" className={`catnav ${onProducts && dept === "all" ? "on" : ""}`} onClick={() => goDept("all")}><GridView /> All products</Link>
-            {DEPTS.map((d) => (
-              <Dropdown
-                key={d.key}
-                align="start"
-                ariaLabel={`${d.name} categories`}
-                triggerClassName={`catnav catnav-menu ${onProducts && dept === d.key ? "on" : ""}`}
-                trigger={(open) => (
-                  <>{d.name} <svg className={`catnav-chev ${open ? "open" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg></>
-                )}
-              >
-                <button type="button" className="menu-item" role="menuitem" onClick={() => goDept(d.key)}>All {d.name}</button>
-                {(DEPT_SUBCATS[d.key] ?? []).map((sc) => (
-                  <button key={sc.label} type="button" className="menu-item" role="menuitem" onClick={() => goDept(d.key, sc.q)}>{sc.label}</button>
-                ))}
-              </Dropdown>
-            ))}
             <Link href="/portal/arrivals" className={`catnav ${seg === "arrivals" ? "on" : ""}`} onClick={() => setMobileNav(false)}><Sparkles /> New arrivals</Link>
             <Link href="/portal/offers" className={`catnav ${seg === "offers" ? "on" : ""}`} onClick={() => setMobileNav(false)}><Tag /> Offers</Link>
+            <Link href="/portal/products" className={`catnav ${onProducts && dept === "all" ? "on" : ""}`} onClick={() => goDept("all")}><GridView /> All products</Link>
+            {depts.map((d) => {
+              const subs = subsFor(d.key);
+              if (!subs.length) {
+                return (
+                  <button key={d.key} type="button" className={`catnav ${onProducts && dept === d.key ? "on" : ""}`} onClick={() => goDept(d.key)}>{d.name}</button>
+                );
+              }
+              return (
+                <Dropdown
+                  key={d.key}
+                  align="start"
+                  ariaLabel={`${d.name} categories`}
+                  triggerClassName={`catnav catnav-menu ${onProducts && dept === d.key ? "on" : ""}`}
+                  trigger={(open) => (
+                    <>{d.name} <svg className={`catnav-chev ${open ? "open" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg></>
+                  )}
+                >
+                  <button type="button" className="menu-item" role="menuitem" onClick={() => goDept(d.key)}>All {d.name}</button>
+                  {subs.map((sc) => (
+                    <button key={sc.key} type="button" className="menu-item" role="menuitem" onClick={() => goDept(d.key, sc.key)}>{sc.name}</button>
+                  ))}
+                </Dropdown>
+              );
+            })}
           </div>
         </nav>
 
@@ -271,12 +311,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <span className="pside-collapse-l">Collapse</span>
             </button>
 
-            <div className="psupport">
-              <span className="psup-h">Need help?</span>
-              <a className="psup-row" href={CONTACT.phoneHref} title={`Call ${CONTACT.phone}`}><Phone /> <span>{CONTACT.phone}</span></a>
-              <a className="psup-row" href={`mailto:${CONTACT.email}`} title={`Email ${CONTACT.email}`}><Mail /> <span>{CONTACT.email}</span></a>
-              <span className="psup-row psup-hours" title="Mon–Fri 10–5:30 · Sat 10:30–5"><Clock /> <span>Mon–Fri 10–5:30</span></span>
-            </div>
+            <HelpFlyout />
           </aside>
 
           <main className="pcontent">

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  fmt, useOrders, commitStockForOrder,
+  fmt, productImg, offerActive, effPrice, useOrders, useSettings, computeTax, commitStockForOrder,
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
 import { Package, Check } from "@/components/Icons";
@@ -18,6 +18,7 @@ const PAYMENTS = ["Net 15 terms", "Net 30 terms", "Card on delivery", "Cash on d
 export default function CartPage() {
   const { products, cart, changeQty, removeLine, clearCart, STORE, flash } = usePortal();
   const { placeOrder } = useOrders();
+  const { settings } = useSettings();
   const router = useRouter();
 
   const [address, setAddress] = useState(ADDRESSES[0].addr);
@@ -36,12 +37,16 @@ export default function CartPage() {
     [cart, products]
   );
   const cases = cartLines.reduce((s, l) => s + l.qty, 0);
-  const subtotal = cartLines.reduce((s, l) => s + l.qty * l.p.price, 0);
+  const subtotal = cartLines.reduce((s, l) => s + l.qty * effPrice(l.p), 0);
   const isPickup = fulfilment.includes("pickup");
+  // Sales tax defaults to the admin-configured rate; admin can still mark an order resale-exempt later.
+  const tax = useMemo(() => computeTax(subtotal, false, settings.taxRate), [subtotal, settings.taxRate]);
+  const deliveryFee = 0; // next-day delivery is free by default; admin may add a fee later
+  const grand = subtotal + tax + deliveryFee;
 
   const submit = () => {
     if (!cartLines.length) return;
-    const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: l.p.price }));
+    const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: effPrice(l.p) }));
     const order: Order = {
       ref: "SW-" + Math.floor(4000 + Math.random() * 5000),
       placed: Date.now(),
@@ -50,7 +55,7 @@ export default function CartPage() {
       payment, fulfilment, notes: notes.trim() || undefined,
       // No tracking at placement — the warehouse assigns it when the order ships.
       tracking: isPickup ? "PICKUP" : undefined,
-      deliveryFee: 0, tax: 0, discount: 0,
+      deliveryFee, tax, discount: 0,
       taxExempt: false, // sales tax applies unless admin marks resale-exempt
       paymentStatus: payment.includes("Net") ? "Unpaid" : "Paid",
       billing: address, shipping: address,
@@ -81,10 +86,10 @@ export default function CartPage() {
         <div className="cartitems">
           {cartLines.map(({ p, qty }) => (
             <div className="citem" key={p.id}>
-              <span className="th"><Image src="/coming-soon.webp" alt="" fill sizes="44px" style={{ objectFit: "contain" }} /></span>
+              <span className="th"><Image src={productImg(p)} alt="" fill sizes="44px" style={{ objectFit: "contain" }} /></span>
               <div className="cmid">
                 <div className="nm">{p.name}</div>
-                <div className="id mono">#{p.id} · {p.pack} · ${fmt(p.price)}/{p.unit}</div>
+                <div className="id mono">#{p.id} · {p.pack} · ${fmt(effPrice(p))}/{p.unit}{offerActive(p) ? ` (was $${fmt(p.price)})` : ""}</div>
                 <div className="ctl">
                   <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case">−</button>
                   <span className="mono">{qty}</span>
@@ -92,7 +97,7 @@ export default function CartPage() {
                 </div>
               </div>
               <div className="crt">
-                <div className="lp mono">${fmt(qty * p.price)}</div>
+                <div className="lp mono">${fmt(qty * effPrice(p))}</div>
                 <button className="rm" onClick={() => removeLine(p.id)}>Remove</button>
               </div>
             </div>
@@ -133,8 +138,9 @@ export default function CartPage() {
         <div className="panel">
           <div className="ordersum">
             <div className="ln"><span>Subtotal · {cases} cases</span><span className="mono">${fmt(subtotal)}</span></div>
+            <div className="ln"><span>{settings.taxLabel} ({settings.taxRate}%)</span><span className="mono">${fmt(tax)}</span></div>
             <div className="ln"><span>{isPickup ? "Pickup" : "Delivery"}</span><span className="mono" style={{ color: "var(--green)" }}>{isPickup ? "At warehouse" : "Next-day · Free"}</span></div>
-            <div className="ln tot"><span>Order total</span><b>${fmt(subtotal)}</b></div>
+            <div className="ln tot"><span>Order total</span><b>${fmt(grand)}</b></div>
           </div>
           <Button variant="primary" fullWidth onClick={submit}>Place order →</Button>
           <p className="ordersum-note">{payment} · ships to {address.split(",")[0]}. A tracking number is added once the warehouse ships your order.</p>

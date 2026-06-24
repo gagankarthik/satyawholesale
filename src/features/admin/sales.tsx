@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  DEPTS, DEPT_BG, deptName, fmt, sku, useInventory, useOrders, useSettings, computeTax,
+  DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, useSettings, computeTax,
   commitStockForOrder, LOW_STOCK,
   CONTACT, CUSTOMERS, orderGrand, ORDER_FLOW, statusSlug,
   type DeptKey, type Product, type Tag, type Order, type OrderLine, type OrderStatus, type PayStatus,
@@ -463,7 +463,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                   <tbody>
                     {draft.map((l) => (
                       <tr key={l.id}>
-                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
+                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
                         <td className="r">
                           <div className="qstep">
                             <button type="button" onClick={() => setQty(l.id, -1)} aria-label="Decrease">−</button>
@@ -500,7 +500,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                   <tbody>
                     {cur.lines.map((l) => (
                       <tr key={l.id}>
-                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><span style={{ fontSize: 13.5 }}>{l.name}</span></div></td>
+                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><span style={{ fontSize: 13.5 }}>{l.name}</span></div></td>
                         <td className="mono muted">SW-{l.id}</td>
                         <td className="r mono">{l.qty}</td>
                         <td className="r mono">{m(l.price)}</td>
@@ -662,7 +662,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                 <tbody>
                   {lines.map((l) => (
                     <tr key={l.id}>
-                      <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
+                      <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
                       <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}>−</button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}>+</button></div></td>
                       <td className="r mono">{m(l.price)}</td>
                       <td className="r mono">{m(l.qty * l.price)}</td>

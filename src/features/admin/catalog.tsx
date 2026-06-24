@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  DEPTS, DEPT_BG, deptName, fmt, sku, useInventory, useOrders, LOW_STOCK,
+  DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, LOW_STOCK,
   CONTACT, CUSTOMERS, orderGrand,
   type DeptKey, type Product, type Tag, type Order, type OrderStatus, type PayStatus,
 } from "@/lib/store";
@@ -27,7 +27,8 @@ const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK 
 
 const EMPTY_PRODUCT = {
   name: "", category: "tobacco" as DeptKey, gtin: "", uom: "case", caseQty: "",
-  cost: "", price: "", mrp: "", description: "", reorderPoint: "", maxStock: "", supplierId: "", stock: "",
+  cost: "", price: "", mrp: "", description: "", reorderPoint: "", maxStock: "", supplierId: "", stock: "", image: "",
+  onArrivals: true, onOffers: false, offerPrice: "",
 };
 
 /** Full-page onboard / edit product (with camera barcode scanning). */
@@ -44,7 +45,9 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
     caseQty: String(existing.caseQty || ""), cost: existing.cost ? String(existing.cost) : "", price: String(existing.price),
     mrp: existing.mrp ? String(existing.mrp) : "", description: existing.description || "",
     reorderPoint: existing.reorderPoint ? String(existing.reorderPoint) : "", maxStock: existing.maxStock ? String(existing.maxStock) : "",
-    supplierId: existing.supplierId || "", stock: String(existing.stock),
+    supplierId: existing.supplierId || "", stock: String(existing.stock), image: existing.image || "",
+    onArrivals: existing.onArrivals ?? false, onOffers: existing.onOffers ?? false,
+    offerPrice: existing.offerPrice ? String(existing.offerPrice) : "",
   } : EMPTY_PRODUCT);
   const [errs, setErrs] = useState<string[]>([]);
   const backHref = editing ? `/admin/products/${existing!.id}` : "/admin/products";
@@ -75,6 +78,12 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
     if (!isNaN(rp) && !isNaN(ms) && rp > ms) errors.push("Reorder point can't exceed max stock.");
     const cost = num(draft.cost), price = num(draft.price);
     if (!isNaN(cost) && !isNaN(price) && price < cost) errors.push("Price is below cost.");
+    const offer = num(draft.offerPrice);
+    if (draft.onOffers) {
+      if (isNaN(offer)) errors.push("Enter the offer price for products featured on Offers.");
+      else if (offer <= 0) errors.push("Offer price must be greater than zero.");
+      else if (!isNaN(price) && offer >= price) errors.push("Offer price must be below the regular price.");
+    }
     if (errors.length) { setErrs(errors); return; }
 
     const common = {
@@ -84,7 +93,9 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
       mrp: Number(draft.mrp) || undefined, description: draft.description || undefined,
       uom: draft.uom, caseQty: Number(draft.caseQty) || undefined,
       reorderPoint: Number(draft.reorderPoint) || undefined, maxStock: Number(draft.maxStock) || undefined,
-      supplierId: draft.supplierId || undefined,
+      supplierId: draft.supplierId || undefined, image: draft.image || undefined,
+      onArrivals: draft.onArrivals, onOffers: draft.onOffers,
+      offerPrice: draft.onOffers ? (Number(draft.offerPrice) || undefined) : undefined,
     };
     if (editing) {
       updateProduct(existing!.id, { ...common, stock: Number(draft.stock) || 0 });
@@ -112,6 +123,9 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
           <div className="formgrid">
             <label className="field full"><span>Product name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Mr Fog Max Pro 1500" required /></label>
             <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Short product description" /></label>
+            <div className="field full">
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" onError={flash} hint="Optional — shown in the portal and admin. A placeholder is used until you add one." />
+            </div>
             <label className="field"><span>Category *</span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
             <div className="field"><span>Barcode (UPC/EAN)</span>
               <div className="scanrow">
@@ -127,6 +141,25 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <label className="field"><span>Reorder point</span><input type="number" value={draft.reorderPoint} onChange={(e) => setDraft({ ...draft, reorderPoint: e.target.value })} placeholder="15" /></label>
             <label className="field"><span>Max stock</span><input type="number" value={draft.maxStock} onChange={(e) => setDraft({ ...draft, maxStock: e.target.value })} placeholder="120" /></label>
             <label className="field"><span>On-hand (cases)</span><input type="number" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} placeholder="0" /></label>
+            <div className="field full">
+              <span>Storefront placement</span>
+              <div className="placetoggles">
+                <label className="taxtoggle">
+                  <input type="checkbox" checked={draft.onArrivals} onChange={(e) => setDraft({ ...draft, onArrivals: e.target.checked })} />
+                  <span><b>Feature on New arrivals</b><small>Shows on the portal&apos;s New arrivals page</small></span>
+                </label>
+                <label className="taxtoggle">
+                  <input type="checkbox" checked={draft.onOffers} onChange={(e) => setDraft({ ...draft, onOffers: e.target.checked })} />
+                  <span><b>Feature on Offers</b><small>Shows on the portal&apos;s Offers page</small></span>
+                </label>
+              </div>
+              {draft.onOffers && (
+                <label className="field" style={{ marginTop: 10, maxWidth: 240 }}>
+                  <span>Offer price ($) *</span>
+                  <input type="number" step="0.01" value={draft.offerPrice} onChange={(e) => setDraft({ ...draft, offerPrice: e.target.value })} placeholder="Discounted price" required />
+                </label>
+              )}
+            </div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
             <Button variant="ghost" type="button" onClick={() => router.push(backHref)}>Cancel</Button>
@@ -188,7 +221,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
       <DataTable
         columns={[
-          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th"><Image src="/coming-soon.webp" alt="" fill sizes="36px" style={{ objectFit: "contain" }} /></span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
+          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th"><Image src={productImg(p)} alt="" fill sizes="36px" style={{ objectFit: "contain" }} /></span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
           { key: "code", header: "Code", render: (p) => <span className="mono muted">{sku(p)}</span> },
           { key: "desc", header: "Description", render: (p) => <span className="muted" style={{ fontSize: 12.5 }}>{p.description || "—"}</span> },
           { key: "cat", header: "Category", render: (p) => <span className="deptpill">{deptName(p.dep)}</span> },

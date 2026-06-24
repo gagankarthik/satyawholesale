@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { fmt, statusSlug, ORDER_FLOW, type Order } from "@/lib/store";
+import { fmt, productImg, statusSlug, ORDER_FLOW, type Order } from "@/lib/store";
 import { Search } from "@/components/Icons";
 import { EmptyState, ListToolbar, type ToolbarOption } from "@/components/ui";
+import { usePortal } from "./PortalShell";
 import { ago } from "./meta";
 
 const SORTS: ToolbarOption[] = [
@@ -13,6 +14,16 @@ const SORTS: ToolbarOption[] = [
   { value: "oldest", label: "Oldest first" },
   { value: "total-desc", label: "Highest total" },
   { value: "cases-desc", label: "Most cases" },
+];
+
+const STATUS_FILTERS: ToolbarOption[] = [
+  { value: "all", label: "All statuses" },
+  { value: "Pending", label: "Pending" },
+  { value: "Processing", label: "Processing" },
+  { value: "At Local Facility", label: "At Local Facility" },
+  { value: "Out for delivery", label: "Out for delivery" },
+  { value: "Completed", label: "Completed" },
+  { value: "Cancelled", label: "Cancelled" },
 ];
 
 export default function OrdersList({
@@ -24,16 +35,21 @@ export default function OrdersList({
   emptyTitle?: string;
   emptyDesc?: string;
 }) {
+  const { products } = usePortal();
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
+
+  const imgFor = (lid: number) => productImg(products.find((p) => p.id === lid) ?? {});
 
   const view = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = orders.filter(
       (o) =>
-        needle === "" ||
-        o.ref.toLowerCase().includes(needle) ||
-        o.lines.some((l) => l.name.toLowerCase().includes(needle))
+        (status === "all" || o.status === status) &&
+        (needle === "" ||
+          o.ref.toLowerCase().includes(needle) ||
+          o.lines.some((l) => l.name.toLowerCase().includes(needle)))
     );
     return [...list].sort((a, b) => {
       switch (sort) {
@@ -43,12 +59,13 @@ export default function OrdersList({
         default: return b.placed - a.placed;
       }
     });
-  }, [orders, q, sort]);
+  }, [orders, q, status, sort]);
 
   return (
     <>
       <ListToolbar
         search={{ value: q, onChange: setQ, placeholder: "Search orders…" }}
+        filters={[{ label: "Status", value: status, onChange: setStatus, options: STATUS_FILTERS }]}
         sort={{ value: sort, onChange: setSort, options: SORTS }}
       />
 
@@ -74,7 +91,7 @@ export default function OrdersList({
                 </div>
                 <div className="oc-thumbs" aria-hidden="true">
                   {o.lines.slice(0, 7).map((l) => (
-                    <span key={l.id} className="oc-th"><Image src="/coming-soon.webp" alt="" fill sizes="46px" style={{ objectFit: "contain" }} /></span>
+                    <span key={l.id} className="oc-th"><Image src={imgFor(l.id)} alt="" fill sizes="46px" style={{ objectFit: "contain" }} /></span>
                   ))}
                   {o.lines.length > 7 && <span className="oc-th more">+{o.lines.length - 7}</span>}
                 </div>

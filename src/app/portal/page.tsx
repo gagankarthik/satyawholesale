@@ -2,22 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { DEPTS, fmt, statusSlug } from "@/lib/store";
+import { useMemo } from "react";
+import { fmt, statusSlug } from "@/lib/store";
 import { usePromotions } from "@/lib/wms";
 import { Package, Sparkles } from "@/components/Icons";
 import { EmptyState, KpiCard } from "@/components/ui";
 import { usePortal } from "./PortalShell";
 import ProductCard from "./ProductCard";
+import PosterCarousel from "./PosterCarousel";
 import { ago } from "./meta";
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export default function PortalDashboard() {
-  const { products, myOrders, STORE, setDept } = usePortal();
+  const { products, myOrders, setDept, depts, matchDept } = usePortal();
   const { promos } = usePromotions();
   const ads = promos.filter((p) => p.active);
-  const [slide, setSlide] = useState(0);
 
   const newArrivals = useMemo(
     () => [...products].sort((a, b) => (b.created ?? 0) - (a.created ?? 0)).slice(0, 12),
@@ -28,40 +28,18 @@ export default function PortalDashboard() {
     [products]
   );
   const deptRows = useMemo(
-    () => DEPTS.map((d) => ({ d, items: products.filter((p) => p.dep === d.key) })).filter((r) => r.items.length).slice(0, 4),
-    [products]
+    () => depts.map((d) => ({ d, items: products.filter((p) => matchDept(p.dep, d.key)) })).filter((r) => r.items.length).slice(0, 4),
+    [products, depts, matchDept]
   );
 
   const openOrders = myOrders.filter((o) => o.status !== "Completed" && o.status !== "Cancelled").length;
   const lifetime = myOrders.reduce((s, o) => s + o.total, 0);
   const casesOrdered = myOrders.reduce((s, o) => s + o.cases, 0);
 
-  useEffect(() => {
-    if (ads.length <= 1) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setSlide((s) => (s + 1) % ads.length), 5000);
-    return () => clearInterval(t);
-  }, [ads.length]);
-
   return (
     <>
       {/* hero — promotions & new-arrival posters */}
-      {ads.length > 0 && (
-        <div className="pcarousel" aria-label="Offers and new arrivals" aria-roledescription="carousel">
-          {ads.map((o, i) => (
-            <div key={o.id} className={`pcslide ${i === slide % ads.length ? "on" : ""}`} aria-hidden={i !== slide % ads.length}>
-              <Image src={o.image} alt="" fill sizes="100vw" style={{ objectFit: "cover" }} priority={i === 0} />
-              <div className="pctext">
-                <div className="pctag">{o.tag}</div>
-                <h3>{o.title}</h3>
-                <p>{o.subtitle}</p>
-                <Link href="/portal/products" className="pc-cta">Shop now →</Link>
-              </div>
-            </div>
-          ))}
-          <div className="pcdots">{ads.map((o, i) => <button key={o.id} className={i === slide % ads.length ? "on" : ""} onClick={() => setSlide(i)} aria-label={`Show ${o.tag}`} />)}</div>
-        </div>
-      )}
+      <PosterCarousel />
 
       {/* customer stats */}
       <div className="kpis rise-in">

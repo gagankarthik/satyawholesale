@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
-import { deptName, fmt, sku, useInventory, LOW_STOCK, type Product } from "@/lib/store";
+import { deptName, fmt, sku, productImg, useInventory, LOW_STOCK, type Product } from "@/lib/store";
 import { Badge } from "@/components/ui";
 import { Search } from "@/components/Icons";
 
@@ -59,12 +59,13 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
 
         <aside className="detail-side">
           <div className="panel pd-hero" style={{ minHeight: 210 }}>
-            <Image src="/coming-soon.webp" alt={p.name} fill sizes="360px" style={{ objectFit: "contain" }} />
+            <Image src={productImg(p)} alt={p.name} fill sizes="360px" style={{ objectFit: "contain" }} />
           </div>
           <div className="panel">
             <div className="panel-h"><h3>Pricing</h3></div>
             <div className="kvs">
               <div className="kv2"><span>Sell price</span><b className="mono">${fmt(p.price)}</b></div>
+              {p.offerPrice ? <div className="kv2"><span>Offer price</span><b className="mono" style={{ color: "#e8453c" }}>${fmt(p.offerPrice)}</b></div> : null}
               <div className="kv2"><span>Landed cost</span><b className="mono">{p.cost != null ? `$${fmt(p.cost)}` : "—"}</b></div>
               <div className="kv2"><span>Suggested retail</span><b className="mono">{p.mrp != null ? `$${fmt(p.mrp)}` : "—"}</b></div>
               <div className="kv2"><span>Margin</span><b className="mono">{p.cost != null && p.price ? `${Math.round((1 - p.cost / p.price) * 100)}%` : "—"}</b></div>
@@ -78,6 +79,13 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
               <div className="kv2"><span>Max stock</span><b>{p.maxStock ?? "—"}</b></div>
             </div>
             <Link href={`/admin/products/${p.id}/edit`} className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit product →</Link>
+          </div>
+          <div className="panel">
+            <div className="panel-h"><h3>Storefront placement</h3></div>
+            <div className="kvs">
+              <div className="kv2"><span>New arrivals</span><Badge tone={p.onArrivals ? "success" : "neutral"}>{p.onArrivals ? "Featured" : "Hidden"}</Badge></div>
+              <div className="kv2"><span>Offers</span><Badge tone={p.onOffers ? "success" : "neutral"}>{p.onOffers ? "Featured" : "Hidden"}</Badge></div>
+            </div>
           </div>
         </aside>
       </div>

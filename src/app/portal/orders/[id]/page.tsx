@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useState } from "react";
 import {
-  CONTACT, fmt, orderGrand, useOrders, canCancelOrder, canEditOrder,
+  CONTACT, fmt, productImg, orderGrand, useOrders, useSettings, computeTax, canCancelOrder, canEditOrder,
   type OrderLine,
 } from "@/lib/store";
 import Image from "next/image";
@@ -18,7 +18,8 @@ const FULFILMENTS = ["Next-day delivery", "Cash & carry pickup", "Scheduled deli
 export default function PortalOrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { orders, patchOrder, setStatus } = useOrders();
-  const { flash } = usePortal();
+  const { flash, products } = usePortal();
+  const { settings } = useSettings();
   const o = orders.find((x) => x.ref === id);
 
   const [editing, setEditing] = useState(false);
@@ -57,6 +58,8 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
       lines: draft,
       total: draftTotal,
       cases: draftCases,
+      // keep sales tax in step with the new subtotal (resale-exempt orders stay at $0)
+      tax: computeTax(draftTotal, o.taxExempt, settings.taxRate),
       fulfilment: fulfil,
       shipping: ship.trim() || o.store,
       notes: notes.trim() || undefined,
@@ -73,9 +76,17 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
 
   const lines = editing ? draft : o.lines;
   const cases = editing ? draftCases : o.cases;
-  const total = editing ? draftTotal : orderGrand(o);
   const editable = canEditOrder(o.status);
   const cancellable = canCancelOrder(o.status);
+
+  /* charge breakdown — tax/delivery/discount applied by admin (or the default rate) */
+  const subtotal = editing ? draftTotal : o.total;
+  const exempt = o.taxExempt === true;
+  const tax = editing ? computeTax(draftTotal, o.taxExempt, settings.taxRate) : (o.tax ?? 0);
+  const deliveryFee = o.deliveryFee ?? 0;
+  const discount = o.discount ?? 0;
+  const grand = editing ? subtotal + tax + deliveryFee - discount : orderGrand(o);
+  const imgFor = (lid: number) => productImg(products.find((p) => p.id === lid) ?? {});
 
   return (
     <div className="odetail rise-in">
@@ -140,7 +151,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
               ) : (
                 <div className="rl" key={l.id}>
                   <span className="rl-item">
-                    <span className="rl-thumb"><Image src="/coming-soon.webp" alt="" fill sizes="40px" style={{ objectFit: "contain" }} /></span>
+                    <span className="rl-thumb"><Image src={imgFor(l.id)} alt="" fill sizes="40px" style={{ objectFit: "contain" }} /></span>
                     {l.name}
                   </span>
                   <span className="q">×{l.qty} @ ${fmt(l.price)}</span>
@@ -149,7 +160,13 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
               )
             )}
           </div>
-          <div className="receipt-tot"><span>Order total · {cases} cases</span><b>${fmt(total)}</b></div>
+          <div className="totals">
+            <div className="tl"><span>Subtotal · {cases} cases</span><span className="mono">${fmt(subtotal)}</span></div>
+            {discount > 0 && <div className="tl"><span>Discount{o.discountReason ? ` · ${o.discountReason}` : ""}</span><span className="mono">−${fmt(discount)}</span></div>}
+            <div className="tl"><span>{exempt ? "Tax · resale exempt" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">${fmt(tax)}</span></div>
+            <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: deliveryFee ? "inherit" : "var(--green)" }}>{deliveryFee ? `$${fmt(deliveryFee)}` : "Free"}</span></div>
+            <div className="tl grand"><span>Order total</span><b>${fmt(grand)}</b></div>
+          </div>
         </div>
         <aside className="od-side">
           <div className="panel">
