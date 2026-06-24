@@ -1,4 +1,5 @@
-import { DEPARTMENTS } from "./data";
+import Image from "next/image";
+import { DEPARTMENTS, ush } from "./data";
 
 export default function Departments() {
   return (
@@ -13,12 +14,17 @@ export default function Departments() {
           </p>
         </div>
         <div className="capi-grid">
-          {DEPARTMENTS.map(({ Icon, name, desc }) => (
-            <div className="capi reveal" key={name}>
-              <div className="ic"><Icon /></div>
-              <h3>{name}</h3>
-              <p>{desc}</p>
-            </div>
+          {DEPARTMENTS.map(({ Icon, name, img, desc }) => (
+            <article className="capi reveal" key={name}>
+              <div className="capi-img">
+                <Image src={ush(img, 640)} alt={name} fill sizes="(max-width: 860px) 80vw, 360px" style={{ objectFit: "cover" }} />
+                <span className="capi-ic"><Icon /></span>
+              </div>
+              <div className="capi-tx">
+                <h3>{name}</h3>
+                <p>{desc}</p>
+              </div>
+            </article>
           ))}
         </div>
       </div>

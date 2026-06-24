@@ -142,20 +142,28 @@
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--r);
-  padding: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 .capi:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--kraft-edge); }
-.capi .ic {
-  width: 50px; height: 50px; border-radius: 13px;
+.capi-img { position: relative; aspect-ratio: 16 / 10; background: #e8ecf1; }
+.capi-img img { object-fit: cover; }
+.capi-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 42%, rgba(20, 24, 48, 0.5)); }
+.capi:hover .capi-img img { transform: scale(1.04); }
+.capi-img img { transition: transform 0.45s var(--ease); }
+.capi-ic {
+  position: absolute; left: 14px; bottom: 12px; z-index: 2;
+  width: 42px; height: 42px; border-radius: 12px;
   display: grid; place-items: center;
-  background: var(--paper); border: 1px solid var(--line);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.94); color: var(--signal-deep);
+  box-shadow: 0 4px 14px -4px rgba(14, 19, 64, 0.35);
 }
-.capi .ic svg { width: 25px; height: 25px; }
-.capi h3 { font-family: var(--font-disp); font-weight: 700; font-size: 19px; letter-spacing: -0.4px; margin: 18px 0 8px; }
-.capi p { font-size: 14px; color: var(--slate); line-height: 1.55; }
-.capi .ln { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--font-mono-f); font-size: 11.5px; letter-spacing: 0.5px; color: var(--slate-2); text-transform: uppercase; }
+.capi-ic svg { width: 22px; height: 22px; }
+.capi-tx { padding: 16px 20px 22px; }
+.capi-tx h3 { font-family: var(--font-disp); font-weight: 700; font-size: 18px; letter-spacing: -0.4px; }
+.capi-tx p { font-size: 13.5px; color: var(--slate); line-height: 1.55; margin-top: 7px; }
 
 /* ---------- service model ---------- */
 .serve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -303,7 +311,18 @@
   .mobmenu a { padding: 12px 4px; font-size: 15px; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--line); }
   .mobmenu a:last-of-type { border-bottom: none; }
   .mobmenu .btn { margin-top: 10px; justify-content: center; }
-  .capi-grid { grid-template-columns: 1fr; }
+  .capi-grid {
+    display: flex;
+    grid-template-columns: none;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -22px;
+    padding: 4px 22px 12px;
+    scrollbar-width: none;
+  }
+  .capi-grid::-webkit-scrollbar { display: none; }
+  .capi { flex: 0 0 76%; max-width: 320px; scroll-snap-align: start; }
   .serve-grid { grid-template-columns: 1fr; }
   .trust-in { grid-template-columns: repeat(2, 1fr); gap: 26px 16px; }
   .about-panel { padding: 30px 24px; }
