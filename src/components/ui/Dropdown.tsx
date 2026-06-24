@@ -12,6 +12,8 @@ export interface DropdownProps {
   className?: string;
   /** Trigger className (defaults to a bare button reset). */
   triggerClassName?: string;
+  /** Horizontal alignment of the panel relative to the trigger. */
+  align?: "start" | "end";
 }
 
 /**
@@ -19,7 +21,7 @@ export interface DropdownProps {
  * rect (so it never clips), and closes on outside click, Escape, scroll, or
  * resize. Used for the account menu and quick-search.
  */
-export function Dropdown({ trigger, children, ariaLabel, className, triggerClassName }: DropdownProps) {
+export function Dropdown({ trigger, children, ariaLabel, className, triggerClassName, align = "end" }: DropdownProps) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
@@ -47,7 +49,7 @@ export function Dropdown({ trigger, children, ariaLabel, className, triggerClass
   const toggle = () => {
     if (pos) { close(); return; }
     const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 8, left: r.right });
+    if (r) setPos({ top: r.bottom + 8, left: align === "start" ? r.left : r.right });
   };
 
   return (
@@ -64,7 +66,7 @@ export function Dropdown({ trigger, children, ariaLabel, className, triggerClass
         {trigger(!!pos)}
       </button>
       {pos && createPortal(
-        <div ref={popRef} className={cx("menu-pop", className)} role="menu" style={{ top: pos.top, left: pos.left }} onClick={close}>
+        <div ref={popRef} className={cx("menu-pop", align === "start" && "menu-start", className)} role="menu" style={{ top: pos.top, left: pos.left }} onClick={close}>
           {children}
         </div>,
         document.body

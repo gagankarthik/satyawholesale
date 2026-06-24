@@ -20,3 +20,4 @@ export { Tooltip, type TooltipProps, type TooltipSide } from "./Tooltip";
 export { Menu, type MenuProps, type MenuAction } from "./Menu";
 export { Dropdown, type DropdownProps } from "./Dropdown";
 export { ViewToggle, type ViewToggleProps, type ViewMode } from "./ViewToggle";
+export { ImageUpload, type ImageUploadProps } from "./ImageUpload";

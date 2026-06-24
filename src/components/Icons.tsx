@@ -137,3 +137,9 @@ export const Table = ({ className }: P) => (
 export const GridView = ({ className }: P) => (
   <svg {...base} className={className}><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></svg>
 );
+export const User = ({ className }: P) => (
+  <svg {...base} className={className}><circle cx="12" cy="8" r="4" /><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" /></svg>
+);
+export const LogOut = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+);

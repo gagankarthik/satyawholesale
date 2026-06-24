@@ -14,11 +14,11 @@ import {
   ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Inbox } from "@/components/Icons";
 import Image from "next/image";
 import { useConfirm } from "@/components/Confirm";
 import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { Button, Badge, DataTable, ListToolbar, Menu, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { Button, Badge, DataTable, ListToolbar, Menu, ImageUpload, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
 const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK ? "warning" : "success");
@@ -120,7 +120,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
     <>
       <Head title="Products" sub="SKU master data — the foundation everything else depends on">
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={() => go("import")}>Bulk import</Button>
+          <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>
           <Button variant="primary" size="sm" onClick={() => setAdding(true)}>+ Onboard product</Button>
         </div>
       </Head>
@@ -300,18 +300,24 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
       </Head>
       <DataTable
         columns={[
-          { key: "name", header: "Category", render: (c) => <span className="prodcell"><span className="th" style={{ background: DEPT_BG[c.key as DeptKey] || "#eee" }}>{c.icon}</span><span className="pn">{c.name}{!c.active && <span className="muted" style={{ fontSize: 11 }}> · hidden</span>}</span></span> },
+          { key: "name", header: "Category", render: (c) => <span className="prodcell"><span className="th">{c.image
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={c.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", fontSize: 18 }}>{c.icon}</span>}</span><span className="pn">{c.name}{!c.active && <span className="muted" style={{ fontSize: 11 }}> · hidden</span>}</span></span> },
           { key: "parent", header: "Parent", render: (c) => c.parent ? <span className="deptpill">{parentName(c.parent)}</span> : <span className="muted">Top-level</span> },
           { key: "details", header: "Details", render: (c) => <span className="muted" style={{ fontSize: 13 }}>{c.details}</span> },
           { key: "group", header: "Group", render: (c) => <span className="deptpill">{c.group}</span> },
           { key: "products", header: "Products", align: "right", render: (c) => <span className="mono">{count(c.key)}</span> },
           { key: "slug", header: "Slug", render: (c) => <span className="mono muted">{c.key}</span> },
-          { key: "actions", header: "Actions", align: "right", render: (c) => (
-            <div className="rowactions" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/admin/categories/${c.key}`)}>Edit</Button>
-              <Button variant="ghost" size="sm" onClick={() => { update(c.key, { active: !c.active }); flash("Updated"); }}>{c.active ? "Hide" : "Show"}</Button>
-              <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (count(c.key) > 0) { flash("Category has products — reassign first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash("Deleted"); } }} aria-label="Delete category"><Close /></Button>
-            </div>
+          { key: "actions", header: "", align: "right", render: (c) => (
+            <Menu
+              label={`Actions for ${c.name}`}
+              items={[
+                { label: "Edit category", onSelect: () => router.push(`/admin/categories/${c.key}`) },
+                { label: c.active ? "Hide category" : "Show category", onSelect: () => { update(c.key, { active: !c.active }); flash("Updated"); } },
+                { label: "Delete category", danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products — reassign first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash("Deleted"); } } },
+              ]}
+            />
           ) },
         ] satisfies Column<(typeof categories)[number]>[]}
         rows={categories}
@@ -384,8 +390,10 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             </label>
             <label className="field"><span>Group</span><input value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} /></label>
             <label className="field full"><span>Details</span><input value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} placeholder="Short description" /></label>
-            <label className="field"><span>Icon (emoji)</span><input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} maxLength={2} /></label>
-            <label className="field"><span>Image URL (optional)</span><input value={draft.image} onChange={(e) => setDraft({ ...draft, image: e.target.value })} placeholder="https://…" /></label>
+            <label className="field"><span>Icon (fallback)</span><input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} maxLength={2} placeholder="🏷️" /></label>
+            <div className="field full">
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Category image" aspect="wide" onError={flash} hint="Shown across the storefront. Falls back to the icon if empty." />
+            </div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
             <Button variant="ghost" type="button" onClick={() => router.push("/admin/categories")}>Cancel</Button>
@@ -582,9 +590,8 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
               <label className="field"><span>Tag</span><input value={draft.tag} onChange={(e) => setDraft({ ...draft, tag: e.target.value })} placeholder="New arrivals" /></label>
               <label className="field"><span>Title *</span><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} required /></label>
               <label className="field full"><span>Subtitle</span><input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })} /></label>
-              <label className="field full"><span>Image URL</span><input value={draft.image} onChange={(e) => setDraft({ ...draft, image: e.target.value })} placeholder="https://… (S3 or any image URL)" /></label>
+              <div className="field full"><ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Banner image" aspect="wide" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
             </div>
-            {draft.image && <div className="promoshot" style={{ backgroundImage: `url(${draft.image})`, height: 130, borderRadius: 12, marginBottom: 16 }} />}
             <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => { setCreating(false); setEditId(null); }}>Cancel</button><button className="btn btn-primary" type="submit">{editId ? "Save" : "Publish"}</button></div>
           </form>
         </div>

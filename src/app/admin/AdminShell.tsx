@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useInventory, useOrders, CUSTOMERS } from "@/lib/store";
-import { usePurchaseOrders, useCustomers } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card, Home } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
@@ -57,30 +55,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   };
   const go = (t: Tab) => router.push(TAB_PATH[t]);
 
-  const { orders } = useOrders();
-  const { products } = useInventory();
-  const { customers } = useCustomers(CUSTOMERS);
-  const { pos } = usePurchaseOrders();
-
-  const pendingAccounts = customers.filter((c) => c.status === "Pending").length;
-  const openPOs = pos.filter((p) => p.status !== "Closed" && p.status !== "Received").length;
-
-  const GROUPS: { label: string; items: { path: string; label: string; Icon: typeof Grid; badge?: number; soon?: boolean }[] }[] = [
+  const GROUPS: { label: string; items: { path: string; label: string; Icon: typeof Grid; soon?: boolean; hidden?: boolean }[] }[] = [
     { label: "Sales", items: [
       { path: "/admin/dashboard", label: "Dashboard", Icon: Grid },
-      { path: "/admin/orders", label: "Orders", Icon: Receipt, badge: orders.length },
-      { path: "/admin/accounts", label: "Accounts", Icon: Users, badge: pendingAccounts || undefined },
+      { path: "/admin/orders", label: "Orders", Icon: Receipt },
+      { path: "/admin/accounts", label: "Accounts", Icon: Users },
     ] },
     { label: "Catalog", items: [
-      { path: "/admin/products", label: "Products", Icon: Boxes, badge: products.length },
-      { path: "/admin/import", label: "Bulk import", Icon: Inbox },
+      { path: "/admin/products", label: "Products", Icon: Boxes },
+      { path: "/admin/import", label: "Bulk import", Icon: Inbox, hidden: true },
       { path: "/admin/categories", label: "Categories", Icon: Tag },
       { path: "/admin/suppliers", label: "Suppliers", Icon: Truck },
       { path: "/admin/promotions", label: "Promotions", Icon: Sparkles },
     ] },
     { label: "Inventory", items: [
       { path: "/admin/inventory", label: "Stock ledger", Icon: Refresh },
-      { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package, badge: openPOs },
+      { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package },
       { path: "/admin/warehouse", label: "Warehouse", Icon: Store },
     ] },
     { label: "Admin", items: [
@@ -113,15 +103,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
               </button>
             </div>
-            <div className="adminrole mono">WAREHOUSE CONSOLE</div>
             <nav className="anav scroll">
               {GROUPS.map((g) => (
                 <div key={g.label} className="anav-group">
                   <div className="anav-label">{g.label}</div>
-                  {g.items.map(({ path, label, Icon, badge, soon }) => (
+                  {g.items.filter((it) => !it.hidden).map(({ path, label, Icon, soon }) => (
                     <Link key={path} href={path} className={isActive(path) ? "on" : ""} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
                       <Icon className="nicon" /> {label}
-                      {badge ? <span className="cb">{badge}</span> : null}
                       {soon && <span className="soon">soon</span>}
                     </Link>
                   ))}
@@ -162,11 +150,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   </div>
                 )}
               </div>
-              <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
-                <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">Satya Wholesale</div></div>
-                <Link href="/admin/settings" className="menu-item" role="menuitem"><Grid /> Settings</Link>
-                <Link href="/portal" className="menu-item" role="menuitem"><Store /> Order portal</Link>
-              </Dropdown>
+              <div className="atb-actions">
+                <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
+                  <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">Satya Wholesale</div></div>
+                  <Link href="/admin/settings" className="menu-item" role="menuitem"><Gear /> Settings</Link>
+                  <Link href="/portal" className="menu-item" role="menuitem"><Store /> Order portal</Link>
+                </Dropdown>
+              </div>
             </div>
             <div className="admincontent">{children}</div>
           </div>
