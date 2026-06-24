@@ -143,3 +143,9 @@ export const User = ({ className }: P) => (
 export const LogOut = ({ className }: P) => (
   <svg {...base} className={className}><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
 );
+export const Camera = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M3 8a2 2 0 0 1 2-2h1.5l1.2-1.7A1 1 0 0 1 8.5 4h7a1 1 0 0 1 .8.3L17.5 6H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><circle cx="12" cy="12.5" r="3.2" /></svg>
+);
+export const Barcode = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M3 5v14M7 5v14M11 5v10M11 18v1M15 5v14M19 5v14M21 5v14" /></svg>
+);

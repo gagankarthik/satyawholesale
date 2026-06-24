@@ -20,7 +20,7 @@ import {
 } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
-import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
+import { Head, FlowGuide, CUSTOMER_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
 import { KpiCard, DataTable, Badge, Button, ListToolbar, Menu, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
@@ -1041,9 +1041,10 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Trade accounts" sub="Open an account for full store details, documents and order history">
+      <Head title="Trade accounts" sub="Review applications, approve stores, then they order in the portal">
         <Button variant="primary" size="sm" onClick={() => setInviting(true)}>+ Invite account</Button>
       </Head>
+      <FlowGuide steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />
       <div className="kpis">
         <KpiCard label="Total accounts" value={customers.length} foot="on file" />
         <KpiCard label="Active" value={stats.filter((c) => c.status === "Active").length} foot="cleared to order" />

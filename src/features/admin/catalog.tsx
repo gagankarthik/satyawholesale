@@ -16,8 +16,10 @@ import {
 } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Inbox } from "@/components/Icons";
 import Image from "next/image";
+import Link from "next/link";
 import { useConfirm } from "@/components/Confirm";
-import { Head, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { Head, FlowGuide, PRODUCT_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
 import { Button, Badge, DataTable, ListToolbar, Menu, ImageUpload, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
@@ -28,18 +30,120 @@ const EMPTY_PRODUCT = {
   cost: "", price: "", mrp: "", description: "", reorderPoint: "", maxStock: "", supplierId: "", stock: "",
 };
 
-export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void }) {
+/** Full-page onboard / edit product (with camera barcode scanning). */
+export function ProductForm({ productId, flash }: { productId?: string; flash: Flash }) {
   const router = useRouter();
   const { products, addProduct, updateProduct, removeProduct } = useInventory();
   const { suppliers } = useSuppliers();
   const { categories } = useCategories();
+  const confirm = useConfirm();
+  const existing = productId ? products.find((p) => String(p.id) === productId) : undefined;
+  const editing = !!existing;
+  const [draft, setDraft] = useState(existing ? {
+    name: existing.name, category: existing.dep, gtin: existing.gtin || "", uom: existing.uom || "case",
+    caseQty: String(existing.caseQty || ""), cost: existing.cost ? String(existing.cost) : "", price: String(existing.price),
+    mrp: existing.mrp ? String(existing.mrp) : "", description: existing.description || "",
+    reorderPoint: existing.reorderPoint ? String(existing.reorderPoint) : "", maxStock: existing.maxStock ? String(existing.maxStock) : "",
+    supplierId: existing.supplierId || "", stock: String(existing.stock),
+  } : EMPTY_PRODUCT);
+  const [errs, setErrs] = useState<string[]>([]);
+  const backHref = editing ? `/admin/products/${existing!.id}` : "/admin/products";
+
+  if (productId && !existing) {
+    return (
+      <>
+        <button className="detail-back" onClick={() => router.push("/admin/products")}>← All products</button>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Product not found</h3></div>
+      </>
+    );
+  }
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: string[] = [];
+    const num = (v: string) => (v === "" ? NaN : Number(v));
+    if (!draft.name.trim()) errors.push("Product name is required.");
+    if (isNaN(num(draft.price))) errors.push("A numeric price is required.");
+    if (draft.gtin && !/^\d{12,13}$/.test(draft.gtin)) errors.push("Barcode must be 12–13 digits.");
+    if (draft.gtin && /^\d{12,13}$/.test(draft.gtin)) {
+      const digits = draft.gtin.split("").map(Number); const check = digits.pop()!;
+      let sum = 0; digits.reverse().forEach((d, i) => { sum += i % 2 === 0 ? d * 3 : d; });
+      if ((10 - (sum % 10)) % 10 !== check) errors.push("Barcode check digit is invalid.");
+    }
+    if (draft.gtin && products.some((p) => p.gtin === draft.gtin && p.id !== existing?.id)) errors.push("That barcode already exists.");
+    const rp = num(draft.reorderPoint), ms = num(draft.maxStock);
+    if (!isNaN(rp) && !isNaN(ms) && rp > ms) errors.push("Reorder point can't exceed max stock.");
+    const cost = num(draft.cost), price = num(draft.price);
+    if (!isNaN(cost) && !isNaN(price) && price < cost) errors.push("Price is below cost.");
+    if (errors.length) { setErrs(errors); return; }
+
+    const common = {
+      name: draft.name.trim(), dep: draft.category,
+      price: Number(draft.price) || 0, pack: `${draft.caseQty || 1}ct`, unit: draft.uom || "case",
+      gtin: draft.gtin || undefined, cost: Number(draft.cost) || undefined,
+      mrp: Number(draft.mrp) || undefined, description: draft.description || undefined,
+      uom: draft.uom, caseQty: Number(draft.caseQty) || undefined,
+      reorderPoint: Number(draft.reorderPoint) || undefined, maxStock: Number(draft.maxStock) || undefined,
+      supplierId: draft.supplierId || undefined,
+    };
+    if (editing) {
+      updateProduct(existing!.id, { ...common, stock: Number(draft.stock) || 0 });
+      flash("Product updated");
+      router.push(`/admin/products/${existing!.id}`);
+    } else {
+      const id = Math.floor(1000 + Math.random() * 8999);
+      addProduct({ id, emoji: "📦", tag: "new" as Tag, stock: Number(draft.stock) || 0, sku: `SW-${id}`, active: true, created: Date.now(), ...common });
+      flash("Product onboarded to catalog");
+      router.push("/admin/products");
+    }
+  };
+
+  return (
+    <>
+      <button className="detail-back" onClick={() => router.push(backHref)}>← {editing ? "Back to product" : "All products"}</button>
+      <header className="adminbar">
+        <div><h1>{editing ? existing!.name : "Onboard a product"}</h1><p>{editing ? sku(existing!) : "Add a SKU to the master catalog"}</p></div>
+        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Remove product?", message: `${existing!.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(existing!.id); router.push("/admin/products"); flash("Removed"); } }}>Remove</Button>}
+      </header>
+      <div className="setpane">
+        <form className="panel anim-in" onSubmit={submit}>
+          <div className="panel-h"><h3>{editing ? "Edit master data" : "Product details"}</h3><span className="hint">Validates against schema, integrity and business rules before it goes live.</span></div>
+          {errs.length > 0 && <div className="valbox">{errs.map((er, i) => <div key={i}>• {er}</div>)}</div>}
+          <div className="formgrid">
+            <label className="field full"><span>Product name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Mr Fog Max Pro 1500" required /></label>
+            <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Short product description" /></label>
+            <label className="field"><span>Category *</span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
+            <div className="field"><span>Barcode (UPC/EAN)</span>
+              <div className="scanrow">
+                <input value={draft.gtin} onChange={(e) => setDraft({ ...draft, gtin: e.target.value })} placeholder="Scan or type 12–13 digits" inputMode="numeric" aria-label="Barcode (UPC/EAN)" />
+                <BarcodeScanner onDetect={(code) => setDraft((d) => ({ ...d, gtin: code }))} />
+              </div>
+            </div>
+            <label className="field"><span>Supplier</span><select value={draft.supplierId} onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}><option value="">— none —</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+            <label className="field"><span>Eaches / case</span><input type="number" value={draft.caseQty} onChange={(e) => setDraft({ ...draft, caseQty: e.target.value })} placeholder="10" /></label>
+            <label className="field"><span>Unit cost ($)</span><input type="number" step="0.01" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} placeholder="0.00" /></label>
+            <label className="field"><span>Unit price ($) *</span><input type="number" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="0.00" required /></label>
+            <label className="field"><span>MRP ($)</span><input type="number" step="0.01" value={draft.mrp} onChange={(e) => setDraft({ ...draft, mrp: e.target.value })} placeholder="0.00" /></label>
+            <label className="field"><span>Reorder point</span><input type="number" value={draft.reorderPoint} onChange={(e) => setDraft({ ...draft, reorderPoint: e.target.value })} placeholder="15" /></label>
+            <label className="field"><span>Max stock</span><input type="number" value={draft.maxStock} onChange={(e) => setDraft({ ...draft, maxStock: e.target.value })} placeholder="120" /></label>
+            <label className="field"><span>On-hand (cases)</span><input type="number" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} placeholder="0" /></label>
+          </div>
+          <div className="modalbtns" style={{ marginTop: 8 }}>
+            <Button variant="ghost" type="button" onClick={() => router.push(backHref)}>Cancel</Button>
+            <Button variant="primary" type="submit">{editing ? "Save changes" : "Validate & add"}</Button>
+          </div>
+        </form>
+      </div>
+    </>
+  );
+}
+
+export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void }) {
+  const router = useRouter();
+  const { products, updateProduct, removeProduct } = useInventory();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<DeptKey | "all">("all");
   const [sort, setSort] = useState("name");
-  const [adding, setAdding] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [draft, setDraft] = useState(EMPTY_PRODUCT);
-  const [errs, setErrs] = useState<string[]>([]);
   const confirm = useConfirm();
 
   const rows = useMemo(() => {
@@ -66,64 +170,15 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
     { value: "newest", label: "Newest" },
   ];
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors: string[] = [];
-    const num = (v: string) => (v === "" ? NaN : Number(v));
-    if (!draft.name.trim()) errors.push("Product name is required.");
-    if (isNaN(num(draft.price))) errors.push("A numeric price is required.");
-    if (draft.gtin && !/^\d{12,13}$/.test(draft.gtin)) errors.push("Barcode must be 12–13 digits.");
-    if (draft.gtin && /^\d{12,13}$/.test(draft.gtin)) {
-      const digits = draft.gtin.split("").map(Number); const check = digits.pop()!;
-      let sum = 0; digits.reverse().forEach((d, i) => { sum += i % 2 === 0 ? d * 3 : d; });
-      if ((10 - (sum % 10)) % 10 !== check) errors.push("Barcode check digit is invalid.");
-    }
-    if (draft.gtin && products.some((p) => p.gtin === draft.gtin)) errors.push("That barcode already exists.");
-    const rp = num(draft.reorderPoint), ms = num(draft.maxStock);
-    if (!isNaN(rp) && !isNaN(ms) && rp > ms) errors.push("Reorder point can't exceed max stock.");
-    const cost = num(draft.cost), price = num(draft.price);
-    if (!isNaN(cost) && !isNaN(price) && price < cost) errors.push("Price is below cost.");
-    if (errors.length) { setErrs(errors); return; }
-
-    const common = {
-      name: draft.name.trim(), dep: draft.category,
-      price: Number(draft.price) || 0, pack: `${draft.caseQty || 1}ct`, unit: draft.uom || "case",
-      gtin: draft.gtin || undefined, cost: Number(draft.cost) || undefined,
-      mrp: Number(draft.mrp) || undefined, description: draft.description || undefined,
-      uom: draft.uom, caseQty: Number(draft.caseQty) || undefined,
-      reorderPoint: Number(draft.reorderPoint) || undefined, maxStock: Number(draft.maxStock) || undefined,
-      supplierId: draft.supplierId || undefined,
-    };
-    if (editId) {
-      updateProduct(editId, { ...common, stock: Number(draft.stock) || 0 });
-      flash("Product updated");
-    } else {
-      const id = Math.floor(1000 + Math.random() * 8999);
-      addProduct({ id, emoji: "📦", tag: "new" as Tag, stock: Number(draft.stock) || 0, sku: `SW-${id}`, active: true, created: Date.now(), ...common });
-      flash("Product onboarded to catalog");
-    }
-    setDraft(EMPTY_PRODUCT); setErrs([]); setAdding(false); setEditId(null);
-  };
-
-  const openEdit = (p: Product) => {
-    setDraft({
-      name: p.name, category: p.dep, gtin: p.gtin || "", uom: p.uom || "case",
-      caseQty: String(p.caseQty || ""), cost: p.cost ? String(p.cost) : "", price: String(p.price),
-      mrp: p.mrp ? String(p.mrp) : "", description: p.description || "",
-      reorderPoint: p.reorderPoint ? String(p.reorderPoint) : "", maxStock: p.maxStock ? String(p.maxStock) : "",
-      supplierId: p.supplierId || "", stock: String(p.stock),
-    });
-    setEditId(p.id); setErrs([]); setAdding(true);
-  };
-
   return (
     <>
       <Head title="Products" sub="SKU master data — the foundation everything else depends on">
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>
-          <Button variant="primary" size="sm" onClick={() => setAdding(true)}>+ Onboard product</Button>
+          <Link className="btn btn-primary btn-sm" href="/admin/products/new">+ Onboard product</Link>
         </div>
       </Head>
+      <FlowGuide steps={PRODUCT_FLOW} active="product" title="Stock-in flow" />
 
       <ListToolbar
         search={{ value: query, onChange: setQuery, placeholder: "Search name, SKU or barcode…" }}
@@ -146,7 +201,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
             <Menu
               label={`Actions for ${p.name}`}
               items={[
-                { label: "Edit product", onSelect: () => openEdit(p) },
+                { label: "Edit product", onSelect: () => router.push(`/admin/products/${p.id}/edit`) },
                 { label: "Add 12 cases", onSelect: () => { updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); } },
                 { label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } } },
               ]}
@@ -160,35 +215,6 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
         empty="No products match."
       />
 
-      {adding && (
-        <div className="modal-overlay" onClick={() => { setAdding(false); setEditId(null); }}>
-          <form className="modal wide" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-            <h3>{editId ? "Edit product" : "Onboard a product"}</h3>
-            <p className="modalp">Master data validates against schema, integrity and business rules before it goes live.</p>
-            {errs.length > 0 && (
-              <div className="valbox">{errs.map((e, i) => <div key={i}>• {e}</div>)}</div>
-            )}
-            <div className="formgrid">
-              <label className="field full"><span>Product name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Mr Fog Max Pro 1500" required /></label>
-              <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Short product description" /></label>
-              <label className="field"><span>Category *</span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
-              <label className="field"><span>Barcode (UPC/EAN)</span><input value={draft.gtin} onChange={(e) => setDraft({ ...draft, gtin: e.target.value })} placeholder="12–13 digits" /></label>
-              <label className="field"><span>Supplier</span><select value={draft.supplierId} onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}><option value="">— none —</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-              <label className="field"><span>Eaches / case</span><input type="number" value={draft.caseQty} onChange={(e) => setDraft({ ...draft, caseQty: e.target.value })} placeholder="10" /></label>
-              <label className="field"><span>Unit cost ($)</span><input type="number" step="0.01" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} placeholder="0.00" /></label>
-              <label className="field"><span>Unit price ($) *</span><input type="number" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="0.00" required /></label>
-              <label className="field"><span>MRP ($)</span><input type="number" step="0.01" value={draft.mrp} onChange={(e) => setDraft({ ...draft, mrp: e.target.value })} placeholder="0.00" /></label>
-              <label className="field"><span>Reorder point</span><input type="number" value={draft.reorderPoint} onChange={(e) => setDraft({ ...draft, reorderPoint: e.target.value })} placeholder="15" /></label>
-              <label className="field"><span>Max stock</span><input type="number" value={draft.maxStock} onChange={(e) => setDraft({ ...draft, maxStock: e.target.value })} placeholder="120" /></label>
-              <label className="field"><span>On-hand (cases)</span><input type="number" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} placeholder="0" /></label>
-            </div>
-            <div className="modalbtns">
-              <button type="button" className="btn btn-ghost" onClick={() => { setAdding(false); setEditId(null); }}>Cancel</button>
-              <button type="submit" className="btn btn-primary">Validate &amp; add</button>
-            </div>
-          </form>
-        </div>
-      )}
     </>
   );
 }
@@ -538,41 +564,85 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
 /* =======================================================================
    PROMOTIONS (advertising shown on the buyer dashboard)
    ======================================================================= */
-const EMPTY_PROMO = { tag: "New arrivals", title: "", subtitle: "", image: "" };
-export function PromotionsTab({ flash }: { flash: Flash }) {
+const EMPTY_PROMO = { tag: "New arrivals", title: "", subtitle: "", image: "", active: true };
+
+/** Full-page create / edit promotion. */
+export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Flash }) {
+  const router = useRouter();
   const { promos, add, update, remove } = usePromotions();
   const confirm = useConfirm();
-  const [editId, setEditId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(EMPTY_PROMO);
+  const existing = promoId ? promos.find((p) => p.id === promoId) : undefined;
+  const editing = !!existing;
+  const [d, setD] = useState(existing
+    ? { tag: existing.tag, title: existing.title, subtitle: existing.subtitle, image: existing.image, active: existing.active }
+    : EMPTY_PROMO);
 
-  const openCreate = () => { setDraft(EMPTY_PROMO); setCreating(true); setEditId(null); };
-  const openEdit = (id: string) => { const p = promos.find((x) => x.id === id)!; setDraft({ tag: p.tag, title: p.title, subtitle: p.subtitle, image: p.image }); setEditId(id); setCreating(false); };
+  if (promoId && !existing) {
+    return (
+      <>
+        <button className="detail-back" onClick={() => router.push("/admin/promotions")}>← All promotions</button>
+        <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Promotion not found</h3></div>
+      </>
+    );
+  }
+
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.title.trim()) return;
-    if (editId) { update(editId, draft); flash("Promotion updated"); }
-    else { add({ id: "PR-" + Math.floor(10 + Math.random() * 89), ...draft, active: true, created: Date.now() }); flash("Promotion published"); }
-    setCreating(false); setEditId(null);
+    if (!d.title.trim()) { flash("Title is required"); return; }
+    const patch = { tag: d.tag.trim() || "Featured", title: d.title.trim(), subtitle: d.subtitle.trim(), image: d.image, active: d.active };
+    if (editing) { update(existing!.id, patch); flash("Promotion updated"); }
+    else { add({ id: "PR-" + Math.floor(10 + Math.random() * 89), ...patch, created: Date.now() }); flash("Promotion published"); }
+    router.push("/admin/promotions");
   };
 
   return (
     <>
+      <button className="detail-back" onClick={() => router.push("/admin/promotions")}>← All promotions</button>
+      <header className="adminbar">
+        <div><h1>{editing ? (existing!.title || "Untitled promotion") : "New promotion"}</h1><p>{editing ? existing!.id : "Create a banner for the buyer dashboard carousel"}</p></div>
+        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${existing!.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/promotions"); flash("Deleted"); } }}>Delete</Button>}
+      </header>
+      <div className="setpane">
+        <form className="panel anim-in" onSubmit={save}>
+          <div className="panel-h"><h3>{editing ? "Edit promotion" : "Promotion details"}</h3><span className="hint">Appears on the buyer dashboard carousel while published.</span></div>
+          <div className="formgrid">
+            <label className="field"><span>Tag</span><input value={d.tag} onChange={(e) => setD({ ...d, tag: e.target.value })} placeholder="New arrivals" /></label>
+            <label className="field"><span>Title *</span><input value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} required placeholder="Fresh vapor & disposables" /></label>
+            <label className="field full"><span>Subtitle</span><input value={d.subtitle} onChange={(e) => setD({ ...d, subtitle: e.target.value })} placeholder="The latest Mr Fog, Breeze and EB Design — just landed by the case." /></label>
+            <label className="field"><span>Visibility</span><select value={d.active ? "1" : "0"} onChange={(e) => setD({ ...d, active: e.target.value === "1" })}><option value="1">Published (live on portal)</option><option value="0">Hidden</option></select></label>
+            <div className="field full"><ImageUpload value={d.image} onChange={(v) => setD({ ...d, image: v })} label="Banner image" aspect="wide" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
+          </div>
+          <div className="modalbtns" style={{ marginTop: 8 }}>
+            <Button variant="ghost" type="button" onClick={() => router.push("/admin/promotions")}>Cancel</Button>
+            <Button variant="primary" type="submit">{editing ? "Save changes" : "Publish promotion"}</Button>
+          </div>
+        </form>
+      </div>
+    </>
+  );
+}
+
+export function PromotionsTab({ flash }: { flash: Flash }) {
+  const { promos, update, remove } = usePromotions();
+  const confirm = useConfirm();
+
+  return (
+    <>
       <Head title="Promotions" sub="Image banners shown on the buyer dashboard in the order portal">
-        <button className="btn btn-primary btn-sm" onClick={openCreate}>+ New promotion</button>
+        <Link className="btn btn-primary btn-sm" href="/admin/promotions/new">+ New promotion</Link>
       </Head>
       <div className="promogrid">
         {promos.map((p) => (
           <div className={`promocard ${p.active ? "" : "off"}`} key={p.id}>
-            <div className="promoshot" style={{ backgroundImage: p.image ? `url(${p.image})` : undefined }}>
+            <Link className="promoshot" href={`/admin/promotions/${p.id}`} style={{ backgroundImage: p.image ? `url(${p.image})` : undefined }} aria-label={`Edit ${p.title}`}>
               {!p.image && <span className="muted">no image</span>}
               <span className="promotag">{p.tag}</span>
-            </div>
+            </Link>
             <div className="promobody">
               <h3>{p.title}</h3>
               <p>{p.subtitle}</p>
               <div className="rowactions" style={{ marginTop: 12 }}>
-                <button className="ia" onClick={() => openEdit(p.id)}>Edit</button>
+                <Link className="ia" href={`/admin/promotions/${p.id}`}>Edit</Link>
                 <button className="ia" onClick={() => { update(p.id, { active: !p.active }); flash(p.active ? "Hidden from portal" : "Live on portal"); }}>{p.active ? "Unpublish" : "Publish"}</button>
                 <button className="ia del" onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Deleted"); } }} aria-label="Delete promotion"><Close /></button>
               </div>
@@ -580,22 +650,6 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
           </div>
         ))}
       </div>
-
-      {(creating || editId) && (
-        <div className="modal-overlay" onClick={() => { setCreating(false); setEditId(null); }}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
-            <h3>{editId ? "Edit promotion" : "New promotion"}</h3>
-            <p className="modalp">Appears on the buyer dashboard carousel while published.</p>
-            <div className="formgrid">
-              <label className="field"><span>Tag</span><input value={draft.tag} onChange={(e) => setDraft({ ...draft, tag: e.target.value })} placeholder="New arrivals" /></label>
-              <label className="field"><span>Title *</span><input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} required /></label>
-              <label className="field full"><span>Subtitle</span><input value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })} /></label>
-              <div className="field full"><ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Banner image" aspect="wide" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
-            </div>
-            <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => { setCreating(false); setEditId(null); }}>Cancel</button><button className="btn btn-primary" type="submit">{editId ? "Save" : "Publish"}</button></div>
-          </form>
-        </div>
-      )}
     </>
   );
 }

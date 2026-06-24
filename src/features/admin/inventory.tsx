@@ -14,7 +14,7 @@ import {
 import { useConfirm } from "@/components/Confirm";
 import { Search, Close, Package } from "@/components/Icons";
 import { DataTable, ListToolbar, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
-import { Head, m, timeAgo, type Flash } from "./shared";
+import { Head, FlowGuide, PRODUCT_FLOW, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
 const matchClass = (s: string) => s === "Matched" ? "matched" : s === "Variance" ? "variance" : "awaiting";
@@ -64,9 +64,10 @@ export function POTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Purchase orders" sub={`Receive · invoice · three-way match — tolerance ±${RECEIVE_TOLERANCE * 100}%`}>
+      <Head title="Purchase orders" sub={`Order stock from suppliers, then receive it to update inventory — tolerance ±${RECEIVE_TOLERANCE * 100}%`}>
         <button className="btn btn-primary btn-sm" onClick={() => router.push("/admin/purchaseorder/new")}>+ New PO</button>
       </Head>
+      <FlowGuide steps={PRODUCT_FLOW} active="po" title="Stock-in flow" />
       {Object.keys(suggestions).length > 0 && (
         <div className="panel" style={{ marginBottom: 18 }}>
           <div className="panel-h"><h3>Reorder suggestions</h3><span className="hint">SKUs at/below reorder point, grouped by supplier</span></div>
@@ -534,7 +535,8 @@ export function InventoryTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Stock ledger" sub="Every receipt, pick, adjustment and transfer — the source of truth" />
+      <Head title="Stock ledger" sub="The running history of every stock change — receipts, picks, adjustments and transfers" />
+      <FlowGuide steps={PRODUCT_FLOW} active="ledger" title="Stock-in flow" />
       <div className="panel" style={{ marginBottom: 18 }}>
         <div className="panel-h"><h3>Manual adjustment</h3></div>
         <form style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }} onSubmit={adjust}>

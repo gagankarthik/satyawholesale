@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card, Home } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
@@ -82,10 +82,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
-  const activeGroup = GROUPS.find((g) => g.items.some((it) => isActive(it.path)));
-  const activeItem = activeGroup?.items.find((it) => isActive(it.path));
-  const pageTitle = activeItem?.label ?? "Dashboard";
-
   const [q, setQ] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const destinations = GROUPS.flatMap((g) => g.items.filter((it) => !it.soon).map((it) => ({ path: it.path, label: it.label, group: g.label })));
@@ -99,9 +95,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <aside className={`aside-dark ${mobileNav ? "open" : ""}`}>
             <div className="side-brand">
               <Link href="/" className="side-logo" aria-label="Satya Wholesale home"><Brand height={40} /></Link>
-              <button className="side-collapse" onClick={toggleCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
-              </button>
             </div>
             <nav className="anav scroll">
               {GROUPS.map((g) => (
@@ -120,16 +113,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
           <div className="adminmain">
             <div className="admintopbar">
-              <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
-              </button>
-              <span className="atb-brand"><Brand height={26} /></span>
-              <nav className="crumbs" aria-label="Breadcrumb">
-                <Link href="/admin/dashboard" className="crumb crumb-home" aria-label="Console home"><Home /></Link>
-                {activeGroup && <><span className="crumb-sep" aria-hidden="true">/</span><span className="crumb">{activeGroup.label}</span></>}
-                <span className="crumb-sep" aria-hidden="true">/</span>
-                <span className="crumb crumb-cur" aria-current="page">{pageTitle}</span>
-              </nav>
+              <div className="atb-left">
+                <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
+                </button>
+                <button className="atb-collapse" onClick={toggleCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
+                </button>
+                <span className="atb-brand"><Brand height={26} /></span>
+              </div>
               <div className="atb-search">
                 <Search />
                 <input

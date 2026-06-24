@@ -28,7 +28,10 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
       <Link className="detail-back" href="/admin/products">← All products</Link>
       <header className="adminbar">
         <div><h1>{p.name}</h1><p>{deptName(p.dep)} · {sku(p)}</p></div>
-        <Badge tone={tone}>{p.stock} cases</Badge>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Badge tone={tone}>{p.stock} cases</Badge>
+          <Link href={`/admin/products/${p.id}/edit`} className="btn btn-primary btn-sm">Edit product</Link>
+        </div>
       </header>
 
       <div className="detail-grid">
@@ -74,7 +77,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
               <div className="kv2"><span>Status</span><Badge tone={tone}>{p.stock <= 0 ? "Out of stock" : p.stock <= LOW_STOCK ? "Low" : "In stock"}</Badge></div>
               <div className="kv2"><span>Max stock</span><b>{p.maxStock ?? "—"}</b></div>
             </div>
-            <Link href="/admin/products" className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit in catalog →</Link>
+            <Link href={`/admin/products/${p.id}/edit`} className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit product →</Link>
           </div>
         </aside>
       </div>
