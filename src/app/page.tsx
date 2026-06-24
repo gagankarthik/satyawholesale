@@ -6,8 +6,10 @@ import Hero from "@/components/landing/Hero";
 import TrustBand from "@/components/landing/TrustBand";
 import Departments from "@/components/landing/Departments";
 import HowWeServe from "@/components/landing/HowWeServe";
+import Process from "@/components/landing/Process";
 import WhySatya from "@/components/landing/WhySatya";
 import AccountGate from "@/components/landing/AccountGate";
+import Faq from "@/components/landing/Faq";
 import Contact from "@/components/landing/Contact";
 import Cta from "@/components/landing/Cta";
 import Footer from "@/components/landing/Footer";
@@ -29,8 +31,10 @@ export default function Home() {
         <TrustBand />
         <Departments />
         <HowWeServe />
+        <Process />
         <WhySatya />
         <AccountGate />
+        <Faq />
         <Contact />
         <Cta />
       </main>

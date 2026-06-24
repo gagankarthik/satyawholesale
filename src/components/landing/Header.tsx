@@ -18,8 +18,9 @@ export default function Header() {
         <nav className="nav-links" aria-label="Primary">
           <a href="#departments">What we carry</a>
           <a href="#how">How we serve</a>
+          <a href="#process">Getting started</a>
           <a href="#why">Why Satya</a>
-          <a href="#contact">Contact</a>
+          <a href="#faq">FAQ</a>
         </nav>
         <div className="nav-cta">
           <Link className="btn btn-ghost btn-sm" href="/portal">Login</Link>
@@ -35,7 +36,9 @@ export default function Header() {
         <div className="mobmenu">
           <a href="#departments" onClick={close}>What we carry</a>
           <a href="#how" onClick={close}>How we serve</a>
+          <a href="#process" onClick={close}>Getting started</a>
           <a href="#why" onClick={close}>Why Satya</a>
+          <a href="#faq" onClick={close}>FAQ</a>
           <a href="#contact" onClick={close}>Contact</a>
           <Link href="/portal" onClick={close}>Login →</Link>
           <a className="btn btn-primary" href="#account" onClick={close}>Open an account <Arrow /></a>

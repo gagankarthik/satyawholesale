@@ -26,6 +26,7 @@ export default function Hero() {
       <div className="hero-grid" aria-hidden />
       <div className="wrap hero-in">
         <div className="hero-copy">
+          <div className="hero-eyebrow reveal"><span className="dot" /> Licensed wholesale distributor · Cincinnati, OH</div>
           <h1 className="headline reveal">
             Wholesale for the<br />
             independent <span className="or">c-store.</span>

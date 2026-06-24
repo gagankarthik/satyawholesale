@@ -421,6 +421,29 @@ header.nav.solid {
     box-shadow: 0 0 0 0 rgba(47, 158, 68, 0);
   }
 }
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(4px);
+  font-family: var(--font-mono-f);
+  font-size: 11.5px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+  margin-bottom: 22px;
+}
+.hero-eyebrow .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 0 3px rgba(242, 106, 27, 0.25);
+}
 h1.headline {
   font-family: var(--font-disp);
   font-weight: 800;
@@ -836,6 +859,142 @@ section {
   text-transform: uppercase;
 }
 
+/* ---------- process / getting started (dark band) ---------- */
+.process {
+  background: var(--ink);
+  background-image: radial-gradient(120% 80% at 100% 0%, rgba(242, 106, 27, 0.12), transparent 60%);
+  color: #fff;
+}
+.process .sx { color: #fff; }
+.process .shead p { color: rgba(255, 255, 255, 0.66); }
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+.stepc {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-line);
+  border-radius: var(--r);
+  padding: 28px 24px;
+  transition: transform var(--t-mid) var(--ease), border-color var(--t-mid) var(--ease);
+}
+.stepc:hover {
+  transform: translateY(-4px);
+  border-color: rgba(242, 106, 27, 0.45);
+}
+.stepc-n {
+  font-family: var(--font-disp);
+  font-weight: 800;
+  font-size: 40px;
+  letter-spacing: -2px;
+  color: var(--signal);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.stepc h3 {
+  font-family: var(--font-disp);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.stepc p {
+  margin-top: 9px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.64);
+}
+.process-cta {
+  margin-top: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.process-cta span {
+  font-family: var(--font-disp);
+  font-weight: 600;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* ---------- faq ---------- */
+.faq {
+  background: var(--paper-2);
+}
+.faq-split {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 60px;
+  align-items: start;
+}
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.faq-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--rs);
+  overflow: hidden;
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.faq-item.on {
+  border-color: var(--kraft-edge);
+  box-shadow: var(--shadow);
+}
+.faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  text-align: left;
+  padding: 20px 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-disp);
+  font-weight: 600;
+  font-size: 16.5px;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+.faq-ic {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.faq-ic::before,
+.faq-ic::after {
+  content: "";
+  position: absolute;
+  background: var(--signal);
+  border-radius: 2px;
+  transition: transform var(--t-mid) var(--ease), opacity var(--t-mid) var(--ease);
+}
+.faq-ic::before { inset: 7px 0; }
+.faq-ic::after { inset: 0 7px; }
+.faq-item.on .faq-ic::after { transform: scaleY(0); opacity: 0; }
+.faq-a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--t-mid) var(--ease);
+}
+.faq-item.on .faq-a { grid-template-rows: 1fr; }
+.faq-a > p {
+  overflow: hidden;
+  margin: 0;
+  padding: 0 22px;
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--slate);
+}
+.faq-item.on .faq-a > p { padding-bottom: 22px; }
+
 /* ---------- final cta ---------- */
 .cta {
   background: linear-gradient(125deg, #f4731e 0%, #ef6312 52%, #e3550c 100%);
@@ -950,9 +1109,13 @@ footer .brand img {
 @media (max-width: 1000px) {
   .hero-in,
   .split,
+  .faq-split,
   .gate-card {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
   .cat-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -980,6 +1143,9 @@ footer .brand img {
     display: grid;
   }
   .cat-grid {
+    grid-template-columns: 1fr;
+  }
+  .steps-grid {
     grid-template-columns: 1fr;
   }
   .cat.feature {
