@@ -1892,6 +1892,21 @@ footer { position: relative; background-image: radial-gradient(680px 320px at 88
 .combo-foot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 4px; }
 .addline .combo { flex: 1 1 260px; }
 
+/* ---------- supplier invoice chips: AP state + credits ---------- */
+.grnchip-overdue { border-color: rgba(197, 58, 27, 0.5); color: var(--red); }
+.grnchip-paid { margin-left: 8px; color: var(--green-text); font-weight: 700; }
+.grnchip-credit { border-color: rgba(47, 158, 68, 0.4); color: var(--green-text); }
+.grnchip-balance { background: var(--paper); font-weight: 600; }
+
+/* ---------- invoice import modal ---------- */
+.modal-wide { width: min(760px, 100%); }
+.impgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 6px; }
+@media (max-width: 640px) { .impgrid { grid-template-columns: 1fr; } }
+.impcol .colabel { display: block; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--slate-2); margin-bottom: 8px; font-family: var(--font-mono-f); }
+.imp-drop { width: 100%; min-height: 130px; border: 1.5px dashed var(--kraft-edge); border-radius: 12px; color: var(--slate); font-weight: 600; font-size: 14px; background: var(--paper-2); transition: border-color var(--t-fast), color var(--t-fast); }
+.imp-drop:hover { border-color: var(--signal); color: var(--ink); }
+.imp-shot { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-2); }
+
 /* ---------- pager ---------- */
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 4px 2px; }
 .pager-btn { font-size: 13px; font-weight: 600; color: var(--ink); padding: 8px 13px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--card); transition: border-color var(--t-fast), color var(--t-fast); }

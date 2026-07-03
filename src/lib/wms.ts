@@ -88,7 +88,7 @@ export const SEED_SUPPLIERS: Supplier[] = [
     leadDays: 2, terms: "7 Days EFT", status: "Active",
     address: "2121 Section Road", city: "Cincinnati", state: "OH", zip: "45222", website: "www.topicz.com",
     accountNo: "904722", salesRep: "Allen Tucker", csr: "Chris Fessenden", deliveryDay: "Thursday", truck: "401", stop: "360",
-    categories: "Cigarettes, cigars, tobacco, candy, HBC, grocery", notes: "OH & WV tobacco tax paid. Shortages must be reported within 24 hours of delivery." },
+    categories: "Cigarettes, cigars, tobacco, candy, HBC, grocery", notes: "OH & WV tobacco tax paid. Tobacco licenses: OH 92-100-001, IN 10222, KY 2000005. Shortages must be reported within 24 hours of delivery; past-due invoices accrue 1.5% monthly service charges." },
   { id: "SUP-01", name: "Midwest Tobacco Dist.", contact: "R. Olsen", email: "orders@midwesttob.com", phone: "(513) 555-0142", leadDays: 3, terms: "Net 15", status: "Active" },
   { id: "SUP-02", name: "Great Lakes Vapor Supply", contact: "T. Brooks", email: "sales@glvapor.com", phone: "(614) 555-0188", leadDays: 5, terms: "Net 30", status: "Active" },
   { id: "SUP-03", name: "Queen City Candy & Snacks", contact: "M. Alvarez", email: "wholesale@qccandy.com", phone: "(513) 555-0199", leadDays: 2, terms: "Net 15", status: "Active" },
@@ -304,6 +304,9 @@ export interface PurchaseOrder {
   approver?: string;
   supplierRef?: string; // supplier's order / confirmation #
   notes?: string;
+  /** Downscaled photo of the vendor's paper invoice, kept for reference. */
+  attachment?: string;
+  attachmentName?: string;
 }
 /** GP% the way distributor invoices print it: (retail − cost) / retail. */
 export const gpPct = (retail: number | string | undefined, cost: number) => {
@@ -354,7 +357,18 @@ export interface InvoiceLine { sku: string; qty: number; cost: number; }
 export interface SupplierInvoice {
   id: string; poId: string; date: number; ref: string; lines: InvoiceLine[]; total: number;
   charges?: number; // service / delivery charge on the invoice
+  tax?: number; // tobacco / OTP tax the vendor prints (Topicz "TAX" column total)
+  due?: number; // payment due date, derived from the supplier's terms at record time
+  paid?: boolean; // accounts payable state; vendors add service charges past due
 }
+
+/** Days until payment is due for a given supplier terms string. */
+export const termsDueDays = (terms: string) => {
+  if (/net\s*30/i.test(terms)) return 30;
+  if (/net\s*15/i.test(terms)) return 15;
+  if (/7\s*days/i.test(terms)) return 7;
+  return 0; // COD variants: due on delivery
+};
 
 export const useReceipts = () => {
   const { items, ready, persist } = usePersisted<GRN>("satya.grns.v1", []);
@@ -364,7 +378,27 @@ export const useReceipts = () => {
 export const useInvoices = () => {
   const { items, ready, persist } = usePersisted<SupplierInvoice>("satya.invoices.v1", []);
   const add = (inv: SupplierInvoice) => persist([inv, ...items]);
-  return { invoices: items, ready, add };
+  const markPaid = (id: string) =>
+    persist(items.map((i) => (i.id === id ? { ...i, paid: true } : i)));
+  return { invoices: items, ready, add, markPaid };
+};
+
+/* ---------- credit memos — vendor credits for shortages/damage/price ---------- */
+export const CREDIT_REASONS = ["Shortage", "Damaged goods", "Price adjustment", "Return"];
+export interface CreditMemo {
+  id: string;
+  poId: string;
+  date: number;
+  ref: string; // the vendor's credit memo number
+  reason: string;
+  amount: number;
+  note?: string;
+}
+export const useCredits = () => {
+  const { items, ready, persist } = usePersisted<CreditMemo>("satya.credits.v1", []);
+  const add = (c: CreditMemo) => persist([c, ...items]);
+  const remove = (id: string) => persist(items.filter((c) => c.id !== id));
+  return { credits: items, ready, add, remove };
 };
 
 export type MatchStatus = "Awaiting receipt" | "Awaiting invoice" | "Matched" | "Variance";
@@ -375,7 +409,7 @@ export interface MatchResult {
   variances: { sku: string; name: string; ordered: number; received: number; invoiced: number }[];
 }
 
-export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: SupplierInvoice[]): MatchResult {
+export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: SupplierInvoice[], credits: CreditMemo[] = []): MatchResult {
   const recBySku: Record<string, number> = {};
   grns.filter((g) => g.poId === po.id).forEach((g) => g.lines.forEach((l) => { recBySku[l.sku] = (recBySku[l.sku] || 0) + l.qty; }));
   const invBySku: Record<string, number> = {};
@@ -383,8 +417,11 @@ export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: Supplier
   const poInvoices = invoices.filter((i) => i.poId === po.id);
   poInvoices.forEach((i) => {
     i.lines.forEach((l) => { invBySku[l.sku] = (invBySku[l.sku] || 0) + l.qty; invTotal += l.qty * l.cost; });
-    invTotal += i.charges ?? 0;
+    invTotal += (i.charges ?? 0) + (i.tax ?? 0);
   });
+  // vendor credits (shortage/damage) reduce what's payable, letting a credited
+  // shortage still land on "Matched"
+  invTotal -= credits.filter((c) => c.poId === po.id).reduce((s, c) => s + c.amount, 0);
 
   const ordered = po.lines.reduce((s, l) => s + l.ordered, 0);
   const received = po.lines.reduce((s, l) => s + (recBySku[l.sku] ?? l.received ?? 0), 0);
@@ -406,6 +443,75 @@ export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: Supplier
   return { ordered, received, invoicedQty, poTotal, invTotal, status, variances };
 }
 const poTotal2 = (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.ordered * l.cost, 0);
+
+/* =========================================================
+   INVOICE TEXT → PO LINES
+   Parses pasted or OCR'd vendor-invoice text (A.H. Jamra /
+   Topicz style: qty, description, UPC, unit price, extension)
+   and matches rows to the catalog: UPC first, fuzzy name second.
+   ========================================================= */
+export interface ParsedInvoiceRow {
+  raw: string;
+  qty: number;
+  cost: number;
+  desc: string;
+  upc?: string;
+  /** Matched catalog product id ("" when no match). */
+  productId: string;
+  matchedName?: string;
+  matchedBy?: "upc" | "name";
+}
+
+const nameTokens = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((t) => t.length > 1);
+
+export function parseInvoiceText(text: string, products: Product[]): ParsedInvoiceRow[] {
+  const byGtin = new Map(products.filter((p) => p.gtin).map((p) => [p.gtin!, p]));
+  const rows: ParsedInvoiceRow[] = [];
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (line.length < 8) continue;
+    // money figures on the line; a real item row has a unit price (and usually an extension)
+    const monies = [...line.matchAll(/\d{1,6}\.\d{2}\b/g)].map((mt) => ({ v: Number(mt[0]), i: mt.index! }));
+    if (!monies.length) continue;
+    if (/subtotal|total|service charge|taxable|please pay/i.test(line)) continue;
+    // unit price: second-to-last money when an extension follows, else the last
+    const cost = monies.length >= 2 ? monies[monies.length - 2].v : monies[0].v;
+    if (cost <= 0) continue;
+
+    const upc = line.match(/\b\d{11,13}\b/)?.[0];
+    // qty: with a leading item number the qty is the 2nd bare integer, else the 1st
+    const ints = [...line.slice(0, monies[0].i).matchAll(/\b\d{1,4}\b/g)].map((mt) => Number(mt[0])).filter((n) => n > 0 && String(n) !== upc?.slice(0, String(n).length));
+    const qty = ints.length >= 2 ? ints[1] : ints[0] ?? 1;
+    if (!qty || qty > 5000) continue;
+
+    // description: strip numbers/UPC, keep the words
+    const desc = line.slice(0, monies[0].i).replace(/\b\d{11,13}\b/g, "").replace(/^\s*\d+\s+\d+\s*/, "").replace(/\s{2,}/g, " ").trim();
+
+    // match: exact UPC beats fuzzy name-token overlap (≥ half the tokens)
+    let matched: Product | undefined = upc ? byGtin.get(upc) : undefined;
+    let matchedBy: ParsedInvoiceRow["matchedBy"] = matched ? "upc" : undefined;
+    if (!matched && desc) {
+      const dt = nameTokens(desc);
+      let best: { p: Product; score: number } | null = null;
+      for (const p of products) {
+        const pt = nameTokens(p.name);
+        const hits = pt.filter((t) => dt.includes(t)).length;
+        const score = hits / Math.max(pt.length, 1);
+        if (score >= 0.5 && (!best || score > best.score)) best = { p, score };
+      }
+      if (best) { matched = best.p; matchedBy = "name"; }
+    }
+
+    rows.push({
+      raw: line, qty, cost, desc: desc || line.slice(0, 40), upc,
+      productId: matched ? String(matched.id) : "",
+      matchedName: matched?.name, matchedBy,
+    });
+  }
+  return rows;
+}
 
 /* =========================================================
    STOCK MOVEMENT LEDGER
