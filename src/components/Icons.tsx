@@ -85,8 +85,13 @@ export const Users = ({ className }: P) => (
 export const Gear = ({ className }: P) => (
   <svg {...base} className={className}><circle cx="12" cy="12" r="3" /><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.3a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.3 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
 );
+/* Shopping cart — mirrors the brand logo's cart mark. */
 export const Bag = ({ className }: P) => (
-  <svg {...base} className={className}><path d="M6 7h12l-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7Z" /><path d="M9 7V5.5a3 3 0 0 1 6 0V7" /></svg>
+  <svg {...base} className={className}>
+    <circle cx="9.5" cy="20" r="1.4" />
+    <circle cx="17.5" cy="20" r="1.4" />
+    <path d="M3 4h2.2l2.3 10.6a1.2 1.2 0 0 0 1.17.94h8.6a1.2 1.2 0 0 0 1.17-.92L20.5 8H6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
 );
 export const Search = ({ className }: P) => (
   <svg {...base} className={className}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>

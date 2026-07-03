@@ -20,7 +20,7 @@ export default function Error({
         <h1>This view didn&apos;t load</h1>
         <p>
           Something went wrong rendering this admin screen. Retry to reload just
-          this panel — the rest of the console stays put.
+          this panel. The rest of the console stays put.
         </p>
         <div className="actions">
           <button className="btn btn-primary" onClick={() => unstable_retry()}>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 
-export const metadata: Metadata = { title: "Terms of Service — Satya Wholesale" };
+export const metadata: Metadata = { title: "Terms of Service · Satya Wholesale" };
 
 export default function Terms() {
   return (
@@ -26,7 +26,7 @@ export default function Terms() {
           "All sales comply with applicable state and federal law, including age verification and tobacco-distribution requirements. You agree to resell products lawfully and to maintain your own required licenses.",
         ] },
         { h: "Limitation of liability", p: [
-          "The site and portal are provided “as is.” To the extent permitted by law, Satya Wholesale is not liable for indirect or consequential damages arising from use of the service.",
+          "The site and portal are provided “as is.” To the extent permitted by law, Satya Wholesale is not liable for indirect or consequential damages arising from use of the service.",
         ] },
       ]}
     />

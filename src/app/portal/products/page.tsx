@@ -18,7 +18,7 @@ const STOCK_FILTERS: ToolbarOption[] = [
 ];
 
 export default function PortalProducts() {
-  const { products, ready, dept, setDept, sub, setSub, query, depts, subsFor, catName, matchDept } = usePortal();
+  const { products, ready, dept, setDept, sub, setSub, query, setQuery, depts, subsFor, catName, matchDept } = usePortal();
   const [sort, setSort] = useState("name");
   const [stock, setStock] = useState("all");
 
@@ -46,7 +46,9 @@ export default function PortalProducts() {
     [products]
   );
 
-  const browse = dept === "all" && !query.trim();
+  // any active search/filter/sort flips the shelves view into a filtered grid
+  const filtering = !!query.trim() || stock !== "all" || sort !== "name";
+  const browse = dept === "all" && !filtering;
   const activeDept = dept === "all" ? null : dept;
   const subs = activeDept ? subsFor(activeDept) : [];
 
@@ -66,6 +68,13 @@ export default function PortalProducts() {
         </div>
       )}
 
+      {ready && (
+        <ListToolbar
+          search={{ value: query, onChange: setQuery, placeholder: "Search products by name or item #" }}
+          filters={[{ label: "Stock", value: stock, onChange: setStock, options: STOCK_FILTERS }]}
+          sort={{ value: sort, onChange: setSort, options: SORTS }}
+        />
+      )}
       {!ready ? (
         <EmptyState icon={<Spinner />} title="Loading catalog…" />
       ) : browse ? (
@@ -85,18 +94,10 @@ export default function PortalProducts() {
             );
           })}
         </>
+      ) : !list.length ? (
+        <EmptyState icon={<Search />} title="No items match that search" description="Try a different term or clear the filter." />
       ) : (
-        <>
-          <ListToolbar
-            filters={[{ label: "Stock", value: stock, onChange: setStock, options: STOCK_FILTERS }]}
-            sort={{ value: sort, onChange: setSort, options: SORTS }}
-          />
-          {!list.length ? (
-            <EmptyState icon={<Search />} title="No items match that search" description="Try a different term or clear the filter." />
-          ) : (
-            <div className="pgrid">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>
-          )}
-        </>
+        <div className="pgrid">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>
       )}
     </div>
   );

@@ -3,11 +3,12 @@
 import { useState } from "react";
 
 const FAQS = [
-  { q: "Who can open a trade account?", a: "Satya is wholesale, trade-only. We supply licensed, registered convenience retailers — every account is verified and limited to buyers 21 and older." },
+  { q: "Who can open a wholesale trade account?", a: "Satya is wholesale and trade only. We supply licensed, registered convenience retailers. Every account is verified before it opens and buying is limited to 21 and older." },
   { q: "How long does approval take?", a: "We review applications the same business day. Once you're approved, the full catalog and case pricing open up in the order portal." },
-  { q: "Do you deliver, or is it pickup only?", a: "Both. Walk the Reading Road cash-and-carry floor and load your own cases, or order in the portal for next-day delivery across Greater Cincinnati and the Tri-State." },
+  { q: "Do you deliver, or is it pickup only?", a: "Both. Walk the Reading Road cash-and-carry floor and load your own cases, or order in the portal for next-day delivery to your store." },
+  { q: "What areas do you deliver to?", a: "We deliver across Greater Cincinnati and the Tri-State, including Northern Kentucky and Southeast Indiana, usually the next business day." },
   { q: "Is there an order minimum?", a: "There's no minimum for cash-and-carry pickup. Any delivery thresholds are confirmed with you when your account is set up." },
-  { q: "What can I buy on one account?", a: "Most of your shelf — tobacco, vape, smoking accessories, health & beauty, grocery & candy, automotive, and phone accessories — on one account, one invoice and one delivery." },
+  { q: "What can I buy on one account?", a: "Most of your shelf: tobacco, vape, smoking accessories, health and beauty, grocery and candy, automotive, and phone accessories. One account, one invoice, one delivery." },
 ];
 
 export default function Faq() {

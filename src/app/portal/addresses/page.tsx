@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Pin, Plus, Trash } from "@/components/Icons";
 import { Button } from "@/components/ui";
+import { useConfirm } from "@/components/Confirm";
 import { usePortal } from "../PortalShell";
 import { ADDRESSES } from "../meta";
 
@@ -11,6 +12,7 @@ const KEY = "satya.addresses";
 
 export default function PortalAddresses() {
   const { flash } = usePortal();
+  const confirm = useConfirm();
   const [list, setList] = useState<Addr[]>(ADDRESSES);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ label: "", addr: "" });
@@ -28,7 +30,11 @@ export default function PortalAddresses() {
     setAdding(false);
     flash("Address added");
   };
-  const removeAddr = (id: string) => { persist(list.filter((a) => a.id !== id)); flash("Address removed"); };
+  const removeAddr = async (a: Addr) => {
+    if (!(await confirm({ title: "Remove this address?", message: `"${a.label}" will no longer be offered at checkout.`, confirmLabel: "Remove address", danger: true }))) return;
+    persist(list.filter((x) => x.id !== a.id));
+    flash(`${a.label} removed`);
+  };
 
   return (
     <>
@@ -42,7 +48,7 @@ export default function PortalAddresses() {
             </div>
             <p>{a.addr}</p>
             {list.length > 1 && (
-              <button type="button" className="addrcard-rm" onClick={() => removeAddr(a.id)} aria-label={`Remove ${a.label}`}><Trash /> Remove</button>
+              <button type="button" className="addrcard-rm" onClick={() => removeAddr(a)} aria-label={`Remove ${a.label}`}><Trash /> Remove</button>
             )}
           </div>
         ))}

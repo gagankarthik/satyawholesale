@@ -11,16 +11,16 @@ import {
   useSuppliers, useCategories, useLocations, useStaff, useCustomers,
   usePurchaseOrders, useMovements, useReceipts, useInvoices, usePromotions,
   poTotal, PO_FLOW, PO_APPROVAL_THRESHOLD, RECEIVE_TOLERANCE, threeWayMatch,
-  ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
+  ROLES, SUPPLIER_TERMS, csvTemplate, parseCsv, validateRows, rowToProduct,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Inbox } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Inbox, Tag as TagIcon, Plus } from "@/components/Icons";
 import Image from "next/image";
 import Link from "next/link";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Head, FlowGuide, PRODUCT_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { Button, Badge, DataTable, ListToolbar, Menu, ImageUpload, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { Button, Badge, Breadcrumb, DataTable, Fab, ListToolbar, Menu, ImageUpload, Switch, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
 const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK ? "warning" : "success");
@@ -111,10 +111,17 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
 
   return (
     <>
-      <button className="detail-back" onClick={() => router.push(backHref)}>← {editing ? "Back to product" : "All products"}</button>
+      <Breadcrumb items={editing
+        ? [{ label: "Products", href: "/admin/products" }, { label: existing!.name, href: backHref }, { label: "Edit" }]
+        : [{ label: "Products", href: "/admin/products" }, { label: "Onboard" }]} />
       <header className="adminbar">
         <div><h1>{editing ? existing!.name : "Onboard a product"}</h1><p>{editing ? sku(existing!) : "Add a SKU to the master catalog"}</p></div>
-        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Remove product?", message: `${existing!.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(existing!.id); router.push("/admin/products"); flash("Removed"); } }}>Remove</Button>}
+        {editing && (
+          <Menu
+            label={`More actions for ${existing!.name}`}
+            items={[{ label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${existing!.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(existing!.id); router.push("/admin/products"); flash(`${existing!.name} removed from catalog`); } } }]}
+          />
+        )}
       </header>
       <div className="setpane">
         <form className="panel anim-in" onSubmit={submit}>
@@ -122,9 +129,9 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
           {errs.length > 0 && <div className="valbox">{errs.map((er, i) => <div key={i}>• {er}</div>)}</div>}
           <div className="formgrid">
             <label className="field full"><span>Product name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Mr Fog Max Pro 1500" required /></label>
-            <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Short product description" /></label>
+            <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="e.g. 5% nicotine, 15-pack display, assorted flavors" /></label>
             <div className="field full">
-              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" onError={flash} hint="Optional — shown in the portal and admin. A placeholder is used until you add one." />
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" onError={flash} hint="Optional. Shown in the portal and admin; a placeholder is used until you add one." />
             </div>
             <label className="field"><span>Category *</span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
             <div className="field"><span>Barcode (UPC/EAN)</span>
@@ -144,14 +151,16 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <div className="field full">
               <span>Storefront placement</span>
               <div className="placetoggles">
-                <label className="taxtoggle">
-                  <input type="checkbox" checked={draft.onArrivals} onChange={(e) => setDraft({ ...draft, onArrivals: e.target.checked })} />
-                  <span><b>Feature on New arrivals</b><small>Shows on the portal&apos;s New arrivals page</small></span>
-                </label>
-                <label className="taxtoggle">
-                  <input type="checkbox" checked={draft.onOffers} onChange={(e) => setDraft({ ...draft, onOffers: e.target.checked })} />
-                  <span><b>Feature on Offers</b><small>Shows on the portal&apos;s Offers page</small></span>
-                </label>
+                <Switch
+                  checked={draft.onArrivals}
+                  onChange={(v) => setDraft({ ...draft, onArrivals: v })}
+                  label={<><b>Feature on New arrivals</b><small>Shows on the portal&apos;s New arrivals page</small></>}
+                />
+                <Switch
+                  checked={draft.onOffers}
+                  onChange={(v) => setDraft({ ...draft, onOffers: v })}
+                  label={<><b>Feature on Offers</b><small>Shows on the portal&apos;s Offers page</small></>}
+                />
               </div>
               {draft.onOffers && (
                 <label className="field" style={{ marginTop: 10, maxWidth: 240 }}>
@@ -205,7 +214,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
   return (
     <>
-      <Head title="Products" sub="SKU master data — the foundation everything else depends on">
+      <Head title="Products" sub="SKU master data, the foundation everything else depends on">
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>
           <Link className="btn btn-primary btn-sm" href="/admin/products/new">+ Onboard product</Link>
@@ -236,7 +245,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
               items={[
                 { label: "Edit product", onSelect: () => router.push(`/admin/products/${p.id}/edit`) },
                 { label: "Add 12 cases", onSelect: () => { updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); } },
-                { label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash("Removed"); } } },
+                { label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash(`${p.name} removed from catalog`); } } },
               ]}
             />
           ) },
@@ -246,8 +255,9 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
         rowClassName={(p) => (p.stock <= 0 ? "rowdim" : undefined)}
         onRowClick={(p) => router.push(`/admin/products/${p.id}`)}
         empty="No products match."
+        pageSize={25}
       />
-
+      <Fab icon={<Plus />} href="/admin/products/new">Onboard product</Fab>
     </>
   );
 }
@@ -362,7 +372,7 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
           { key: "name", header: "Category", render: (c) => <span className="prodcell"><span className="th">{c.image
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={c.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", fontSize: 18 }}>{c.icon}</span>}</span><span className="pn">{c.name}{!c.active && <span className="muted" style={{ fontSize: 11 }}> · hidden</span>}</span></span> },
+            : <span style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", color: "var(--slate-2)" }}><TagIcon /></span>}</span><span className="pn">{c.name}{!c.active && <span className="muted" style={{ fontSize: 11 }}> · hidden</span>}</span></span> },
           { key: "parent", header: "Parent", render: (c) => c.parent ? <span className="deptpill">{parentName(c.parent)}</span> : <span className="muted">Top-level</span> },
           { key: "details", header: "Details", render: (c) => <span className="muted" style={{ fontSize: 13 }}>{c.details}</span> },
           { key: "group", header: "Group", render: (c) => <span className="deptpill">{c.group}</span> },
@@ -373,8 +383,8 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
               label={`Actions for ${c.name}`}
               items={[
                 { label: "Edit category", onSelect: () => router.push(`/admin/categories/${c.key}`) },
-                { label: c.active ? "Hide category" : "Show category", onSelect: () => { update(c.key, { active: !c.active }); flash("Updated"); } },
-                { label: "Delete category", danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products — reassign first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash("Deleted"); } } },
+                { label: c.active ? "Hide category" : "Show category", onSelect: () => { update(c.key, { active: !c.active }); flash(c.active ? `${c.name} hidden from portal` : `${c.name} visible on portal`); } },
+                { label: "Delete category", danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products. Reassign them first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash(`${c.name} deleted`); } } },
               ]}
             />
           ) },
@@ -407,7 +417,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
   if (catKey && !existing) {
     return (
       <>
-        <button className="detail-back" onClick={() => router.push("/admin/categories")}>← All categories</button>
+        <Breadcrumb items={[{ label: "Categories", href: "/admin/categories" }, { label: "Not found" }]} />
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Category not found</h3></div>
       </>
     );
@@ -430,10 +440,15 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
 
   return (
     <>
-      <button className="detail-back" onClick={() => router.push("/admin/categories")}>← All categories</button>
+      <Breadcrumb items={[{ label: "Categories", href: "/admin/categories" }, { label: editing ? existing!.name : "New category" }]} />
       <header className="adminbar">
         <div><h1>{editing ? existing!.name : "New category"}</h1><p>{editing ? `${existing!.key} · ${products.filter((p) => p.dep === existing!.key).length} products` : "Create a department or sub-category"}</p></div>
-        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash("Category has products — reassign first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash("Deleted"); } }}>Delete</Button>}
+        {editing && (
+          <Menu
+            label={`More actions for ${existing!.name}`}
+            items={[{ label: "Delete category", danger: true, onSelect: async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash("Category has products. Reassign them first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash(`${existing!.name} deleted`); } } }]}
+          />
+        )}
       </header>
 
       <div className="setpane">
@@ -444,14 +459,13 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             <label className="field"><span>Parent category</span>
               <select value={draft.parent} onChange={(e) => setDraft({ ...draft, parent: e.target.value })}>
                 <option value="">— Top-level department</option>
-                {parents.map((p) => <option key={p.key} value={p.key}>{p.icon} {p.name}</option>)}
+                {parents.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
               </select>
             </label>
             <label className="field"><span>Group</span><input value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} /></label>
-            <label className="field full"><span>Details</span><input value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} placeholder="Short description" /></label>
-            <label className="field"><span>Icon (fallback)</span><input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} maxLength={2} placeholder="🏷️" /></label>
+            <label className="field full"><span>Details</span><input value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} placeholder="e.g. Disposables, pods and e-liquids" /></label>
             <div className="field full">
-              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Category image" aspect="wide" onError={flash} hint="Shown across the storefront. Falls back to the icon if empty." />
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Category image" aspect="wide" onError={flash} hint="Shown across the storefront. A tag glyph is used until you add one." />
             </div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
@@ -466,7 +480,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             <div className="minirows">
               {categories.filter((c) => c.parent === existing!.key).map((c) => (
                 <div className="minirow" key={c.key} style={{ cursor: "pointer" }} onClick={() => router.push(`/admin/categories/${c.key}`)}>
-                  <div><div className="ref" style={{ fontWeight: 600 }}>{c.icon} {c.name}</div><div className="st2">{c.key}</div></div>
+                  <div><div className="ref" style={{ fontWeight: 600 }}>{c.name}</div><div className="st2">{c.key}</div></div>
                   <span className="amt mono">{products.filter((p) => p.dep === c.key).length} products</span>
                 </div>
               ))}
@@ -499,7 +513,7 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Suppliers" sub="Vendor master — lead times, terms and catalog mapping">
+      <Head title="Suppliers" sub="Vendor master: lead times, terms, accounts and delivery routes">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/suppliers/new")}>+ Add supplier</Button>
       </Head>
       <ListToolbar
@@ -509,9 +523,10 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
       />
       <DataTable
         columns={[
-          { key: "name", header: "Supplier", render: (s) => <div className="prodcell"><span className="avatar">{s.name.slice(0, 2).toUpperCase()}</span><div><div className="pn">{s.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{s.id}</div></div></div> },
+          { key: "name", header: "Supplier", render: (s) => <div className="prodcell"><span className="avatar">{s.name.slice(0, 2).toUpperCase()}</span><div><div className="pn">{s.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{s.id}{s.accountNo ? ` · acct #${s.accountNo}` : ""}</div></div></div> },
           { key: "contact", header: "Contact", render: (s) => <span style={{ fontSize: 13 }}>{s.contact}<div className="mono muted" style={{ fontSize: 11 }}>{s.email}</div></span> },
           { key: "terms", header: "Terms", render: (s) => <span className="deptpill">{s.terms}</span> },
+          { key: "delivery", header: "Delivery", render: (s) => s.deliveryDay ? <span style={{ fontSize: 13 }}>{s.deliveryDay}{s.truck ? <div className="mono muted" style={{ fontSize: 11 }}>truck {s.truck} · stop {s.stop}</div> : null}</span> : <span className="muted">—</span> },
           { key: "lead", header: "Lead time", align: "right", render: (s) => <span className="mono">{s.leadDays}d</span> },
           { key: "status", header: "Status", align: "right", render: (s) => <Badge tone={s.status === "Active" ? "success" : "neutral"}>{s.status}</Badge> },
           { key: "action", header: "", align: "right", render: (s) => (
@@ -519,7 +534,7 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
               label={`Actions for ${s.name}`}
               items={[
                 { label: "Edit supplier", onSelect: () => router.push(`/admin/suppliers/${s.id}`) },
-                { label: s.status === "Active" ? "Disable supplier" : "Enable supplier", onSelect: () => { update(s.id, { status: s.status === "Active" ? "Inactive" : "Active" }); flash("Updated"); } },
+                { label: s.status === "Active" ? "Disable supplier" : "Enable supplier", onSelect: () => { const disabling = s.status === "Active"; update(s.id, { status: disabling ? "Inactive" : "Active" }); flash(disabling ? `${s.name} disabled` : `${s.name} enabled`); } },
               ]}
             />
           ) },
@@ -536,21 +551,41 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
 /* =======================================================================
    SUPPLIER — full-page create / edit
    ======================================================================= */
-const EMPTY_SUP = { name: "", contact: "", email: "", phone: "", leadDays: "3", terms: "Net 15", status: "Active" as "Active" | "Inactive" };
+const EMPTY_SUP = {
+  name: "", contact: "", email: "", phone: "", leadDays: "3", terms: "Net 15", status: "Active" as "Active" | "Inactive",
+  address: "", city: "", state: "OH", zip: "", website: "",
+  accountNo: "", salesRep: "", csr: "", deliveryDay: "", truck: "", stop: "",
+  categories: "", notes: "",
+};
 export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash }) {
   const router = useRouter();
   const { suppliers, add, update, remove } = useSuppliers();
+  const { pos } = usePurchaseOrders();
   const confirm = useConfirm();
   const existing = supId ? suppliers.find((s) => s.id === supId) : undefined;
   const editing = !!existing;
   const [d, setD] = useState(existing
-    ? { name: existing.name, contact: existing.contact, email: existing.email, phone: existing.phone, leadDays: String(existing.leadDays), terms: existing.terms, status: existing.status }
+    ? {
+        name: existing.name, contact: existing.contact, email: existing.email, phone: existing.phone,
+        leadDays: String(existing.leadDays), terms: existing.terms, status: existing.status,
+        address: existing.address ?? "", city: existing.city ?? "", state: existing.state ?? "", zip: existing.zip ?? "",
+        website: existing.website ?? "", accountNo: existing.accountNo ?? "", salesRep: existing.salesRep ?? "",
+        csr: existing.csr ?? "", deliveryDay: existing.deliveryDay ?? "", truck: existing.truck ?? "", stop: existing.stop ?? "",
+        categories: existing.categories ?? "", notes: existing.notes ?? "",
+      }
     : EMPTY_SUP);
+
+  const history = useMemo(() => {
+    if (!existing) return null;
+    const list = pos.filter((p) => p.supplierId === existing.id);
+    const open = list.filter((p) => p.status !== "Received" && p.status !== "Closed");
+    return { list: [...list].sort((a, b) => b.created - a.created), open: open.length, spend: list.reduce((s, p) => s + poTotal(p), 0) };
+  }, [pos, existing]);
 
   if (supId && !existing) {
     return (
       <>
-        <button className="detail-back" onClick={() => router.push("/admin/suppliers")}>← All suppliers</button>
+        <Breadcrumb items={[{ label: "Suppliers", href: "/admin/suppliers" }, { label: "Not found" }]} />
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Supplier not found</h3></div>
       </>
     );
@@ -559,37 +594,102 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!d.name.trim()) { flash("Name is required"); return; }
-    const patch = { name: d.name.trim(), contact: d.contact, email: d.email, phone: d.phone, leadDays: Number(d.leadDays) || 3, terms: d.terms, status: d.status };
+    const patch = {
+      name: d.name.trim(), contact: d.contact, email: d.email, phone: d.phone,
+      leadDays: Number(d.leadDays) || 3, terms: d.terms, status: d.status,
+      address: d.address.trim(), city: d.city.trim(), state: d.state.trim(), zip: d.zip.trim(),
+      website: d.website.trim(), accountNo: d.accountNo.trim(), salesRep: d.salesRep.trim(),
+      csr: d.csr.trim(), deliveryDay: d.deliveryDay.trim(), truck: d.truck.trim(), stop: d.stop.trim(),
+      categories: d.categories.trim(), notes: d.notes.trim(),
+    };
     if (editing) { update(existing!.id, patch); flash("Supplier updated"); }
     else { add({ id: "SUP-" + Math.floor(10 + Math.random() * 89), ...patch }); flash("Supplier added"); }
     router.push("/admin/suppliers");
   };
 
+  const form = (
+    <form className="panel anim-in" onSubmit={save}>
+      <div className="panel-h"><h3>{editing ? "Edit supplier" : "Supplier details"}</h3><span className="hint">Mirrors the header block on the supplier&apos;s invoices</span></div>
+      <div className="formgrid">
+        <label className="field full"><span>Name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
+        <label className="field"><span>Contact</span><input value={d.contact} onChange={(e) => setD({ ...d, contact: e.target.value })} /></label>
+        <label className="field"><span>Email</span><input value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
+        <label className="field"><span>Phone</span><input value={d.phone} onChange={(e) => setD({ ...d, phone: e.target.value })} /></label>
+        <label className="field"><span>Website</span><input value={d.website} onChange={(e) => setD({ ...d, website: e.target.value })} placeholder="www.example.com" /></label>
+        <label className="field full"><span>Street address</span><input value={d.address} onChange={(e) => setD({ ...d, address: e.target.value })} placeholder="2121 Section Road" /></label>
+        <label className="field"><span>City</span><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} /></label>
+        <label className="field"><span>State</span><input value={d.state} onChange={(e) => setD({ ...d, state: e.target.value })} /></label>
+        <label className="field"><span>ZIP</span><input value={d.zip} onChange={(e) => setD({ ...d, zip: e.target.value })} /></label>
+        <label className="field full"><span>What they distribute</span><input value={d.categories} onChange={(e) => setD({ ...d, categories: e.target.value })} placeholder="Cigarettes, tobacco, cigars, candy, groceries" /></label>
+      </div>
+      <div className="panel-h" style={{ marginTop: 18 }}><h3>Account &amp; delivery</h3><span className="hint">Our account with them + their route</span></div>
+      <div className="formgrid">
+        <label className="field"><span>Account #</span><input className="mono" value={d.accountNo} onChange={(e) => setD({ ...d, accountNo: e.target.value })} placeholder="904722" /></label>
+        <label className="field"><span>Sales rep</span><input value={d.salesRep} onChange={(e) => setD({ ...d, salesRep: e.target.value })} /></label>
+        <label className="field"><span>CSR</span><input value={d.csr} onChange={(e) => setD({ ...d, csr: e.target.value })} /></label>
+        <label className="field"><span>Payment terms</span>
+          <select value={d.terms} onChange={(e) => setD({ ...d, terms: e.target.value })}>
+            {SUPPLIER_TERMS.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </label>
+        <label className="field"><span>Lead time (days)</span><input type="number" value={d.leadDays} onChange={(e) => setD({ ...d, leadDays: e.target.value })} /></label>
+        <label className="field"><span>Delivery day</span><input value={d.deliveryDay} onChange={(e) => setD({ ...d, deliveryDay: e.target.value })} placeholder="Thursday" /></label>
+        <label className="field"><span>Truck #</span><input className="mono" value={d.truck} onChange={(e) => setD({ ...d, truck: e.target.value })} /></label>
+        <label className="field"><span>Stop #</span><input className="mono" value={d.stop} onChange={(e) => setD({ ...d, stop: e.target.value })} /></label>
+        <div className="field"><span>Status</span>
+          <Switch checked={d.status === "Active"} onChange={(v) => setD({ ...d, status: v ? "Active" : "Inactive" })} label={d.status === "Active" ? "Active, available on new POs" : "Inactive, hidden from new POs"} />
+        </div>
+        <label className="field full"><span>Notes</span><textarea rows={2} value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Tax paid notes, claim window, minimums…" /></label>
+      </div>
+      <div className="modalbtns" style={{ marginTop: 8 }}>
+        <Button variant="ghost" type="button" onClick={() => router.push("/admin/suppliers")}>Cancel</Button>
+        <Button variant="primary" type="submit">{editing ? "Save changes" : "Add supplier"}</Button>
+      </div>
+    </form>
+  );
+
   return (
     <>
-      <button className="detail-back" onClick={() => router.push("/admin/suppliers")}>← All suppliers</button>
+      <Breadcrumb items={[{ label: "Suppliers", href: "/admin/suppliers" }, { label: editing ? existing!.name : "New supplier" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? existing!.name : "New supplier"}</h1><p>{editing ? existing!.id : "Add a vendor to the master list"}</p></div>
-        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Delete supplier?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/suppliers"); flash("Deleted"); } }}>Delete</Button>}
+        <div><h1>{editing ? existing!.name : "New supplier"}</h1><p>{editing ? `${existing!.id}${existing!.accountNo ? ` · account #${existing!.accountNo}` : ""}` : "Add a vendor to the master list"}</p></div>
+        {editing && (
+          <Menu
+            label={`More actions for ${existing!.name}`}
+            items={[{ label: "Delete supplier", danger: true, onSelect: async () => { if (await confirm({ title: "Delete supplier?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/suppliers"); flash(`${existing!.name} deleted`); } } }]}
+          />
+        )}
       </header>
-      <div className="setpane">
-        <form className="panel anim-in" onSubmit={save}>
-          <div className="panel-h"><h3>{editing ? "Edit supplier" : "Supplier details"}</h3></div>
-          <div className="formgrid">
-            <label className="field full"><span>Name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
-            <label className="field"><span>Contact</span><input value={d.contact} onChange={(e) => setD({ ...d, contact: e.target.value })} /></label>
-            <label className="field"><span>Email</span><input value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
-            <label className="field"><span>Phone</span><input value={d.phone} onChange={(e) => setD({ ...d, phone: e.target.value })} /></label>
-            <label className="field"><span>Lead time (days)</span><input type="number" value={d.leadDays} onChange={(e) => setD({ ...d, leadDays: e.target.value })} /></label>
-            <label className="field"><span>Payment terms</span><select value={d.terms} onChange={(e) => setD({ ...d, terms: e.target.value })}><option>Net 15</option><option>Net 30</option><option>COD</option></select></label>
-            <label className="field"><span>Status</span><select value={d.status} onChange={(e) => setD({ ...d, status: e.target.value as "Active" | "Inactive" })}><option>Active</option><option>Inactive</option></select></label>
-          </div>
-          <div className="modalbtns" style={{ marginTop: 8 }}>
-            <Button variant="ghost" type="button" onClick={() => router.push("/admin/suppliers")}>Cancel</Button>
-            <Button variant="primary" type="submit">{editing ? "Save changes" : "Add supplier"}</Button>
-          </div>
-        </form>
-      </div>
+      {editing && history ? (
+        <div className="detail-grid">
+          <div className="detail-main">{form}</div>
+          <aside className="detail-side">
+            <div className="panel anim-in">
+              <div className="panel-h"><h3>Purchase history</h3><Link className="ia" href="/admin/purchaseorder/new">+ New PO</Link></div>
+              <div className="kvs">
+                <div className="kv2"><span>Purchase orders</span><b className="mono">{history.list.length}</b></div>
+                <div className="kv2"><span>Open</span><b className="mono">{history.open}</b></div>
+                <div className="kv2"><span>Total spend</span><b className="mono">{m(history.spend)}</b></div>
+              </div>
+              {history.list.length > 0 && (
+                <div className="minirows" style={{ marginTop: 12 }}>
+                  {history.list.slice(0, 6).map((p) => (
+                    <Link className="minirow clickrow" key={p.id} href={`/admin/purchaseorder/${p.id}`}>
+                      <div><div className="ref mono">{p.id}</div><div className="st2">{p.lines.length} lines · {timeAgo(p.created)}</div></div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span className="mono">{m(poTotal(p))}</span>
+                        <span className={`pobadge s-${p.status.replace(/\s+/g, "").toLowerCase()}`}>{p.status}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <div className="setpane">{form}</div>
+      )}
     </>
   );
 }
@@ -613,7 +713,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
   if (promoId && !existing) {
     return (
       <>
-        <button className="detail-back" onClick={() => router.push("/admin/promotions")}>← All promotions</button>
+        <Breadcrumb items={[{ label: "Promotions", href: "/admin/promotions" }, { label: "Not found" }]} />
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Promotion not found</h3></div>
       </>
     );
@@ -630,10 +730,15 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
 
   return (
     <>
-      <button className="detail-back" onClick={() => router.push("/admin/promotions")}>← All promotions</button>
+      <Breadcrumb items={[{ label: "Promotions", href: "/admin/promotions" }, { label: editing ? (existing!.title || "Untitled") : "New promotion" }]} />
       <header className="adminbar">
         <div><h1>{editing ? (existing!.title || "Untitled promotion") : "New promotion"}</h1><p>{editing ? existing!.id : "Create a banner for the buyer dashboard carousel"}</p></div>
-        {editing && <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${existing!.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/promotions"); flash("Deleted"); } }}>Delete</Button>}
+        {editing && (
+          <Menu
+            label={`More actions for ${existing!.title || "this promotion"}`}
+            items={[{ label: "Delete promotion", danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${existing!.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/promotions"); flash("Promotion deleted"); } } }]}
+          />
+        )}
       </header>
       <div className="setpane">
         <form className="panel anim-in" onSubmit={save}>
@@ -641,8 +746,10 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
           <div className="formgrid">
             <label className="field"><span>Tag</span><input value={d.tag} onChange={(e) => setD({ ...d, tag: e.target.value })} placeholder="New arrivals" /></label>
             <label className="field"><span>Title *</span><input value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} required placeholder="Fresh vapor & disposables" /></label>
-            <label className="field full"><span>Subtitle</span><input value={d.subtitle} onChange={(e) => setD({ ...d, subtitle: e.target.value })} placeholder="The latest Mr Fog, Breeze and EB Design — just landed by the case." /></label>
-            <label className="field"><span>Visibility</span><select value={d.active ? "1" : "0"} onChange={(e) => setD({ ...d, active: e.target.value === "1" })}><option value="1">Published (live on portal)</option><option value="0">Hidden</option></select></label>
+            <label className="field full"><span>Subtitle</span><input value={d.subtitle} onChange={(e) => setD({ ...d, subtitle: e.target.value })} placeholder="The latest Mr Fog, Breeze and EB Design, just landed by the case." /></label>
+            <div className="field"><span>Visibility</span>
+              <Switch checked={d.active} onChange={(v) => setD({ ...d, active: v })} label={d.active ? "Live on the portal carousel" : "Hidden from the portal"} />
+            </div>
             <div className="field full"><ImageUpload value={d.image} onChange={(v) => setD({ ...d, image: v })} label="Banner image" aspect="wide" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
@@ -658,6 +765,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
 export function PromotionsTab({ flash }: { flash: Flash }) {
   const { promos, update, remove } = usePromotions();
   const confirm = useConfirm();
+  const router = useRouter();
 
   return (
     <>
@@ -674,10 +782,15 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
             <div className="promobody">
               <h3>{p.title}</h3>
               <p>{p.subtitle}</p>
-              <div className="rowactions" style={{ marginTop: 12 }}>
-                <Link className="ia" href={`/admin/promotions/${p.id}`}>Edit</Link>
-                <button className="ia" onClick={() => { update(p.id, { active: !p.active }); flash(p.active ? "Hidden from portal" : "Live on portal"); }}>{p.active ? "Unpublish" : "Publish"}</button>
-                <button className="ia del" onClick={async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Deleted"); } }} aria-label="Delete promotion"><Close /></button>
+              <div className="rowactions" style={{ marginTop: 12, justifyContent: "space-between", display: "flex", alignItems: "center" }}>
+                <Switch checked={p.active} onChange={() => { update(p.id, { active: !p.active }); flash(p.active ? `"${p.title}" hidden from portal` : `"${p.title}" live on portal`); }} label={p.active ? "Live" : "Hidden"} />
+                <Menu
+                  label={`Actions for ${p.title}`}
+                  items={[
+                    { label: "Edit promotion", onSelect: () => router.push(`/admin/promotions/${p.id}`) },
+                    { label: "Delete promotion", danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Promotion deleted"); } } },
+                  ]}
+                />
               </div>
             </div>
           </div>

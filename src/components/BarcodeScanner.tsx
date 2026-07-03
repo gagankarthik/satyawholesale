@@ -43,7 +43,7 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
     };
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setErr("No camera available — type the barcode in manually.");
+      setErr("No camera available. Type the barcode in manually.");
       return stop;
     }
 
@@ -106,7 +106,7 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
                   <video ref={videoRef} muted playsInline />
                   <span className="scanframe" />
                 </div>
-                <p className="modalp">Point the rear camera at a UPC or EAN barcode — it fills in automatically.</p>
+                <p className="modalp">Point the rear camera at a UPC or EAN barcode and it fills in automatically.</p>
               </>
             )}
             <div className="modalbtns">

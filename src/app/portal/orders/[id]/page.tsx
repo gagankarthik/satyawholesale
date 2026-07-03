@@ -65,13 +65,13 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
       notes: notes.trim() || undefined,
     });
     setEditing(false);
-    flash("Order updated");
+    flash(`Changes to ${o.ref} saved`);
   };
 
   const cancelOrder = () => {
     setStatus(o.ref, "Cancelled");
     setConfirmCancel(false);
-    flash("Order cancelled");
+    flash(`Order ${o.ref} cancelled`);
   };
 
   const lines = editing ? draft : o.lines;

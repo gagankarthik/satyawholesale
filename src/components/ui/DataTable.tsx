@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { cx } from "./cx";
 
 export interface Column<T> {
@@ -32,6 +32,8 @@ export interface DataTableProps<T> {
   selected?: Set<string>;
   onToggle?: (key: string) => void;
   onToggleAll?: (keys: string[], select: boolean) => void;
+  /** Paginate when rows exceed this size; the pager renders under the table. */
+  pageSize?: number;
   className?: string;
 }
 
@@ -42,9 +44,10 @@ export interface DataTableProps<T> {
  */
 export function DataTable<T>({
   columns, rows, rowKey, loading = false, skeletonRows = 5, empty, onRowClick, rowClassName, defaultSort,
-  selectable = false, selected, onToggle, onToggleAll, className,
+  selectable = false, selected, onToggle, onToggleAll, pageSize, className,
 }: DataTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(defaultSort ?? null);
+  const [page, setPage] = useState(0);
   const colCls = (c: Column<T>) => (c.align === "right" ? "r" : undefined);
   const span = columns.length + (selectable ? 1 : 0);
 
@@ -63,7 +66,15 @@ export function DataTable<T>({
     return sort.dir === "desc" ? out.reverse() : out;
   }, [rows, sort, columns]);
 
-  const visibleKeys = useMemo(() => sortedRows.map(rowKey), [sortedRows, rowKey]);
+  // pagination — clamp the page when the row set shrinks (filtering, deletes)
+  const pages = pageSize ? Math.max(1, Math.ceil(sortedRows.length / pageSize)) : 1;
+  useEffect(() => { setPage((p) => Math.min(p, pages - 1)); }, [pages]);
+  const pagedRows = useMemo(
+    () => (pageSize ? sortedRows.slice(page * pageSize, (page + 1) * pageSize) : sortedRows),
+    [sortedRows, page, pageSize]
+  );
+
+  const visibleKeys = useMemo(() => pagedRows.map(rowKey), [pagedRows, rowKey]);
   const allSelected = !!selected && visibleKeys.length > 0 && visibleKeys.every((k) => selected.has(k));
 
   return (
@@ -110,7 +121,7 @@ export function DataTable<T>({
           ) : sortedRows.length === 0 ? (
             <tr><td colSpan={span} className="tableempty">{empty ?? "No records."}</td></tr>
           ) : (
-            sortedRows.map((row) => {
+            pagedRows.map((row) => {
               const k = rowKey(row);
               return (
                 <tr
@@ -132,6 +143,15 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
+      {pageSize != null && sortedRows.length > pageSize && (
+        <nav className="pager" aria-label="Table pages">
+          <button type="button" className="pager-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>← Previous</button>
+          <span className="pager-info">
+            {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sortedRows.length)} of {sortedRows.length}
+          </span>
+          <button type="button" className="pager-btn" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>Next →</button>
+        </nav>
+      )}
     </div>
   );
 }

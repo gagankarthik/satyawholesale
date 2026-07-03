@@ -18,10 +18,10 @@ import {
   ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip, Plus } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowGuide, CUSTOMER_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { KpiCard, DataTable, Badge, Button, ListToolbar, Menu, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { KpiCard, DataTable, Badge, Breadcrumb, Button, Combobox, Fab, ListToolbar, Menu, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
 const statusTone = (s: OrderStatus): BadgeTone =>
@@ -337,7 +337,7 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
             <select value={dkind} onChange={(e) => setDkind(e.target.value as "amount" | "percent")}><option value="amount">$ amount</option><option value="percent">% percent</option></select>
             <input type="number" min={0} step="0.01" value={dval} onChange={(e) => setDval(e.target.value)} placeholder={dkind === "percent" ? "10" : "25.00"} />
           </div>
-          <input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Reason — loyalty, damaged case, promo…" />
+          <input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Reason: loyalty, damaged case, promo…" />
           <div className="adjbtns">
             {order.discount ? <Button variant="ghost" size="sm" onClick={clearDisc}>Clear</Button> : null}
             <Button variant="primary" size="sm" onClick={applyDisc}>Apply discount</Button>
@@ -348,7 +348,7 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
           <div className="adjsec">
             <div className="adjsec-h"><span>Tracking number</span>{order.tracking ? <span className="adjval">{order.tracking}</span> : <span className="adjval none">Not shipped</span>}</div>
             <div className="inline-apply"><input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="1Z…" /><Button variant="ghost" size="sm" onClick={applyTrack}>Save</Button></div>
-            <small className="muted" style={{ fontSize: 11.5 }}>Added by the warehouse — shown to the customer once saved.</small>
+            <small className="muted" style={{ fontSize: 11.5 }}>Added by the warehouse. Shown to the customer once saved.</small>
           </div>
         )}
       </div>
@@ -364,13 +364,12 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<OrderLine[]>([]);
-  const [addId, setAddId] = useState("");
   const cur = orders.find((o) => o.ref === id) || null;
 
   if (!cur) {
     return (
       <>
-        <button className="detail-back" onClick={() => router.push("/admin/orders")}>← All orders</button>
+        <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: "Not found" }]} />
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Order not found</h3><p>It may have been deleted.</p></div>
       </>
     );
@@ -381,17 +380,16 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   const tax = computeTax(cur.total, cur.taxExempt, settings.taxRate);
   const grand = cur.total + (cur.deliveryFee ?? 0) + tax - (cur.discount ?? 0);
 
-  const startEdit = () => { setDraft(cur.lines.map((l) => ({ ...l }))); setAddId(""); setEditing(true); };
+  const startEdit = () => { setDraft(cur.lines.map((l) => ({ ...l }))); setEditing(true); };
   const draftCases = draft.reduce((s, l) => s + l.qty, 0);
   const draftTotal = draft.reduce((s, l) => s + l.qty * l.price, 0);
   const setQty = (lid: number, d: number) => setDraft((ls) => ls.map((l) => (l.id === lid ? { ...l, qty: Math.max(1, l.qty + d) } : l)));
   const dropLine = (lid: number) => setDraft((ls) => ls.filter((l) => l.id !== lid));
-  const addLine = () => {
-    const p = products.find((x) => String(x.id) === addId);
+  const addLine = (id: string) => {
+    const p = products.find((x) => String(x.id) === id);
     if (!p) return;
     if (draft.some((l) => l.id === p.id)) { flash("Already on this order"); return; }
     setDraft((ls) => [...ls, { id: p.id, name: p.name, qty: 1, price: p.price }]);
-    setAddId("");
   };
   const saveItems = () => {
     if (!draft.length) { flash("An order needs at least one item"); return; }
@@ -408,7 +406,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
   return (
     <>
-      <button className="detail-back" onClick={() => router.push("/admin/orders")}>← All orders</button>
+      <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: cur.ref }]} />
       <header className="adminbar">
         <div><h1>{cur.ref}</h1><p>{cur.store} · placed {new Date(cur.placed).toLocaleString()}</p></div>
         <div style={{ display: "flex", gap: 10 }}>
@@ -458,6 +456,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
             {editing ? (
               <>
+                <div className="tablewrap">
                 <table className="invtable flat">
                   <thead><tr><th scope="col">Product</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit</th><th className="r" scope="col">Line</th><th scope="col"></th></tr></thead>
                   <tbody>
@@ -478,12 +477,15 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="addline">
-                  <select value={addId} onChange={(e) => setAddId(e.target.value)} aria-label="Add product">
-                    <option value="">+ Add a product…</option>
-                    {products.filter((p) => !draft.some((l) => l.id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.name} · {m(p.price)}</option>)}
-                  </select>
-                  <Button variant="ghost" size="sm" onClick={addLine} disabled={!addId}>Add</Button>
+                  <Combobox
+                    ariaLabel="Add a product to this order"
+                    placeholder="Add a product: type a name or SKU"
+                    value=""
+                    onChange={addLine}
+                    options={products.filter((p) => !draft.some((l) => l.id === p.id)).map((p) => ({ value: String(p.id), label: p.name, hint: m(p.price) }))}
+                  />
                 </div>
                 <div className="totals">
                   <div className="tl"><span>Subtotal · {draftCases} cases</span><span className="mono">{m(draftTotal)}</span></div>
@@ -495,6 +497,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               </>
             ) : (
               <>
+                <div className="tablewrap">
                 <table className="invtable flat">
                   <thead><tr><th scope="col">Product</th><th scope="col">Code</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit price</th><th className="r" scope="col">Line total</th></tr></thead>
                   <tbody>
@@ -509,6 +512,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="totals">
                   <div className="tl"><span>Subtotal · {cur.cases} cases</span><span className="mono">{m(cur.total)}</span></div>
                   <div className="tl"><span>Discount{cur.discountReason ? ` · ${cur.discountReason}` : ""}</span><span className="mono">−{m(v.discount)}</span></div>
@@ -532,13 +536,13 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                 {cur.status === "Cancelled" ? (
                   <Button variant="ghost" size="sm" onClick={() => { setStatus(cur.ref, "Pending"); flash("Order reinstated"); }}>Reinstate order</Button>
                 ) : (
-                  <select aria-label="Order status" className={`statussel s-${statusSlug(cur.status)}`} value={cur.status} onChange={(e) => { setStatus(cur.ref, e.target.value as OrderStatus); flash("Status updated"); }}>
+                  <select aria-label="Order status" className={`statussel s-${statusSlug(cur.status)}`} value={cur.status} onChange={(e) => { setStatus(cur.ref, e.target.value as OrderStatus); flash(`${cur.ref} marked ${e.target.value}`); }}>
                     {O_STATUSES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 )}
               </div>
               <div className="kv2 col"><span>Message to customer</span>
-                <textarea className="msgbox" rows={3} placeholder="e.g. Out for delivery — arriving before 2 PM." defaultValue={cur.adminNote || ""} key={cur.ref} onBlur={(e) => { const t = e.target.value.trim(); if (t !== (cur.adminNote || "")) { patchOrder(cur.ref, { adminNote: t || undefined }); flash("Message saved"); } }} />
+                <textarea className="msgbox" rows={3} placeholder="e.g. Out for delivery, arriving before 2 PM." defaultValue={cur.adminNote || ""} key={cur.ref} onBlur={(e) => { const t = e.target.value.trim(); if (t !== (cur.adminNote || "")) { patchOrder(cur.ref, { adminNote: t || undefined }); flash("Message saved"); } }} />
                 <small className="muted" style={{ fontSize: 11.5 }}>Shown on the customer&apos;s order page &amp; receipt.</small>
               </div>
             </div>
@@ -584,7 +588,6 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
 
   const [custId, setCustId] = useState(customers[0]?.id ?? "");
   const [lines, setLines] = useState<OrderLine[]>([]);
-  const [addId, setAddId] = useState("");
   const [fulfilment, setFulfilment] = useState("Next-day delivery");
   const [payment, setPayment] = useState("Net 15 terms");
   const [taxExempt, setTaxExempt] = useState(false);
@@ -602,12 +605,11 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const discount = Math.max(0, discKind === "percent" ? Math.round(subtotal * discVnum) / 100 : discVnum);
   const grand = subtotal + tax + deliveryFee - discount;
 
-  const addLine = () => {
-    const p = products.find((x) => String(x.id) === addId);
+  const addLine = (id: string) => {
+    const p = products.find((x) => String(x.id) === id);
     if (!p) return;
     if (lines.some((l) => l.id === p.id)) { flash("Already on this order"); return; }
     setLines((ls) => [...ls, { id: p.id, name: p.name, qty: 1, price: p.price }]);
-    setAddId("");
   };
   const setQty = (id: number, d: number) => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, qty: Math.max(1, l.qty + d) } : l)));
   const drop = (id: number) => setLines((ls) => ls.filter((l) => l.id !== id));
@@ -637,7 +639,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <button className="detail-back" onClick={() => router.push("/admin/orders")}>← All orders</button>
+      <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: "New order" }]} />
       <header className="adminbar">
         <div><h1>New order</h1><p>Create an order on behalf of a trade account</p></div>
       </header>
@@ -657,6 +659,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
           <div className="panel anim-in">
             <div className="panel-h"><h3>Products</h3><span className="hint">{cases} cases · {lines.length} items</span></div>
             {lines.length ? (
+              <div className="tablewrap">
               <table className="invtable flat">
                 <thead><tr><th>Product</th><th className="r">Qty</th><th className="r">Unit</th><th className="r">Line</th><th></th></tr></thead>
                 <tbody>
@@ -671,13 +674,16 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                   ))}
                 </tbody>
               </table>
-            ) : <p className="muted" style={{ fontSize: 14, padding: "6px 0 14px" }}>No products yet — add some below.</p>}
+              </div>
+            ) : <p className="muted" style={{ fontSize: 14, padding: "6px 0 14px" }}>No products yet. Pick one from the list below to start the order.</p>}
             <div className="addline">
-              <select value={addId} onChange={(e) => setAddId(e.target.value)} aria-label="Add product">
-                <option value="">+ Add a product…</option>
-                {products.filter((p) => !lines.some((l) => l.id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.name} · {m(p.price)}</option>)}
-              </select>
-              <Button variant="ghost" size="sm" onClick={addLine} disabled={!addId}>Add</Button>
+              <Combobox
+                ariaLabel="Add a product to this order"
+                placeholder="Add a product: type a name or SKU"
+                value=""
+                onChange={addLine}
+                options={products.filter((p) => !lines.some((l) => l.id === p.id)).map((p) => ({ value: String(p.id), label: p.name, hint: m(p.price) }))}
+              />
             </div>
           </div>
         </div>
@@ -785,9 +791,10 @@ export function OrdersTab() {
 
   return (
     <>
-      <Head title="Orders" sub="Orders from the trade portal — open any order for the full receipt">
+      <Head title="Orders" sub="Orders from the trade portal. Open any order for the full receipt">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}>+ New order</Button>
       </Head>
+      <Fab icon={<Plus />} href="/admin/orders/new">New order</Fab>
       <div className="kpis">
         <KpiCard tone="accent" label="All-time sales" value={k(rev)} foot={`${orders.length} orders`} />
         <KpiCard label="Open" value={orders.filter((o) => o.status !== "Completed").length} foot="in fulfillment" />
@@ -879,7 +886,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       status: "Pending", terms: inv.terms, applied: Date.now(),
     });
     setInv(EMPTY_INVITE); setInviting(false);
-    flash("Invite sent — account pending");
+    flash("Invite sent, account pending");
   };
 
   const stats = customers.map((c) => {
@@ -960,6 +967,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
             <div className="panel">
               <div className="panel-h"><h3>Order history</h3><span className="hint">{cur.orders} orders · {m(cur.spend)}</span></div>
               {cur.history.length ? (
+                <div className="tablewrap">
                 <table className="invtable flat">
                   <thead><tr><th>Order</th><th>Date</th><th className="r">Cases</th><th className="r">Total</th><th>Status</th></tr></thead>
                   <tbody>
@@ -968,7 +976,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                     ))}
                   </tbody>
                 </table>
-              ) : <p style={{ color: "var(--slate)", fontSize: 14 }}>No orders on record yet.</p>}
+                </div>
+              ) : <p style={{ color: "var(--slate)", fontSize: 14 }}>No orders on record yet. Orders this account places in the portal will appear here.</p>}
             </div>
           </div>
 

@@ -20,7 +20,7 @@ export default function Error({
         <h1>This page didn&apos;t load</h1>
         <p>
           We couldn&apos;t load your catalog or orders just now. Retry to try
-          again — your cart and account stay intact.
+          again. Your cart and account stay intact.
         </p>
         <div className="actions">
           <button className="btn btn-primary" onClick={() => unstable_retry()}>

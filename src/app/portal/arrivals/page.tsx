@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Sparkles } from "@/components/Icons";
-import { EmptyState, Spinner } from "@/components/ui";
+import { Button, EmptyState, Spinner } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
 import PosterCarousel from "../PosterCarousel";
@@ -31,7 +31,12 @@ export default function PortalArrivals() {
         {list.length ? (
           <div className="pgrid">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>
         ) : (
-          <EmptyState icon={<Sparkles />} title="No products yet" description="Check back soon for fresh stock." />
+          <EmptyState
+            icon={<Sparkles />}
+            title="Nothing new this week"
+            description="New products land here as the warehouse receives them. Everything already in stock is in the catalog."
+            action={<Button href="/portal/products" variant="primary">Browse all products</Button>}
+          />
         )}
       </section>
     </>

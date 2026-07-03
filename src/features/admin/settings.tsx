@@ -8,7 +8,7 @@ import {
   useStaff, PO_APPROVAL_THRESHOLD, ROLES, type Role,
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
-import { ListToolbar, type ToolbarOption } from "@/components/ui";
+import { ListToolbar, Menu, Tabs, type ToolbarOption } from "@/components/ui";
 import { Head, m, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
@@ -47,10 +47,17 @@ export function UsersTab({ flash }: { flash: Flash }) {
             {rows.map((u) => (
               <tr key={u.id}>
                 <td><div className="prodcell"><span className="avatar">{u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><div><div className="pn">{u.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{u.email}</div></div></div></td>
-                <td><select className="rolesel" value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash("Role updated"); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
+                <td><select className="rolesel" aria-label={`Role for ${u.name}`} value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash(`${u.name} is now ${e.target.value}`); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
                 <td className="mono muted">{u.device || "—"}</td>
                 <td className="r"><span className={`ustatus ${u.status === "Active" ? "active" : "hold"}`}>{u.status}</span></td>
-                <td className="r"><button className="ia" onClick={() => { update(u.id, { status: u.status === "Active" ? "Suspended" : "Active" }); flash("Updated"); }}>{u.status === "Active" ? "Suspend" : "Restore"}</button></td>
+                <td className="r">
+                  <Menu
+                    label={`Actions for ${u.name}`}
+                    items={[
+                      { label: u.status === "Active" ? "Suspend user" : "Restore user", danger: u.status === "Active", onSelect: () => { const suspending = u.status === "Active"; update(u.id, { status: suspending ? "Suspended" : "Active" }); flash(suspending ? `${u.name} suspended` : `${u.name} restored`); } },
+                    ]}
+                  />
+                </td>
               </tr>
             ))}
             {!rows.length && <tr><td colSpan={5} className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No users match.</td></tr>}
@@ -97,14 +104,15 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     flash("Tax settings saved");
   };
 
-  const TABS = [{ k: "company", label: "Company" }, { k: "tax", label: "Tax & invoicing" }, { k: "policies", label: "Warehouse policies" }] as const;
-
   return (
     <>
       <Head title="Settings" sub="Company profile, tax and warehouse policies" />
-      <div className="tabbar">
-        {TABS.map((t) => <button key={t.k} className={tab === t.k ? "on" : ""} onClick={() => setTab(t.k)}>{t.label}</button>)}
-      </div>
+      <Tabs
+        ariaLabel="Settings sections"
+        value={tab}
+        onChange={(k) => setTab(k as typeof tab)}
+        tabs={[{ key: "company", label: "Company" }, { key: "tax", label: "Tax & invoicing" }, { key: "policies", label: "Warehouse policies" }]}
+      />
 
       <div className="setpane">
         {tab === "company" && (

@@ -9,8 +9,9 @@ export default function Departments() {
           <div className="tag">What we distribute</div>
           <h2 className="sx">What we keep<br />in stock.</h2>
           <p>
-            The categories we carry for convenience retailers. Live catalog, case pricing and ordering
-            are reserved for verified trade accounts in the order portal.
+            Seven wholesale categories for convenience stores, gas stations and smoke shops, stocked
+            deep and restocked weekly. The live catalog with case pricing opens after your trade
+            account is verified.
           </p>
         </div>
         <div className="capi-grid">

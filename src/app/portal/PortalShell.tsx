@@ -13,6 +13,7 @@ import { useSession } from "@/lib/auth";
 import { Bag, Search, Grid, GridView, Receipt, Card, Check, User, LogOut, Shield, Pin, Sparkles, Tag } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
+import { ConfirmProvider } from "@/components/Confirm";
 import HelpFlyout from "./HelpFlyout";
 
 type Cart = Record<number, number>; // id -> cases
@@ -129,7 +130,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   };
   const add = (id: number) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
-    flash("Added to cart");
+    const p = products.find((x) => x.id === id);
+    flash(p ? `${p.name} added to cart` : "Added to cart");
   };
   const changeQty = (id: number, d: number) =>
     setCart((c) => {
@@ -192,6 +194,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   if (sessionReady && !signedIn) return <div className="papp" />;
 
   return (
+    <ConfirmProvider>
     <Ctx.Provider value={value}>
       <div className={`papp ${collapsed ? "collapsed" : ""}`}>
         {/* full-width top bar */}
@@ -200,7 +203,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
             </button>
-            <Link href="/portal" className="ptop-logo" aria-label="Satya Wholesale — dashboard"><Brand height={34} /></Link>
+            <Link href="/portal" className="ptop-logo" aria-label="Satya Wholesale dashboard"><Brand height={34} /></Link>
           </div>
           <form className="search" onSubmit={(e) => { e.preventDefault(); goSearch(); }} role="search">
             <Search />
@@ -247,7 +250,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           <div className="topbar-actions">
             <Link href="/portal/cart" className="cart-mini" aria-label={`Cart, ${cases} item${cases !== 1 ? "s" : ""}`}>
               <Bag />
-              {cases > 0 && <span className="cart-count">{cases}</span>}
+              {cases > 0 && <span className="cart-count" key={cases}>{cases}</span>}
             </Link>
             <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">JS</span>}>
               <div className="menu-head"><div className="mh-nm">Jay&apos;s Stop &amp; Shop</div><div className="mh-em">buyer@yourstore.com</div></div>
@@ -303,8 +306,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               {navItem("/portal/profile", seg === "profile", <User />, "Profile")}
               {navItem("/portal/addresses", seg === "addresses", <Pin />, "Manage address")}
               {navItem("/portal/payments", seg === "payments", <Card />, "Payments")}
-              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Rewards — coming soon" : undefined}><span className="ic"><Sparkles /></span> Rewards <span className="soon">soon</span></span>
-              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Coupons — coming soon" : undefined}><span className="ic"><Tag /></span> Coupons <span className="soon">soon</span></span>
+              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Rewards, coming soon" : undefined}><span className="ic"><Sparkles /></span> Rewards <span className="soon">soon</span></span>
+              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Coupons, coming soon" : undefined}><span className="ic"><Tag /></span> Coupons <span className="soon">soon</span></span>
             </nav>
             <button className="pside-collapse" onClick={toggleCollapse} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
@@ -320,8 +323,9 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           </main>
         </div>
 
-        {toast && <div className="toast show"><Check /> {toast}</div>}
+        {toast && <div className="toast show" key={toast}><Check /> {toast}</div>}
       </div>
     </Ctx.Provider>
+    </ConfirmProvider>
   );
 }

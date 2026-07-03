@@ -51,6 +51,8 @@ function usePersisted<T>(key: string, seed: T[]) {
 /* =========================================================
    SUPPLIERS
    ========================================================= */
+export const SUPPLIER_TERMS = ["Net 15", "Net 30", "COD", "COD Cash Only", "7 Days EFT"];
+
 export interface Supplier {
   id: string;
   name: string;
@@ -60,9 +62,33 @@ export interface Supplier {
   leadDays: number;
   terms: string; // payment terms
   status: "Active" | "Inactive";
+  // invoice-header details (all optional — older saved suppliers won't have them)
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  website?: string;
+  accountNo?: string; // our account number with this supplier
+  salesRep?: string; // their salesperson on our account
+  csr?: string; // customer service rep
+  deliveryDay?: string; // e.g. "Thursday"
+  truck?: string; // route truck #
+  stop?: string; // route stop #
+  categories?: string; // what they distribute, free text
+  notes?: string;
 }
 
 export const SEED_SUPPLIERS: Supplier[] = [
+  { id: "SUP-06", name: "A.H. Jamra Company", contact: "Kyle Weldon", email: "orders@ahjamra.com", phone: "(419) 248-3393",
+    leadDays: 1, terms: "COD Cash Only", status: "Active",
+    address: "201 South Saint Clair Street", city: "Toledo", state: "OH", zip: "43604",
+    accountNo: "92100016", salesRep: "Kyle Weldon", deliveryDay: "Thursday", truck: "402", stop: "92",
+    categories: "Cigarettes, tobacco, cigars, candy, groceries", notes: "OTP tax paid by supplier. Claims within 24 hours of delivery." },
+  { id: "SUP-07", name: "Topicz", contact: "Chris Fessenden", email: "account.receivable@topicz.com", phone: "(513) 351-7700",
+    leadDays: 2, terms: "7 Days EFT", status: "Active",
+    address: "2121 Section Road", city: "Cincinnati", state: "OH", zip: "45222", website: "www.topicz.com",
+    accountNo: "904722", salesRep: "Allen Tucker", csr: "Chris Fessenden", deliveryDay: "Thursday", truck: "401", stop: "360",
+    categories: "Cigarettes, cigars, tobacco, candy, HBC, grocery", notes: "OH & WV tobacco tax paid. Shortages must be reported within 24 hours of delivery." },
   { id: "SUP-01", name: "Midwest Tobacco Dist.", contact: "R. Olsen", email: "orders@midwesttob.com", phone: "(513) 555-0142", leadDays: 3, terms: "Net 15", status: "Active" },
   { id: "SUP-02", name: "Great Lakes Vapor Supply", contact: "T. Brooks", email: "sales@glvapor.com", phone: "(614) 555-0188", leadDays: 5, terms: "Net 30", status: "Active" },
   { id: "SUP-03", name: "Queen City Candy & Snacks", contact: "M. Alvarez", email: "wholesale@qccandy.com", phone: "(513) 555-0199", leadDays: 2, terms: "Net 15", status: "Active" },
@@ -261,7 +287,13 @@ export type POStatus = "Draft" | "Approved" | "Sent" | "Partially Received" | "R
 export const PO_FLOW: POStatus[] = ["Draft", "Approved", "Sent", "Partially Received", "Received", "Closed"];
 export const PO_APPROVAL_THRESHOLD = 2000;
 
-export interface POLine { sku: string; name: string; ordered: number; received: number; cost: number; }
+export interface POLine {
+  sku: string; name: string; ordered: number; received: number; cost: number;
+  upc?: string; // supplier/manufacturer barcode
+  unit?: string; // sell unit, e.g. case / box / pkt
+  retail?: string | number; // suggested retail per unit (for GP%)
+  dep?: string; // category key, for the recap
+}
 export interface PurchaseOrder {
   id: string;
   supplierId: string;
@@ -270,7 +302,14 @@ export interface PurchaseOrder {
   expected: number;
   lines: POLine[];
   approver?: string;
+  supplierRef?: string; // supplier's order / confirmation #
+  notes?: string;
 }
+/** GP% the way distributor invoices print it: (retail − cost) / retail. */
+export const gpPct = (retail: number | string | undefined, cost: number) => {
+  const r = Number(retail);
+  return r > 0 ? ((r - cost) / r) * 100 : null;
+};
 export const poTotal = (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.ordered * l.cost, 0);
 
 export const SEED_POS: PurchaseOrder[] = [
@@ -312,7 +351,10 @@ export const RECEIVE_TOLERANCE = 0.05; // ±5% over/under receipt tolerance
 export interface GRNLine { sku: string; qty: number; }
 export interface GRN { id: string; poId: string; received: number; lines: GRNLine[]; note?: string; by: string; }
 export interface InvoiceLine { sku: string; qty: number; cost: number; }
-export interface SupplierInvoice { id: string; poId: string; date: number; ref: string; lines: InvoiceLine[]; total: number; }
+export interface SupplierInvoice {
+  id: string; poId: string; date: number; ref: string; lines: InvoiceLine[]; total: number;
+  charges?: number; // service / delivery charge on the invoice
+}
 
 export const useReceipts = () => {
   const { items, ready, persist } = usePersisted<GRN>("satya.grns.v1", []);
@@ -339,7 +381,10 @@ export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: Supplier
   const invBySku: Record<string, number> = {};
   let invTotal = 0;
   const poInvoices = invoices.filter((i) => i.poId === po.id);
-  poInvoices.forEach((i) => i.lines.forEach((l) => { invBySku[l.sku] = (invBySku[l.sku] || 0) + l.qty; invTotal += l.qty * l.cost; }));
+  poInvoices.forEach((i) => {
+    i.lines.forEach((l) => { invBySku[l.sku] = (invBySku[l.sku] || 0) + l.qty; invTotal += l.qty * l.cost; });
+    invTotal += i.charges ?? 0;
+  });
 
   const ordered = po.lines.reduce((s, l) => s + l.ordered, 0);
   const received = po.lines.reduce((s, l) => s + (recBySku[l.sku] ?? l.received ?? 0), 0);

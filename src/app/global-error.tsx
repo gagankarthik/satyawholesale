@@ -25,7 +25,7 @@ export default function GlobalError({
             <h1>Something went wrong</h1>
             <p>
               The app ran into a problem it couldn&apos;t recover from on its own.
-              Try reloading — if this keeps happening, contact Satya Wholesale.
+              Try reloading. If this keeps happening, contact Satya Wholesale.
             </p>
             <div className="actions">
               <button className="btn btn-primary" onClick={() => unstable_retry()}>

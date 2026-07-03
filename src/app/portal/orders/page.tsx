@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Receipt } from "@/components/Icons";
-import { EmptyState } from "@/components/ui";
+import { Button, EmptyState, Tabs } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import OrdersList from "../OrdersList";
 
@@ -23,7 +23,8 @@ export default function PortalOrders() {
         variant="light"
         icon={<Receipt />}
         title="No orders yet"
-        description="Your submitted orders will appear here, with live status and tracking."
+        description="Place your first case order and it will show up here with live status and tracking."
+        action={<Button href="/portal/products" variant="primary">Browse products</Button>}
       />
     );
   }
@@ -34,28 +35,21 @@ export default function PortalOrders() {
   const upcoming = myOrders.filter((o) => !isClosed(o.status) && o.fulfilment !== "Scheduled delivery");
 
   const buckets: Record<TabKey, typeof myOrders> = { upcoming, previous, scheduled };
-  const empties: Record<TabKey, string> = {
-    upcoming: "No upcoming orders",
-    previous: "No past orders yet",
-    scheduled: "No scheduled orders",
+  const empties: Record<TabKey, { title: string; desc: string }> = {
+    upcoming: { title: "No upcoming orders", desc: "Orders you place appear here until they're delivered or picked up." },
+    previous: { title: "No past orders yet", desc: "Completed and cancelled orders move here once they close." },
+    scheduled: { title: "No scheduled orders", desc: "Choose “Scheduled delivery” at checkout to see orders here." },
   };
 
   return (
     <>
-      <div className="tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            className={`tab ${tab === t.key ? "on" : ""}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label} <span className="tabc">{buckets[t.key].length}</span>
-          </button>
-        ))}
-      </div>
-      <OrdersList orders={buckets[tab]} emptyTitle={empties[tab]} />
+      <Tabs
+        ariaLabel="Order buckets"
+        value={tab}
+        onChange={(k) => setTab(k as TabKey)}
+        tabs={TABS.map((t) => ({ key: t.key, label: t.label, count: buckets[t.key].length }))}
+      />
+      <OrdersList orders={buckets[tab]} emptyTitle={empties[tab].title} emptyDesc={empties[tab].desc} />
     </>
   );
 }

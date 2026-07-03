@@ -20,7 +20,7 @@ export default function Error({
         <h1>We hit a snag</h1>
         <p>
           An unexpected error stopped this page from loading. Trying again often
-          clears it — if it keeps happening, reach out to your account rep.
+          clears it. If it keeps happening, reach out to your account rep.
         </p>
         <div className="actions">
           <button className="btn btn-primary" onClick={() => unstable_retry()}>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CONTACT } from "@/lib/store";
-import { fileApplication } from "@/lib/wms";
 import { Arrow, Check, Phone, Mail, Pin, Clock } from "@/components/Icons";
 
+/* Formal contact form. Account applications live on /apply. */
 export default function Contact() {
   const [sent, setSent] = useState(false);
 
@@ -14,7 +15,7 @@ export default function Contact() {
         <div className="shead reveal" style={{ marginBottom: 36 }}>
           <div className="tag">Contact</div>
           <h2 className="sx">Talk to the warehouse.</h2>
-          <p>Questions about trade accounts, delivery areas or the catalog? Reach the sales team directly.</p>
+          <p>Questions about wholesale pricing, delivery areas or the catalog? Call, email or visit the Reading Road warehouse. A person answers, not a call center.</p>
         </div>
         <div className="contact-grid">
           <div className="contact-card dark reveal">
@@ -28,39 +29,26 @@ export default function Contact() {
             </ul>
           </div>
           <div className="contact-card reveal">
-            <h3>Request a trade account</h3>
-            <p>Send your details and the team will follow up the same business day.</p>
+            <h3>Send us a message</h3>
+            <p>We reply the same business day. Looking to open an account instead? <Link href="/apply" style={{ fontWeight: 600, color: "var(--signal-text)" }}>Start an application</Link>.</p>
             {sent ? (
-              <div style={{ marginTop: 24 }}>
-                <div className="modal-check" style={{ margin: "0 0 14px" }}><Check /></div>
-                <p style={{ marginTop: 0 }}>Thanks, we&apos;ve received your request and will follow up shortly. For anything urgent, call {CONTACT.phone}.</p>
+              <div className="apply-done" role="status">
+                <div className="modal-check success-pop"><Check /></div>
+                <b>Message sent</b>
+                <p>Thanks, we&apos;ll get back to you today. For anything urgent, call {CONTACT.phone}.</p>
               </div>
             ) : (
-              <form
-                className="contact-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const f = new FormData(e.currentTarget);
-                  fileApplication({
-                    store: String(f.get("store") || "New applicant"),
-                    contact: String(f.get("name") || ""),
-                    email: String(f.get("email") || ""),
-                    phone: String(f.get("phone") || ""),
-                    city: CONTACT.city,
-                  });
-                  setSent(true);
-                }}
-              >
+              <form className="contact-form" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
                 <div className="row2">
                   <label className="field"><span>Your name</span><input name="name" required placeholder="Full name" /></label>
-                  <label className="field"><span>Store name</span><input name="store" required placeholder="Business name" /></label>
+                  <label className="field"><span>Store name</span><input name="store" placeholder="Business name" /></label>
                 </div>
                 <div className="row2">
                   <label className="field"><span>Email</span><input name="email" type="email" required placeholder="you@store.com" /></label>
-                  <label className="field"><span>Phone</span><input name="phone" placeholder="(   )   -    " /></label>
+                  <label className="field"><span>Phone</span><input name="phone" placeholder="(513) 555-0100" /></label>
                 </div>
-                <label className="field"><span>How can we help?</span><textarea name="message" placeholder="Tell us about your store and what you'd like to stock." /></label>
-                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }}>Apply for trade access <Arrow /></button>
+                <label className="field"><span>How can we help?</span><textarea name="message" required placeholder="Delivery days for the West Side? Do you carry a brand we need?" /></label>
+                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }}>Send message <Arrow /></button>
               </form>
             )}
           </div>

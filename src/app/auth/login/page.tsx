@@ -47,7 +47,7 @@ export default function Login() {
           }}
         >
           <div className="auth-h">Sign in</div>
-          <p className="auth-sub">Demo mode — any details will sign you in.</p>
+          <p className="auth-sub">Demo mode. Any details will sign you in.</p>
           <label className="field">
             <span>Trade account email</span>
             <input type="email" defaultValue="buyer@yourstore.com" required />

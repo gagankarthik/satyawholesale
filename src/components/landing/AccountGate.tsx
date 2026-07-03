@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Arrow, Shield } from "@/components/Icons";
 import { REQS, ush } from "./data";
 
@@ -33,7 +34,7 @@ export default function AccountGate() {
                 </div>
               ))}
             </div>
-            <a className="btn btn-primary" href="#contact">Start an application <Arrow /></a>
+            <Link className="btn btn-primary" href="/apply">Start an application <Arrow /></Link>
           </div>
         </div>
       </div>

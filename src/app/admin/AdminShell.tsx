@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card } from "@/components/Icons";
-import { Dropdown } from "@/components/ui";
+import { Dropdown, Kbd } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
 import { type Tab, type Flash } from "@/features/admin/shared";
@@ -84,6 +84,20 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const [q, setQ] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Ctrl/Cmd+K focuses the console search from anywhere in the admin
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const destinations = GROUPS.flatMap((g) => g.items.filter((it) => !it.soon).map((it) => ({ path: it.path, label: it.label, group: g.label })));
   const results = q.trim() ? destinations.filter((d) => d.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : [];
 
@@ -125,13 +139,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <div className="atb-search">
                 <Search />
                 <input
-                  placeholder="Search console…"
+                  ref={searchRef}
+                  placeholder="Search console"
                   value={q}
                   onChange={(e) => { setQ(e.target.value); setSearchOpen(true); }}
                   onFocus={() => setSearchOpen(true)}
                   onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
                   aria-label="Search console"
                 />
+                <span className="atb-kbd" aria-hidden="true"><Kbd>Ctrl</Kbd><Kbd>K</Kbd></span>
                 {searchOpen && results.length > 0 && (
                   <div className="atb-results" role="listbox">
                     {results.map((r) => (
@@ -153,7 +169,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <div className="admincontent">{children}</div>
           </div>
 
-          {toast && <div className="toast show"><Check /> {toast}</div>}
+          {toast && <div className="toast show" key={toast}><Check /> {toast}</div>}
         </div>
       </Ctx.Provider>
     </ConfirmProvider>

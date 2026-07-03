@@ -25,6 +25,7 @@ export default function CartPage() {
   const [payment, setPayment] = useState(PAYMENTS[0]);
   const [fulfilment, setFulfilment] = useState(FULFILMENTS[0]);
   const [notes, setNotes] = useState("");
+  const [placing, setPlacing] = useState(false);
 
   const cartLines = useMemo(
     () =>
@@ -45,7 +46,8 @@ export default function CartPage() {
   const grand = subtotal + tax + deliveryFee;
 
   const submit = () => {
-    if (!cartLines.length) return;
+    if (!cartLines.length || placing) return;
+    setPlacing(true);
     const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: effPrice(l.p) }));
     const order: Order = {
       ref: "SW-" + Math.floor(4000 + Math.random() * 5000),
@@ -63,7 +65,7 @@ export default function CartPage() {
     placeOrder(order);
     commitStockForOrder(lines);
     clearCart();
-    flash("Order placed");
+    flash(`Order ${order.ref} placed`);
     router.push(`/portal/orders/${order.ref}`);
   };
 
@@ -142,7 +144,9 @@ export default function CartPage() {
             <div className="ln"><span>{isPickup ? "Pickup" : "Delivery"}</span><span className="mono" style={{ color: "var(--green)" }}>{isPickup ? "At warehouse" : "Next-day · Free"}</span></div>
             <div className="ln tot"><span>Order total</span><b>${fmt(grand)}</b></div>
           </div>
-          <Button variant="primary" fullWidth onClick={submit}>Place order →</Button>
+          <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing}>
+            {placing ? "Placing order…" : "Place order →"}
+          </Button>
           <p className="ordersum-note">{payment} · ships to {address.split(",")[0]}. A tracking number is added once the warehouse ships your order.</p>
         </div>
       </aside>

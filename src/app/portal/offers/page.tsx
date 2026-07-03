@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Tag } from "@/components/Icons";
-import { EmptyState, Spinner } from "@/components/ui";
+import { Button, EmptyState, Spinner } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
 import PosterCarousel from "../PosterCarousel";
@@ -31,7 +31,12 @@ export default function PortalOffers() {
         {deals.length ? (
           <div className="pgrid">{deals.map((p) => <ProductCard key={p.id} p={p} />)}</div>
         ) : (
-          <EmptyState icon={<Tag />} title="No offers right now" description="Check back soon for new deals." />
+          <EmptyState
+            icon={<Tag />}
+            title="No offers running right now"
+            description="Deals show up here the moment the warehouse flags them. The full catalog is still at everyday case prices."
+            action={<Button href="/portal/products" variant="primary">Browse all products</Button>}
+          />
         )}
       </section>
     </>

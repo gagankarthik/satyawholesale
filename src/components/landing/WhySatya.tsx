@@ -39,7 +39,6 @@ export default function WhySatya() {
               sizes="(max-width:1000px) 100vw, 50vw"
               style={{ objectFit: "cover" }}
             />
-            <div className="shotcap"><span><Pin /> Reading Road warehouse · {CONTACT.city}</span></div>
           </div>
         </div>
       </div>

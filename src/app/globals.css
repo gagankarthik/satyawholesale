@@ -20,19 +20,37 @@
   --kraft-2: #e3d4b4;
   --kraft-edge: #d3c19c;
 
-  /* signal orange (the cart) + status green */
+  /* signal orange (the cart) + status green
+     three oranges, one hue: --signal for accents/glows/display type on ink,
+     --signal-deep for button surfaces (white text ≥ 4.5:1),
+     --signal-text when orange is running text on paper (≥ 5:1) */
   --signal: #f26a1b;
-  --signal-deep: #d6560f;
+  --signal-deep: #c24f10;
+  --signal-text: #a8440d;
   --signal-soft: #fdecdf;
   --green: #2f9e44;
+  --green-text: #237733;
   --green-soft: #e6f4e9;
-  --red: #d8401f;
+  --red: #c53a1b;
 
-  /* text */
+  /* text on paper — every step clears WCAG AA (4.5:1) on --paper */
   --slate: #5b5848;
-  --slate-2: #8b8773;
-  --slate-3: #a39f8c;
+  --slate-2: #6b6650;
+  --slate-3: #726d57;
+  /* muted text on navy ink (6.6:1) — use instead of slate-* on dark */
+  --ink-muted: #9ba3bd;
   --line: #e6dfd0;
+
+  /* type scale — real contrast between steps; display sizes clamp to viewport */
+  --fs-2xs: 11px;   /* mono micro-labels, uppercase + tracked */
+  --fs-xs: 12px;    /* captions, table meta */
+  --fs-sm: 13.5px;  /* secondary text, dense tables */
+  --fs-base: 15px;  /* body */
+  --fs-md: 17px;    /* leads, section intro */
+  --fs-lg: 20px;    /* card titles */
+  --fs-h3: clamp(19px, 1.6vw, 22px);
+  --fs-h2: clamp(30px, 3.8vw, 46px);
+  --fs-h1: clamp(42px, 5.8vw, 72px);
 
   --r: 16px;
   --rs: 11px;
@@ -50,9 +68,9 @@
   --t-mid: 0.25s;
   --t-slow: 0.4s;
 
-  --font-disp: var(--font-display), "Bricolage Grotesque", sans-serif;
+  --font-disp: var(--font-display), "Roboto", sans-serif;
   --font-body-f: var(--font-body), system-ui, sans-serif;
-  --font-mono-f: var(--font-mono), "IBM Plex Mono", monospace;
+  --font-mono-f: var(--font-mono), "Roboto Mono", monospace;
 }
 
 * {
@@ -89,7 +107,7 @@ img {
   display: block;
 }
 ::selection {
-  background: var(--signal);
+  background: var(--signal-deep);
   color: #fff;
 }
 :focus-visible {
@@ -150,14 +168,14 @@ img {
   height: 17px;
 }
 .btn-primary {
-  background: var(--signal);
+  background: var(--signal-deep);
   color: #fff;
-  box-shadow: 0 10px 24px -8px rgba(242, 106, 27, 0.6);
+  box-shadow: 0 10px 24px -8px rgba(242, 106, 27, 0.55);
 }
 .btn-primary:hover {
-  background: var(--signal-deep);
+  background: var(--signal-text);
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px -8px rgba(242, 106, 27, 0.62);
+  box-shadow: 0 16px 30px -8px rgba(242, 106, 27, 0.58);
 }
 .btn-ink {
   background: var(--ink);
@@ -185,11 +203,23 @@ img {
   transform: translateY(-2px);
   box-shadow: 0 16px 30px -10px rgba(0, 0, 0, 0.2);
 }
+/* honest states: press settles back down, disabled goes inert and says so */
+.btn:active {
+  transform: translateY(0);
+  transition-duration: 0.06s;
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 /* ---------- ticker strip ---------- */
 .strip {
   background: var(--ink);
-  color: var(--slate-3);
+  color: var(--ink-muted);
   font-family: var(--font-mono-f);
   font-size: 11.5px;
   letter-spacing: 1.5px;
@@ -349,22 +379,30 @@ header.nav.solid {
 }
 .hero-dots {
   position: absolute;
-  bottom: 22px;
+  bottom: 6px;
   left: 0;
   right: 0;
   z-index: 3;
   display: flex;
-  gap: 9px;
   justify-content: center;
 }
+/* 40px hit target; the visible dot is the ::before */
 .hero-dots button {
+  min-width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: none;
+}
+.hero-dots button::before {
+  content: "";
   width: 9px;
   height: 9px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
-  transition: width 0.25s, background 0.25s;
+  transition: width 0.25s var(--ease), background 0.25s var(--ease);
 }
-.hero-dots button.on {
+.hero-dots button.on::before {
   background: var(--signal);
   width: 26px;
   border-radius: 6px;
@@ -383,11 +421,8 @@ header.nav.solid {
 .hero-in {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: 1.04fr 0.96fr;
-  gap: 52px;
-  align-items: center;
 }
+.hero-copy { max-width: 760px; }
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -447,13 +482,14 @@ header.nav.solid {
 h1.headline {
   font-family: var(--font-disp);
   font-weight: 800;
-  font-size: clamp(40px, 5.6vw, 70px);
+  font-size: var(--fs-h1);
   line-height: 0.99;
   letter-spacing: -2px;
   margin: 24px 0 0;
 }
 h1.headline .or {
   color: var(--signal);
+  white-space: nowrap; /* "c-store." must never break at its hyphen */
 }
 h1.headline .stroke {
   -webkit-text-stroke: 1.4px rgba(255, 255, 255, 0.5);
@@ -490,32 +526,35 @@ h1.headline .stroke {
 }
 .hero-meta .m span {
   font-family: var(--font-mono-f);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   letter-spacing: 0.6px;
-  color: var(--slate-3);
+  color: var(--ink-muted);
   text-transform: uppercase;
 }
 
-/* ---------- section scaffolding ---------- */
+/* ---------- section scaffolding ----------
+   fluid rhythm: spacing scales with the viewport, small screens first */
 section {
-  padding: 100px 0;
+  padding: clamp(68px, 9vw, 104px) 0;
 }
 .shead {
   max-width: 680px;
-  margin-bottom: 50px;
+  margin-bottom: clamp(32px, 5vw, 50px);
 }
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 9px;
   font-family: var(--font-mono-f);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: var(--signal);
+  color: var(--signal-text);
   font-weight: 500;
   margin-bottom: 18px;
 }
+/* orange tags sitting on ink can afford the vivid hue (large luminance gap) */
+.process .tag, .quote .tag, .hero .tag { color: var(--signal); }
 .tag .ix {
   font-weight: 600;
   color: var(--slate-2);
@@ -523,7 +562,7 @@ section {
 .sx {
   font-family: var(--font-disp);
   font-weight: 700;
-  font-size: clamp(30px, 3.8vw, 46px);
+  font-size: var(--fs-h2);
   line-height: 1.04;
   letter-spacing: -1.4px;
 }
@@ -853,9 +892,9 @@ section {
 .quote .by {
   margin-top: 30px;
   font-family: var(--font-mono-f);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   letter-spacing: 1.2px;
-  color: var(--slate-3);
+  color: var(--ink-muted);
   text-transform: uppercase;
 }
 
@@ -997,7 +1036,8 @@ section {
 
 /* ---------- final cta ---------- */
 .cta {
-  background: linear-gradient(125deg, #f4731e 0%, #ef6312 52%, #e3550c 100%);
+  /* one hue, deepened so white body copy clears AA across the surface */
+  background: linear-gradient(125deg, #d6560f 0%, #c94f0d 52%, #b04708 100%);
   color: #fff;
   text-align: center;
   position: relative;
@@ -1025,7 +1065,7 @@ section {
   margin: 22px auto 0;
   font-size: 18px;
   max-width: 540px;
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
 }
 .cta .ca {
   display: flex;
@@ -1107,7 +1147,6 @@ footer .brand img {
 
 /* ---------- responsive ---------- */
 @media (max-width: 1000px) {
-  .hero-in,
   .split,
   .faq-split,
   .gate-card {
@@ -1132,9 +1171,6 @@ footer .brand img {
   }
 }
 @media (max-width: 720px) {
-  section {
-    padding: 72px 0;
-  }
   .nav-links,
   .nav-cta .signin {
     display: none;

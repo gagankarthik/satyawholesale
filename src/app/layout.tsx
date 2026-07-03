@@ -1,34 +1,36 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Roboto, Open_Sans, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import "./app.css";
 import AgeGate from "@/components/AgeGate";
 
-const display = Bricolage_Grotesque({
+/* Two-family system: Roboto carries headlines and data (Roboto Mono for
+   SKUs, prices, invoice numbers), Open Sans carries body text. */
+const display = Roboto({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["500", "700", "900"],
 });
 
-const body = Inter({
+const body = Open_Sans({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const mono = IBM_Plex_Mono({
+const mono = Roboto_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
 
 const DESCRIPTION =
-  "Satya Wholesale is a licensed wholesale and cash-and-carry distributor in Cincinnati, Ohio, supplying independent convenience retailers across Greater Cincinnati — tobacco, vape, grocery, candy, HBA and more on one trade account.";
+  "Satya Wholesale is a licensed wholesale and cash-and-carry distributor in Cincinnati, Ohio, supplying independent convenience retailers across Greater Cincinnati with tobacco, vape, grocery, candy, HBA and more on one trade account.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://satyawholesalers.com"),
   title: {
-    default: "Satya Wholesale — Cincinnati cash & carry distributor for convenience stores",
+    default: "Satya Wholesale | Cash & carry distributor for convenience stores",
     template: "%s · Satya Wholesale",
   },
   description: DESCRIPTION,
@@ -48,14 +50,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Satya Wholesale",
-    title: "Satya Wholesale — Cincinnati cash & carry distributor",
+    title: "Satya Wholesale | Cash & carry distributor",
     description: DESCRIPTION,
     url: "https://satyawholesalers.com",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Satya Wholesale — Cincinnati cash & carry distributor",
+    title: "Satya Wholesale | Cash & carry distributor",
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },
