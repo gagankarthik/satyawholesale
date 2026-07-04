@@ -10,25 +10,30 @@ const STEPS = [
 
 export default function Process() {
   return (
-    <section id="process" className="process">
-      <div className="wrap">
-        <div className="shead reveal">
-          <div className="tag">Getting started</div>
-          <h2 className="sx">From application to<br />your shelf in four steps.</h2>
-          <p>Opening a wholesale account is quick. Most stores go from application to their first case order within one business day.</p>
-        </div>
-        <div className="steps-grid">
-          {STEPS.map((s) => (
-            <div className="stepc reveal" key={s.n}>
-              <div className="stepc-n">{s.n}</div>
-              <h3>{s.h}</h3>
-              <p>{s.p}</p>
-            </div>
-          ))}
-        </div>
-        <div className="process-cta reveal">
-          <span>Ready when you are.</span>
-          <Link className="btn btn-primary" href="/apply">Open a trade account <Arrow /></Link>
+    <section id="process" className="process pinwrap" data-pin-track>
+      <div className="pinview">
+        <div className="wrap">
+          <div className="shead reveal">
+            <div className="tag">Getting started</div>
+            <h2 className="sx" data-lines>
+              <span className="lm"><span className="lm-in">From application to</span></span>
+              <span className="lm"><span className="lm-in">your shelf in four steps.</span></span>
+            </h2>
+            <p>Opening a wholesale account is quick. Most stores go from application to their first case order within one business day.</p>
+          </div>
+          <div className="steps-grid">
+            {STEPS.map((s) => (
+              <div className="stepc reveal" key={s.n}>
+                <h3>{s.h}</h3>
+                <p>{s.p}</p>
+              </div>
+            ))}
+          </div>
+          <div className="pinbar" aria-hidden="true"><span className="pinbar-fill" /></div>
+          <div className="process-cta reveal">
+            <span>Ready when you are.</span>
+            <Link className="btn btn-primary" href="/apply">Open a trade account <Arrow /></Link>
+          </div>
         </div>
       </div>
     </section>

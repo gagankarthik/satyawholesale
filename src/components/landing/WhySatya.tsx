@@ -11,7 +11,10 @@ export default function WhySatya() {
       <div className="wrap split">
         <div className="reveal">
           <div className="tag">Why partner with Satya</div>
-          <h2 className="sx">One account for<br />most of your shelf.</h2>
+          <h2 className="sx" data-lines>
+            <span className="lm"><span className="lm-in">One account for</span></span>
+            <span className="lm"><span className="lm-in">most of your shelf.</span></span>
+          </h2>
           <p style={{ marginTop: 16, color: "var(--slate)", fontSize: 17, lineHeight: 1.62 }}>
             Independent stores run better with fewer suppliers to manage. Satya covers most of your
             shelf from a single account, so you spend less time placing orders and reconciling invoices.
@@ -30,7 +33,7 @@ export default function WhySatya() {
             <span className="cred"><Pin /> Cincinnati, OH</span>
           </div>
         </div>
-        <div className="reveal">
+        <div className="reveal" data-parallax="0.08">
           <div className="shotcard">
             <Image
               src={ush("1578575437130-527eed3abbec", 1100)}

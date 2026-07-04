@@ -7,7 +7,10 @@ export default function HowWeServe() {
       <div className="wrap">
         <div className="shead reveal">
           <div className="tag">How we serve</div>
-          <h2 className="sx">Pick it up, or have it<br />delivered to your door.</h2>
+          <h2 className="sx" data-lines>
+            <span className="lm"><span className="lm-in">Pick it up, or have it</span></span>
+            <span className="lm"><span className="lm-in">delivered to your door.</span></span>
+          </h2>
         </div>
         <div className="serve-grid">
           {SERVICE.map(({ Icon, n, h, p, img }) => (

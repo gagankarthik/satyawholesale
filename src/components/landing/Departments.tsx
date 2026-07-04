@@ -7,7 +7,10 @@ export default function Departments() {
       <div className="wrap">
         <div className="shead reveal">
           <div className="tag">What we distribute</div>
-          <h2 className="sx">What we keep<br />in stock.</h2>
+          <h2 className="sx" data-lines>
+            <span className="lm"><span className="lm-in">What we keep</span></span>
+            <span className="lm"><span className="lm-in">in stock.</span></span>
+          </h2>
           <p>
             Seven wholesale categories for convenience stores, gas stations and smoke shops, stocked
             deep and restocked weekly. The live catalog with case pricing opens after your trade

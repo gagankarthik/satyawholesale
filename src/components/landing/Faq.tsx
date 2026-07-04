@@ -18,7 +18,10 @@ export default function Faq() {
       <div className="wrap faq-split">
         <div className="shead reveal" style={{ marginBottom: 0 }}>
           <div className="tag">FAQ</div>
-          <h2 className="sx">Questions,<br />answered.</h2>
+          <h2 className="sx" data-lines>
+            <span className="lm"><span className="lm-in">Questions,</span></span>
+            <span className="lm"><span className="lm-in">answered.</span></span>
+          </h2>
           <p>What independent retailers ask most before opening an account. Anything else? Call the warehouse.</p>
         </div>
         <div className="faq-list reveal">

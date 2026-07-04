@@ -3,7 +3,7 @@ import LandingEffects from "@/components/landing/LandingEffects";
 import ContactBar from "@/components/landing/ContactBar";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
-import TrustBand from "@/components/landing/TrustBand";
+import Marquee from "@/components/landing/Marquee";
 import Departments from "@/components/landing/Departments";
 import HowWeServe from "@/components/landing/HowWeServe";
 import Process from "@/components/landing/Process";
@@ -28,7 +28,7 @@ export default function Home() {
       <Header />
       <main id="main">
         <Hero />
-        <TrustBand />
+        <Marquee />
         <Departments />
         <HowWeServe />
         <Process />

@@ -355,7 +355,7 @@ header.nav.solid {
 }
 .hero-carousel {
   position: absolute;
-  inset: 0;
+  inset: -12% 0; /* vertical headroom for the parallax drift */
   z-index: 0;
 }
 .hero-slide {
@@ -922,15 +922,6 @@ section {
   transform: translateY(-4px);
   border-color: rgba(242, 106, 27, 0.45);
 }
-.stepc-n {
-  font-family: var(--font-disp);
-  font-weight: 800;
-  font-size: 40px;
-  letter-spacing: -2px;
-  color: var(--signal);
-  line-height: 1;
-  margin-bottom: 16px;
-}
 .stepc h3 {
   font-family: var(--font-disp);
   font-weight: 700;
@@ -1143,6 +1134,95 @@ footer .brand img {
 .reveal.in {
   opacity: 1;
   transform: none;
+}
+
+/* =========================================================
+   MOTION SYSTEM — kinetic type, odometers, marquee, pinning
+   ========================================================= */
+
+/* line-mask reveal: each .lm clips a .lm-in that rises into place */
+[data-lines] .lm { display: block; overflow: hidden; }
+[data-lines] .lm-in {
+  display: block;
+  transform: translateY(112%);
+  transition: transform 0.9s cubic-bezier(0.16, 0.84, 0.22, 1);
+}
+[data-lines].in .lm:nth-child(1) .lm-in { transition-delay: 0.05s; }
+[data-lines].in .lm:nth-child(2) .lm-in { transition-delay: 0.16s; }
+[data-lines].in .lm:nth-child(3) .lm-in { transition-delay: 0.27s; }
+[data-lines].in .lm-in { transform: translateY(0); }
+
+/* marquee: seamless loop of duplicated content */
+.marquee {
+  overflow: hidden;
+  border-top: 1px solid var(--kraft-edge);
+  border-bottom: 1px solid var(--kraft-edge);
+  background: var(--kraft);
+  padding: 15px 0;
+}
+.marquee-track {
+  display: flex;
+  gap: 0;
+  width: max-content;
+  animation: marquee-scroll 36s linear infinite;
+}
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.marquee-set {
+  display: flex;
+  align-items: center;
+  gap: 44px;
+  padding-right: 44px;
+  white-space: nowrap;
+}
+.marquee-set span {
+  font-family: var(--font-disp);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.marquee-set i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--signal-deep);
+  flex: none;
+}
+@keyframes marquee-scroll { to { transform: translateX(-50%); } }
+
+/* pinned scroll-telling: the section is tall, the inner view sticks, and
+   --pinp (0..1 from the scroll loop) scrubs the step progress bar */
+.pinwrap { position: relative; min-height: 165vh; padding: 0 !important; }
+.pinview { position: sticky; top: 0; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding: 72px 0; }
+@media (max-width: 880px) {
+  .pinwrap { min-height: 0; }
+  .pinview { position: static; min-height: 0; padding: 68px 0; }
+}
+.pinbar { position: relative; height: 2px; background: var(--ink-line); margin-top: 40px; border-radius: 2px; }
+.pinbar-fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: calc(var(--pinp, 0) * 100%);
+  background: var(--signal);
+  border-radius: 2px;
+}
+/* process steps: a hairline accent that grows in as each card reveals */
+.stepc { position: relative; }
+.stepc::before {
+  content: "";
+  position: absolute;
+  left: 24px; top: 0;
+  width: 34px; height: 2px;
+  background: var(--signal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--ease) 0.25s, width 0.3s var(--ease);
+}
+.stepc.reveal.in::before { transform: scaleX(1); }
+.stepc:hover::before { width: 64px; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lines] .lm-in { transform: none; transition: none; }
+  .marquee-track { animation: none; }
+  .pinview { position: static; min-height: 0; }
 }
 
 /* ---------- responsive ---------- */

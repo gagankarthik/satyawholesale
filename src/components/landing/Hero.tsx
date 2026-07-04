@@ -17,7 +17,7 @@ export default function Hero() {
 
   return (
     <section className="hero">
-      <div className="hero-carousel" aria-hidden>
+      <div className="hero-carousel" aria-hidden data-parallax="0.12">
         {HERO_IMAGES.map((img, i) => (
           <div key={img.id} className={`hero-slide ${i === slide ? "on" : ""}`}>
             <Image src={ush(img.id, 1600)} alt="" fill priority={i === 0} sizes="100vw" style={{ objectFit: "cover" }} />
@@ -27,9 +27,9 @@ export default function Hero() {
       <div className="hero-grid" aria-hidden />
       <div className="wrap hero-in">
         <div className="hero-copy">
-          <h1 className="headline reveal">
-            Wholesale for the<br />
-            independent <span className="or">c&#8209;store.</span>
+          <h1 className="headline" data-lines>
+            <span className="lm"><span className="lm-in">Wholesale for the</span></span>
+            <span className="lm"><span className="lm-in">independent <span className="or">c&#8209;store.</span></span></span>
           </h1>
           <p className="sub reveal">
             Satya Wholesale is a licensed wholesale distributor and cash-and-carry warehouse on Reading

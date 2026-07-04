@@ -123,18 +123,6 @@
 }
 
 /* ---------- trust band ---------- */
-.trust {
-  background: var(--kraft);
-  border-top: 1px solid var(--kraft-edge);
-  border-bottom: 1px solid var(--kraft-edge);
-  padding: 30px 0;
-}
-.trust-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
-@media (max-width: 860px) { .trust-in { grid-template-columns: 1fr 1fr; gap: 22px; } }
-.trust .ti { color: var(--ink); }
-.trust .ti b { font-family: var(--font-disp); font-weight: 800; font-size: 30px; letter-spacing: -1px; display: block; }
-.trust .ti b .u { color: var(--signal-deep); }
-.trust .ti span { font-family: var(--font-mono-f); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--slate); }
 
 /* ---------- capabilities (what we carry — no prices/brands) ---------- */
 .capi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -162,19 +150,40 @@
 }
 .capi-ic svg { width: 22px; height: 22px; }
 .capi-tx { padding: 16px 20px 22px; }
-.capi-tx h3 { font-family: var(--font-disp); font-weight: 700; font-size: 18px; letter-spacing: -0.4px; }
+.capi-tx h3 { font-family: var(--font-disp); font-weight: 700; font-size: 18px; letter-spacing: -0.4px; display: inline-block; background: linear-gradient(var(--signal-deep), var(--signal-deep)) no-repeat left bottom / 0 2px; transition: background-size 0.4s var(--ease); padding-bottom: 2px; }
+.capi:hover .capi-tx h3 { background-size: 100% 2px; }
 .capi-tx p { font-size: 13.5px; color: var(--slate); line-height: 1.55; margin-top: 7px; }
 
 /* ---------- service model ---------- */
 .serve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .serve {
+  position: relative;
   background: linear-gradient(180deg, var(--ink-2), var(--ink));
   border: 1px solid var(--ink-line);
   border-radius: var(--r);
   padding: 0;
   color: #fff;
   overflow: hidden;
+  transition: transform var(--t-mid) var(--ease);
 }
+/* masked gradient border that warms up on hover */
+.serve::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(160deg, rgba(242, 106, 27, 0.55), transparent 42%, transparent 62%, rgba(242, 106, 27, 0.3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--t-mid) var(--ease);
+  pointer-events: none;
+  z-index: 2;
+}
+.serve:hover { transform: translateY(-4px); }
+.serve:hover::before { opacity: 1; }
 .serve .shot { position: relative; height: 178px; }
 .serve .shot img { object-fit: cover; }
 .serve .shot::after {
@@ -327,7 +336,6 @@
   .capi-grid::-webkit-scrollbar { display: none; }
   .capi { flex: 0 0 76%; max-width: 320px; scroll-snap-align: start; }
   .serve-grid { grid-template-columns: 1fr; }
-  .trust-in { grid-template-columns: repeat(2, 1fr); gap: 26px 16px; }
   .about-panel { padding: 30px 24px; }
 }
 @media (max-width: 560px) {
@@ -335,7 +343,6 @@
   .contactbar .right { margin-left: 0; }
   .contact-card { padding: 28px 22px; }
   .contact-form .row2 { grid-template-columns: 1fr; }
-  .trust-in { grid-template-columns: 1fr 1fr; }
 }
 
 /* =========================================================
