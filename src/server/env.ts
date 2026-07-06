@@ -15,6 +15,9 @@ export const env = {
   get region() { return process.env.AWS_REGION || req("NEXT_PUBLIC_AWS_REGION"); },
   get table() { return req("NEXT_PUBLIC_SATYA_TABLE"); },
   get bucket() { return req("SATYA_BUCKET"); },
-  get userPoolId() { return req("COGNITO_USER_POOL_ID"); },
-  get clientId() { return req("COGNITO_CLIENT_ID"); },
+  // Cognito pool/client IDs are public identifiers (they ship in the browser
+  // bundle), so the server reads the same NEXT_PUBLIC_ values — one source of
+  // truth, no duplicate env vars.
+  get userPoolId() { return req("NEXT_PUBLIC_COGNITO_USER_POOL_ID"); },
+  get clientId() { return req("NEXT_PUBLIC_COGNITO_CLIENT_ID"); },
 };

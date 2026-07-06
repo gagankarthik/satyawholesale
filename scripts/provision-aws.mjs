@@ -214,11 +214,9 @@ log(`${ADMIN_EMAIL} added to "admin" group`);
 const envPath = new URL("../.env.local", import.meta.url).pathname.replace(/^\/(\w:)/, "$1");
 const wanted = {
   AWS_REGION: REGION,
-  NEXT_PUBLIC_SATYA_TABLE: TABLE,
   SATYA_BUCKET: BUCKET,
-  COGNITO_USER_POOL_ID: poolId,
-  COGNITO_CLIENT_ID: clientId,
   NEXT_PUBLIC_AWS_REGION: REGION,
+  NEXT_PUBLIC_SATYA_TABLE: TABLE,
   NEXT_PUBLIC_COGNITO_USER_POOL_ID: poolId,
   NEXT_PUBLIC_COGNITO_CLIENT_ID: clientId,
   NEXT_PUBLIC_MEDIA_BASE: `https://${BUCKET}.s3.${REGION}.amazonaws.com`,
