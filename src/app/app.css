@@ -872,7 +872,7 @@ a.fg-inner:hover { background: var(--paper); }
 .fchips button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .fchips button.warn.on { background: #9a6b00; border-color: #9a6b00; }
 
-.tablewrap { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.tablewrap { background: var(--card); border: 1px solid var(--line); overflow-x: auto; }
 .invtable { width: 100%; border-collapse: collapse; }
 .invtable th { text-align: left; font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--slate-2); font-weight: 500; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--paper-2); }
 .invtable th.r, .invtable td.r { text-align: right; }
@@ -1049,6 +1049,13 @@ a.fg-inner:hover { background: var(--paper); }
 .panel.co .field > span:not(.sr-only) { font-size: 12px; font-weight: 700; color: var(--ink); }
 .panel.co .field select,
 .panel.co .field input { width: 100%; }
+/* checkout: address is choose-only; managed on the addresses page */
+.colabel-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.colabel-row .linklike { font-size: 12px; font-weight: 600; }
+.co-noaddr { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; color: var(--slate-2); font-size: 13px; }
+.co-noaddr p { margin: 0; }
+/* "optional" hint inside a field label */
+.field .opt { font-weight: 400; font-style: normal; font-size: 11px; color: var(--slate-2); margin-left: 5px; }
 
 /* =========================================================
    RESPONSIVE — app surfaces

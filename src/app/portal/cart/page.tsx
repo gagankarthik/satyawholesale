@@ -6,9 +6,10 @@ import {
   fmt, productImg, offerActive, effPrice, useOrders, useSettings, computeTax,
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
-import { Package, Check } from "@/components/Icons";
+import { Package } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import Image from "next/image";
+import Link from "next/link";
 import { usePortal } from "../PortalShell";
 import { useAddresses } from "@/lib/addresses";
 
@@ -22,7 +23,7 @@ export default function CartPage() {
   const { addresses } = useAddresses(STORE);
   const router = useRouter();
 
-  const [address, setAddress] = useState("");
+  const [addressId, setAddressId] = useState("");
   const [payment, setPayment] = useState(PAYMENTS[0]);
   const [fulfilment, setFulfilment] = useState(FULFILMENTS[0]);
   const [notes, setNotes] = useState("");
@@ -30,8 +31,11 @@ export default function CartPage() {
 
   // Default to the first saved address once the account's list loads.
   useEffect(() => {
-    if (!address && addresses[0]) setAddress(addresses[0].addr);
-  }, [addresses, address]);
+    if (!addressId && addresses[0]) setAddressId(addresses[0].id);
+  }, [addresses, addressId]);
+
+  // Addresses are managed on the Addresses page; checkout only selects one.
+  const address = useMemo(() => addresses.find((a) => a.id === addressId)?.addr ?? "", [addresses, addressId]);
 
   const cartLines = useMemo(
     () =>
@@ -127,22 +131,25 @@ export default function CartPage() {
         <div className="panel co">
           <div className="panel-h"><h3>Checkout</h3></div>
           <div className="cofield">
-            <span className="colabel">Delivery address</span>
-            {addresses.length > 0 && (
-              <div className="addrlist" style={{ marginBottom: 10 }}>
-                {addresses.map((a) => (
-                  <label key={a.id} className={`addropt ${address === a.addr ? "on" : ""}`}>
-                    <input type="radio" name="ship" checked={address === a.addr} onChange={() => setAddress(a.addr)} />
-                    <span className="addrtext"><b>{a.label}</b><small>{a.addr}</small></span>
-                    <span className="addrtick" aria-hidden="true"><Check /></span>
-                  </label>
-                ))}
+            <div className="colabel-row">
+              <span className="colabel">Delivery address</span>
+              <Link href="/portal/addresses" className="linklike">Manage addresses</Link>
+            </div>
+            {addresses.length > 0 ? (
+              <label className="field">
+                <span className="sr-only">Choose a delivery address</span>
+                <select value={addressId} onChange={(e) => setAddressId(e.target.value)} aria-label="Delivery address">
+                  {addresses.map((a) => (
+                    <option key={a.id} value={a.id}>{a.label} — {a.addr}</option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className="co-noaddr">
+                <p>No saved addresses yet. Add one to check out.</p>
+                <Button href="/portal/addresses" variant="ghost" size="sm">Add an address</Button>
               </div>
             )}
-            <label className="field">
-              <span className="sr-only">Delivery address</span>
-              <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" aria-label="Delivery address" required />
-            </label>
           </div>
           <label className="field"><span>Fulfilment</span>
             <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}>

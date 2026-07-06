@@ -7,18 +7,26 @@ import { useConfirm } from "@/components/Confirm";
 import { usePortal } from "../PortalShell";
 import { useAddresses, type Address } from "@/lib/addresses";
 
+const EMPTY = { label: "", line: "", apt: "", city: "", state: "", zip: "" };
+
 export default function PortalAddresses() {
   const { flash, STORE } = usePortal();
   const confirm = useConfirm();
   const { addresses, add, remove } = useAddresses(STORE);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ label: "", addr: "" });
+  const [draft, setDraft] = useState(EMPTY);
+
+  const set = (k: keyof typeof draft) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setDraft((d) => ({ ...d, [k]: e.target.value }));
 
   const addAddr = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.label.trim() || !draft.addr.trim()) return;
-    add(draft.label, draft.addr);
-    setDraft({ label: "", addr: "" });
+    if (!draft.label.trim() || !draft.line.trim() || !draft.city.trim() || !draft.state.trim() || !draft.zip.trim()) {
+      flash("Fill in label, address, city, state and ZIP");
+      return;
+    }
+    add(draft);
+    setDraft(EMPTY);
     setAdding(false);
     flash("Address added");
   };
@@ -63,11 +71,15 @@ export default function PortalAddresses() {
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={addAddr}>
             <h3>Add a delivery address</h3>
             <div className="formgrid">
-              <label className="field full"><span>Label</span><input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} placeholder="e.g. Back dock" required autoFocus /></label>
-              <label className="field full"><span>Address</span><input value={draft.addr} onChange={(e) => setDraft({ ...draft, addr: e.target.value })} placeholder="Street, city, state ZIP" required /></label>
+              <label className="field full"><span>Label</span><input value={draft.label} onChange={set("label")} placeholder="e.g. Back dock" required autoFocus /></label>
+              <label className="field full"><span>Street address</span><input value={draft.line} onChange={set("line")} placeholder="123 Reading Rd" autoComplete="address-line1" required /></label>
+              <label className="field full"><span>Apt / suite / building no. <em className="opt">optional</em></span><input value={draft.apt} onChange={set("apt")} placeholder="Suite 200" autoComplete="address-line2" /></label>
+              <label className="field"><span>City</span><input value={draft.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" required /></label>
+              <label className="field"><span>State</span><input value={draft.state} onChange={set("state")} placeholder="OH" autoComplete="address-level1" maxLength={2} required /></label>
+              <label className="field"><span>ZIP code</span><input value={draft.zip} onChange={set("zip")} placeholder="45202" autoComplete="postal-code" inputMode="numeric" required /></label>
             </div>
             <div className="modalbtns">
-              <Button variant="ghost" type="button" onClick={() => setAdding(false)}>Cancel</Button>
+              <Button variant="ghost" type="button" onClick={() => { setAdding(false); setDraft(EMPTY); }}>Cancel</Button>
               <Button variant="primary" type="submit">Add address</Button>
             </div>
           </form>
