@@ -78,7 +78,7 @@ export default function Onboarding() {
           </label>
           <label className="field">
             <span>Phone</span>
-            <input value={form.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" />
+            <input type="tel" value={form.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" />
           </label>
           <label className="field">
             <span>City</span>

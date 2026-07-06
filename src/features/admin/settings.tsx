@@ -123,7 +123,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
             <h3>Add a user</h3>
             <div className="formgrid">
               <label className="field full"><span>Full name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
-              <label className="field"><span>Email</span><input value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
+              <label className="field"><span>Email</span><input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
               <label className="field"><span>Role</span><select value={d.role} onChange={(e) => setD({ ...d, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
               <label className="field"><span>Scanner device</span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
             </div>

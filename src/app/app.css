@@ -1057,6 +1057,63 @@ a.fg-inner:hover { background: var(--paper); }
 /* "optional" hint inside a field label */
 .field .opt { font-weight: 400; font-style: normal; font-size: 11px; color: var(--slate-2); margin-left: 5px; }
 
+/* order summary rows — label left, amount right (was colliding) */
+.ordersum .ln { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; color: var(--slate); }
+.ordersum .ln.tot { border-top: 1px dashed var(--kraft-edge); margin-top: 6px; padding-top: 14px; font-size: 15px; color: var(--ink); font-weight: 600; }
+.ordersum .ln.tot b { font-family: var(--font-disp); font-size: 24px; }
+
+/* ===== multi-step checkout ===== */
+.checkout { display: flex; flex-direction: column; gap: 18px; }
+.steps { display: flex; align-items: center; gap: 6px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
+.steps .step { display: flex; align-items: center; gap: 6px; }
+.steps .step button { display: inline-flex; align-items: center; gap: 8px; background: none; border: none; padding: 6px 6px; cursor: pointer; color: var(--slate-2); }
+.steps .step button:disabled { cursor: default; }
+.steps .step-n { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--line); font-size: 12px; font-weight: 700; font-family: var(--font-mono-f); }
+.steps .step-n svg { width: 14px; height: 14px; }
+.steps .step-l { font-size: 13px; font-weight: 600; }
+.steps .step.on .step-n { background: var(--signal); color: #fff; border-color: var(--signal); }
+.steps .step.on .step-l, .steps .step.done .step-l { color: var(--ink); }
+.steps .step.done .step-n { background: var(--green); color: #fff; border-color: transparent; }
+.steps .step:not(:last-child)::after { content: ""; width: 20px; height: 2px; border-radius: 2px; background: var(--line); }
+.steps .step.done:not(:last-child)::after { background: var(--green); }
+
+.co-check { display: flex; align-items: center; gap: 9px; font-size: 13.5px; cursor: pointer; }
+.co-check input { width: 16px; height: 16px; }
+.co-nav { display: flex; flex-direction: column; gap: 10px; }
+
+/* review step */
+.co-review-lines { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.co-rline { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; }
+.co-rline .th { position: relative; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: #e8ecf1; flex: none; }
+.co-rline .nm { font-weight: 600; font-size: 13.5px; }
+.co-rline .id { font-size: 11px; color: var(--slate-2); margin-top: 2px; }
+.co-rl-amt { font-weight: 600; }
+.co-review-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+.co-review-meta .kv2 { display: flex; flex-direction: column; gap: 3px; }
+.co-review-meta .kv2.full { grid-column: 1 / -1; }
+.co-review-meta .kv2 > span { font-size: 11px; color: var(--slate-2); text-transform: uppercase; letter-spacing: .4px; }
+.co-review-meta .kv2 > b { font-size: 13.5px; font-weight: 600; line-height: 1.4; }
+
+/* order-placed confirmation */
+.co-done { position: relative; display: flex; justify-content: center; padding: 20px 0 40px; }
+.co-done-card { max-width: 520px; width: 100%; text-align: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 40px 32px; }
+.co-done-ic { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 999px; background: var(--signal-soft); color: var(--green); margin-bottom: 18px; }
+.co-done-ic svg { width: 34px; height: 34px; }
+.co-done-eyebrow { display: block; font-size: 11px; letter-spacing: 1px; color: var(--slate-2); text-transform: uppercase; margin-bottom: 6px; }
+.co-done-card h1 { font-family: var(--font-disp); font-size: 30px; letter-spacing: -.5px; margin: 0 0 8px; }
+.co-done-card > p { color: var(--slate); font-size: 14px; line-height: 1.6; max-width: 400px; margin: 0 auto 24px; }
+.co-done-sum { text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+.co-done-addr { font-size: 12.5px; text-align: right; max-width: 62%; }
+.co-done-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
+
+@media print {
+  .ptopbar, .pcatline, .pside, .sideov, .toast, .confetti-canvas, .co-done-actions, .navtoggle { display: none !important; }
+  .pcontent { padding: 0 !important; }
+  .co-done { padding: 0; }
+  .co-done-card { border: none; max-width: none; padding: 0; }
+}
+
 /* =========================================================
    RESPONSIVE — app surfaces
    ========================================================= */

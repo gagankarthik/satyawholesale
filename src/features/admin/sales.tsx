@@ -330,16 +330,16 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
       <div className="adjform">
         <div className="adjsec">
           <div className="adjsec-h"><span>Delivery fee</span>{order.deliveryFee ? <span className="adjval">{m(order.deliveryFee)}</span> : <span className="adjval none">None</span>}</div>
-          <div className="inline-apply"><input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} placeholder="0.00" /><Button variant="ghost" size="sm" onClick={applyDeliv}>Apply</Button></div>
+          <div className="inline-apply"><input type="number" min={0} step="0.01" value={deliv} onChange={(e) => setDeliv(e.target.value)} placeholder="0.00" aria-label="Delivery fee ($)" /><Button variant="ghost" size="sm" onClick={applyDeliv}>Apply</Button></div>
         </div>
 
         <div className="adjsec">
           <div className="adjsec-h"><span>Discount</span>{order.discount ? <span className="adjval cut">−{m(order.discount)}</span> : <span className="adjval none">None</span>}</div>
           <div className="discrow">
-            <select value={dkind} onChange={(e) => setDkind(e.target.value as "amount" | "percent")}><option value="amount">$ amount</option><option value="percent">% percent</option></select>
-            <input type="number" min={0} step="0.01" value={dval} onChange={(e) => setDval(e.target.value)} placeholder={dkind === "percent" ? "10" : "25.00"} />
+            <select value={dkind} onChange={(e) => setDkind(e.target.value as "amount" | "percent")} aria-label="Discount type"><option value="amount">$ amount</option><option value="percent">% percent</option></select>
+            <input type="number" min={0} step="0.01" value={dval} onChange={(e) => setDval(e.target.value)} placeholder={dkind === "percent" ? "10" : "25.00"} aria-label={dkind === "percent" ? "Discount percent" : "Discount amount ($)"} />
           </div>
-          <input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Reason: loyalty, damaged case, promo…" />
+          <input value={dreason} onChange={(e) => setDreason(e.target.value)} placeholder="Reason: loyalty, damaged case, promo…" aria-label="Discount reason" />
           <div className="adjbtns">
             {order.discount ? <Button variant="ghost" size="sm" onClick={clearDisc}>Clear</Button> : null}
             <Button variant="primary" size="sm" onClick={applyDisc}>Apply discount</Button>
@@ -349,7 +349,7 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
         {order.tracking !== "PICKUP" && order.status !== "Pending" && order.status !== "Cancelled" && (
           <div className="adjsec">
             <div className="adjsec-h"><span>Tracking number</span>{order.tracking ? <span className="adjval">{order.tracking}</span> : <span className="adjval none">Not shipped</span>}</div>
-            <div className="inline-apply"><input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="1Z…" /><Button variant="ghost" size="sm" onClick={applyTrack}>Save</Button></div>
+            <div className="inline-apply"><input value={track} onChange={(e) => setTrack(e.target.value)} placeholder="1Z…" aria-label="Tracking number" /><Button variant="ghost" size="sm" onClick={applyTrack}>Save</Button></div>
             <small className="muted" style={{ fontSize: 11.5 }}>Added by the warehouse. Shown to the customer once saved.</small>
           </div>
         )}
@@ -979,8 +979,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                 <div className="formgrid" style={{ margin: 0 }}>
                   <label className="field full"><span>Store name</span><input value={draft.store} onChange={(e) => setDraft({ ...draft, store: e.target.value })} /></label>
                   <label className="field"><span>Contact</span><input value={draft.contact} onChange={(e) => setDraft({ ...draft, contact: e.target.value })} /></label>
-                  <label className="field"><span>Email</span><input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></label>
-                  <label className="field"><span>Phone</span><input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></label>
+                  <label className="field"><span>Email</span><input type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></label>
+                  <label className="field"><span>Phone</span><input type="tel" value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></label>
                   <label className="field"><span>Payment terms</span><input value={draft.terms} onChange={(e) => setDraft({ ...draft, terms: e.target.value })} /></label>
                   <label className="field full"><span>Address</span><input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} /></label>
                   <div className="full modalactions"><Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button><Button variant="primary" onClick={saveEdit}>Save changes</Button></div>
@@ -1118,7 +1118,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <label className="field full"><span>Store name *</span><input value={inv.store} onChange={(e) => setInv({ ...inv, store: e.target.value })} required placeholder="Jay's Stop & Shop" /></label>
               <label className="field"><span>Contact</span><input value={inv.contact} onChange={(e) => setInv({ ...inv, contact: e.target.value })} placeholder="Full name" /></label>
               <label className="field"><span>Email *</span><input type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} required placeholder="buyer@store.com" /></label>
-              <label className="field"><span>Phone</span><input value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="(513) 555-0000" /></label>
+              <label className="field"><span>Phone</span><input type="tel" value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="(513) 555-0000" /></label>
               <label className="field"><span>City</span><input value={inv.city} onChange={(e) => setInv({ ...inv, city: e.target.value })} /></label>
               <label className="field"><span>Payment terms</span><select value={inv.terms} onChange={(e) => setInv({ ...inv, terms: e.target.value })}><option>Net 15</option><option>Net 30</option><option>COD</option></select></label>
             </div>

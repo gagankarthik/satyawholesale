@@ -69,8 +69,8 @@ export default function ApplyWizard() {
         {step === 1 && (
           <div className="wizpane" key="s1">
             <div className="row2">
-              <label className="field"><span>Email</span><input type="email" value={d.email} onChange={set("email")} required placeholder="you@store.com" autoFocus /></label>
-              <label className="field"><span>Phone</span><input value={d.phone} onChange={set("phone")} placeholder="(513) 555-0100" /></label>
+              <label className="field"><span>Email</span><input type="email" value={d.email} onChange={set("email")} required placeholder="you@store.com" autoComplete="email" autoFocus /></label>
+              <label className="field"><span>Phone</span><input type="tel" value={d.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" /></label>
             </div>
             <div className="row2">
               <label className="field"><span>Business license #</span><input value={d.businessLicense} onChange={set("businessLicense")} placeholder="Optional, speeds up review" /></label>
