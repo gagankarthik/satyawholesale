@@ -43,6 +43,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false, // don't advertise the framework/version
+  /* Inline the non-public server var at build so it survives to the Amplify
+     SSR runtime (which doesn't expose app env vars to runtime process.env).
+     NEXT_PUBLIC_* vars inline automatically; this covers the one that isn't. */
+  env: { SATYA_BUCKET: process.env.SATYA_BUCKET ?? "" },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
