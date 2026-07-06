@@ -34,11 +34,11 @@ export default function Hero() {
           <p className="sub reveal">
             Satya Wholesale is a licensed wholesale distributor and cash-and-carry warehouse on Reading
             Road in Cincinnati, Ohio. Independent convenience stores across the Tri-State stock tobacco,
-            vape, grocery, candy, health and beauty, and automotive supplies here on one trade account.
+            vape, grocery, candy, health and beauty, and automotive supplies here on one customer account.
             Shop the floor yourself or get next-day delivery to your store.
           </p>
           <div className="hero-actions reveal">
-            <Link className="btn btn-primary" href="/apply">Open a trade account <Arrow /></Link>
+            <Link className="btn btn-primary" href="/apply">Open a customer account <Arrow /></Link>
             <a className="btn btn-light" href="#contact">Contact sales</a>
           </div>
         </div>

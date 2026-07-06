@@ -29,11 +29,11 @@ export default function Footer() {
               <a href="#departments">What we carry</a>
               <a href="#how">How we serve</a>
               <a href="#why">Why Satya</a>
-              <a href="#account">Trade accounts</a>
+              <a href="#account">Customer accounts</a>
             </div>
             <div className="fcol">
               <h5>Account</h5>
-              <Link href="/portal">Trade login</Link>
+              <Link href="/portal">Customer login</Link>
               <Link href="/portal">Order portal</Link>
               <Link href="/admin">Admin console</Link>
               <a href="#contact">Support</a>

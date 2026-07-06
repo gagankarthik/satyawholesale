@@ -8,7 +8,7 @@ export default function Terms() {
     <LegalPage
       title="Terms of Service"
       updated="June 2026"
-      intro="These terms govern use of the Satya Wholesale site and order portal by approved trade accounts. By opening an account or placing an order, your business agrees to them."
+      intro="These terms govern use of the Satya Wholesale site and order portal by approved customer accounts. By opening an account or placing an order, your business agrees to them."
       sections={[
         { h: "Eligibility", p: [
           "The portal is for verified retail businesses only. Accounts require a valid business license, and a tobacco license for regulated categories. All buyers must be 21 or older. We may decline or revoke access at our discretion.",

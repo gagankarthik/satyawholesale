@@ -1,0 +1,66 @@
+name: CI
+
+# Validates every push and PR (typecheck + production build), then — only on
+# master, and only if you've opted in by setting the AMPLIFY_APP_ID repo
+# variable — triggers an Amplify release. If you keep Amplify's native GitHub
+# integration (auto-build on push), leave AMPLIFY_APP_ID unset and the deploy
+# job is skipped so you never double-deploy.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
+        env:
+          # Public config is inlined at build time. Real values come from repo
+          # variables; empty is fine for CI (the app degrades to signed-out).
+          NEXT_PUBLIC_AWS_REGION: ${{ vars.NEXT_PUBLIC_AWS_REGION }}
+          NEXT_PUBLIC_COGNITO_USER_POOL_ID: ${{ vars.NEXT_PUBLIC_COGNITO_USER_POOL_ID }}
+          NEXT_PUBLIC_COGNITO_CLIENT_ID: ${{ vars.NEXT_PUBLIC_COGNITO_CLIENT_ID }}
+          NEXT_PUBLIC_MEDIA_BASE: ${{ vars.NEXT_PUBLIC_MEDIA_BASE }}
+
+  deploy:
+    name: Release on Amplify
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push' && vars.AMPLIFY_APP_ID != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # for OIDC role assumption (preferred over static keys)
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          # Preferred: OIDC. Set AWS_DEPLOY_ROLE_ARN (repo variable) to a role
+          # that trusts token.actions.githubusercontent.com and can call
+          # amplify:StartJob. Falls back to static keys if the role is unset.
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Trigger Amplify release
+        run: |
+          aws amplify start-job \
+            --app-id "${{ vars.AMPLIFY_APP_ID }}" \
+            --branch-name "${{ vars.AMPLIFY_BRANCH || 'master' }}" \
+            --job-type RELEASE

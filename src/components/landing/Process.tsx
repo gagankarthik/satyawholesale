@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Arrow } from "@/components/Icons";
 
 const STEPS = [
-  { n: "01", h: "Apply for trade access", p: "Submit your business and tobacco licenses online. It costs nothing and takes about five minutes." },
-  { n: "02", h: "Get verified, same day", p: "We review your details the same business day and activate your trade account." },
+  { n: "01", h: "Apply for customer access", p: "Submit your business and tobacco licenses online. It costs nothing and takes about five minutes." },
+  { n: "02", h: "Get verified, same day", p: "We review your details the same business day and activate your customer account." },
   { n: "03", h: "Order in the portal", p: "Browse the live catalog with case pricing and build an order in minutes." },
   { n: "04", h: "Pick up or get it delivered", p: "Collect at the Reading Road warehouse, or take next-day delivery across the Tri-State." },
 ];
@@ -32,7 +32,7 @@ export default function Process() {
           <div className="pinbar" aria-hidden="true"><span className="pinbar-fill" /></div>
           <div className="process-cta reveal">
             <span>Ready when you are.</span>
-            <Link className="btn btn-primary" href="/apply">Open a trade account <Arrow /></Link>
+            <Link className="btn btn-primary" href="/apply">Open a customer account <Arrow /></Link>
           </div>
         </div>
       </div>

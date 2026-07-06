@@ -55,17 +55,20 @@ export function usePortal() {
   return v;
 }
 
-const STORE = "Jay's Stop & Shop";
-
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { ready: sessionReady, signedIn, signOut } = useSession();
+  const { ready: sessionReady, signedIn, store, email, signOut } = useSession();
+
+  /* The signed-in customer account. Orders come back already scoped to this
+     store by the API, so no client-side store filter is needed. */
+  const STORE = store ?? email ?? "";
+  const initials = (STORE || email || "SW").split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "SW";
 
   const { products, ready } = useInventory();
   const { orders } = useOrders();
   const { categories } = useCategories();
-  const myOrders = orders.filter((o) => o.store === STORE);
+  const myOrders = orders;
 
   /* ---- admin-managed catalog taxonomy (departments + sub-categories) ---- */
   const depts = useMemo(() => categories.filter((c) => c.parent === null && c.active), [categories]);
@@ -172,8 +175,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : seg === "orders" ? `${myOrders.length} order${myOrders.length !== 1 ? "s" : ""} on record`
     : seg === "payments" ? "Invoices & account balance"
     : seg === "addresses" ? "Saved delivery addresses"
-    : seg === "profile" ? "Your trade account"
-    : `Welcome back, ${STORE}`;
+    : seg === "profile" ? "Your customer account"
+    : `Welcome back, ${STORE || "customer"}`;
 
   const navItem = (href: string, active: boolean, icon: React.ReactNode, label: string, badge?: number) => (
     <Link href={href} className={`sitem ${active ? "on" : ""}`} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
@@ -252,8 +255,8 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <Bag />
               {cases > 0 && <span className="cart-count" key={cases}>{cases}</span>}
             </Link>
-            <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">JS</span>}>
-              <div className="menu-head"><div className="mh-nm">Jay&apos;s Stop &amp; Shop</div><div className="mh-em">buyer@yourstore.com</div></div>
+            <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">{initials}</span>}>
+              <div className="menu-head"><div className="mh-nm">{STORE || "Customer account"}</div><div className="mh-em">{email}</div></div>
               <Link href="/portal/profile" className="menu-item" role="menuitem"><User /> Profile</Link>
               <Link href="/portal/addresses" className="menu-item" role="menuitem"><Pin /> Addresses</Link>
               <Link href="/admin" className="menu-item" role="menuitem"><Shield /> Admin console</Link>

@@ -41,7 +41,7 @@ export default function AgeGate() {
               <button className="btn btn-primary" onClick={confirm}>Yes, I&apos;m 21 or older</button>
               <button className="btn btn-ghost" onClick={() => setState("deny")}>No, I&apos;m under 21</button>
             </div>
-            <p className="agegate-foot">Trade-only · 21+ · Sales comply with state &amp; federal law.</p>
+            <p className="agegate-foot">Wholesale · 21+ · Sales comply with state &amp; federal law.</p>
           </>
         ) : (
           <>

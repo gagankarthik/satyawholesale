@@ -19,7 +19,7 @@ export default function AccountGate() {
             <div className="gate-badge"><Shield /> Verified retailers only · 21+</div>
           </div>
           <div className="gate-body">
-            <div className="tag">Trade accounts</div>
+            <div className="tag">Customer accounts</div>
             <h2>Apply once,<br />order anytime.</h2>
             <p>
               The order portal is open to verified retailers only. Submit your details once and we&apos;ll

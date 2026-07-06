@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut } from "@/components/Icons";
 import { Dropdown, Kbd } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
+import { useSession } from "@/lib/auth";
 import { type Tab, type Flash } from "@/features/admin/shared";
 
 /* tab key -> route, so feature components can keep their `go(tab)` API */
@@ -41,9 +42,18 @@ export function useAdmin() {
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { ready: sessionReady, signedIn, isAdmin, email, signOut } = useSession();
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  /* Console is admin-only: bounce signed-out visitors to login and
+     signed-in non-admins (buyers) to their order portal. */
+  useEffect(() => {
+    if (!sessionReady) return;
+    if (!signedIn) router.replace("/auth/login");
+    else if (!isAdmin) router.replace("/portal");
+  }, [sessionReady, signedIn, isAdmin, router]);
 
   useEffect(() => { setCollapsed(localStorage.getItem("satya.sidebar") === "1"); }, []);
   const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.sidebar", n ? "1" : "0"); } catch {} return n; });
@@ -100,6 +110,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, []);
   const destinations = GROUPS.flatMap((g) => g.items.filter((it) => !it.soon).map((it) => ({ path: it.path, label: it.label, group: g.label })));
   const results = q.trim() ? destinations.filter((d) => d.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : [];
+
+  // Hold the frame until the session is confirmed admin (the effect above redirects otherwise).
+  if (!sessionReady || !signedIn || !isAdmin) return <div className="admin" />;
 
   return (
     <ConfirmProvider>
@@ -160,9 +173,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               </div>
               <div className="atb-actions">
                 <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
-                  <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">Satya Wholesale</div></div>
+                  <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">{email || "Satya Wholesale"}</div></div>
                   <Link href="/admin/settings" className="menu-item" role="menuitem"><Gear /> Settings</Link>
                   <Link href="/portal" className="menu-item" role="menuitem"><Store /> Order portal</Link>
+                  <div className="menu-sep" />
+                  <button type="button" className="menu-item danger" role="menuitem" onClick={() => { signOut(); router.replace("/auth/login"); }}><LogOut /> Sign out</button>
                 </Dropdown>
               </div>
             </div>

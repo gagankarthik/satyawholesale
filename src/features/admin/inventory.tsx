@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { uploadFile, resolveFileUrl } from "@/lib/api";
 import {
   sku, useInventory, LOW_STOCK, deptName,
   type Product, type DeptKey,
@@ -30,7 +31,22 @@ const fmtGp = (l: POLine) => {
   return gp === null ? "—" : `${gp.toFixed(1)}%`;
 };
 
-/** Downscale a photo so a PO attachment fits comfortably in localStorage. */
+/** Renders a private S3 image (an /api/file link) by exchanging it for a
+    short-lived presigned URL an <img> can load. Public URLs render directly. */
+function AuthImage({ src, alt, style, className }: { src: string; alt: string; style?: React.CSSProperties; className?: string }) {
+  const [resolved, setResolved] = useState("");
+  useEffect(() => {
+    let live = true;
+    setResolved("");
+    resolveFileUrl(src).then((u) => { if (live) setResolved(u); }).catch(() => {});
+    return () => { live = false; };
+  }, [src]);
+  if (!resolved) return <div className={className} style={{ ...style, display: "grid", placeItems: "center", minHeight: 80 }}><span className="spinner" /></div>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={resolved} alt={alt} style={style} className={className} />;
+}
+
+/** Downscale a photo before OCR / upload so large phone shots stay manageable. */
 const downscale = (dataUrl: string, maxW = 1400): Promise<string> =>
   new Promise((resolve) => {
     const img = new window.Image();
@@ -72,9 +88,15 @@ function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose, flash
     const reader = new FileReader();
     reader.onload = async () => {
       const small = await downscale(String(reader.result));
-      setImg(small);
+      setImg(small);        // keep a local copy for OCR
       setImgName(f.name);
-      onAttach(small, f.name);
+      try {
+        const blob = await (await fetch(small)).blob();
+        const url = await uploadFile(blob, "image/jpeg", "attachments");
+        onAttach(url, f.name); // persist the S3 URL on the PO, not the raw image
+      } catch {
+        flash("Couldn't save the invoice photo, but you can still read its lines.");
+      }
     };
     reader.readAsDataURL(f);
   };
@@ -698,8 +720,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
             <div className="panel">
               <div className="panel-h"><h3>Invoice photo</h3><span className="hint">{cur.attachmentName || "attached"}</span></div>
               <button type="button" onClick={() => setViewShot(true)} style={{ display: "block", width: "100%" }} aria-label="View invoice photo full size">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cur.attachment} alt="Vendor invoice" style={{ width: "100%", borderRadius: 10, border: "1px solid var(--line)" }} />
+                <AuthImage src={cur.attachment} alt="Vendor invoice" style={{ width: "100%", borderRadius: 10, border: "1px solid var(--line)" }} />
               </button>
             </div>
           )}
@@ -732,8 +753,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
       )}
       {viewShot && cur.attachment && (
         <div className="modal-overlay" onClick={() => setViewShot(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cur.attachment} alt="Vendor invoice, full size" style={{ maxWidth: "94vw", maxHeight: "92vh", margin: "auto", borderRadius: 12 }} />
+          <AuthImage src={cur.attachment} alt="Vendor invoice, full size" style={{ maxWidth: "94vw", maxHeight: "92vh", margin: "auto", borderRadius: 12 }} />
         </div>
       )}
     </>

@@ -1,0 +1,38 @@
+# AWS Amplify Hosting build spec — Satya Wholesale (Next.js SSR).
+#
+# This app has API route handlers (/api/*) and dynamic routes, so Amplify
+# deploys it on the Next.js SSR compute platform (WEB_COMPUTE). Confirm the
+# app's platform is "Web compute" in the Amplify console (Hosting > App
+# settings) — Amplify auto-detects it for the App Router, but verify.
+#
+# Required environment variables (Amplify console > Hosting > Environment
+# variables). NEXT_PUBLIC_* are inlined at build time; the rest are read at
+# request time by the SSR compute:
+#   AWS_REGION, NEXT_PUBLIC_AWS_REGION
+#   SATYA_TABLE, SATYA_BUCKET
+#   COGNITO_USER_POOL_ID, COGNITO_CLIENT_ID
+#   NEXT_PUBLIC_COGNITO_USER_POOL_ID, NEXT_PUBLIC_COGNITO_CLIENT_ID
+#   NEXT_PUBLIC_MEDIA_BASE
+# Do NOT set NEXT_AWS_ACCESS_KEY_ID / _SECRET in Amplify — instead attach an
+# IAM role to the SSR compute with DynamoDB (satya-app), S3 (media bucket)
+# and cognito-idp:AdminCreateUser/AdminAddUserToGroup/AdminGetUser access.
+# The SDK default credential chain picks that role up automatically.
+
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 20 || nvm install 20
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - .next/cache/**/*
+      - node_modules/**/*

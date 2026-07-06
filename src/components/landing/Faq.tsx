@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const FAQS = [
-  { q: "Who can open a wholesale trade account?", a: "Satya is wholesale and trade only. We supply licensed, registered convenience retailers. Every account is verified before it opens and buying is limited to 21 and older." },
+  { q: "Who can open a wholesale customer account?", a: "Satya is wholesale only. We supply licensed, registered convenience retailers. Every account is verified before it opens and buying is limited to 21 and older." },
   { q: "How long does approval take?", a: "We review applications the same business day. Once you're approved, the full catalog and case pricing open up in the order portal." },
   { q: "Do you deliver, or is it pickup only?", a: "Both. Walk the Reading Road cash-and-carry floor and load your own cases, or order in the portal for next-day delivery to your store." },
   { q: "What areas do you deliver to?", a: "We deliver across Greater Cincinnati and the Tri-State, including Northern Kentucky and Southeast Indiana, usually the next business day." },

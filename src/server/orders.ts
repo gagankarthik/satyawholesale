@@ -1,0 +1,116 @@
+import { getItem, type Row } from "./db";
+import type { AuthUser } from "./auth";
+import { GuardError, isValidId } from "./guard";
+
+/* Orders are the only buyer-writable records, and they carry money and
+   fulfilment state. NEVER trust the client for either: line prices, totals
+   and tax are recomputed from the live catalog + settings here, and status
+   transitions are constrained. The browser's optimistic copy is cosmetic;
+   this is the record of truth that gets stored. */
+
+interface RawLine { id: number | string; qty: number | string }
+
+const clampStr = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
+
+async function taxRate(): Promise<number> {
+  const s = await getItem("settings", "main");
+  const r = Number(s?.taxRate);
+  return Number.isFinite(r) && r >= 0 ? r : 6.5;
+}
+
+/** Re-price a client line list against the catalog. Rejects unknown/inactive
+    products, bad quantities, and quantities beyond available stock. */
+async function priceLines(raw: unknown): Promise<{ lines: Row[]; subtotal: number; cases: number }> {
+  const rawLines = Array.isArray(raw) ? (raw as RawLine[]) : [];
+  if (!rawLines.length) throw new GuardError("Your cart is empty.");
+  if (rawLines.length > 200) throw new GuardError("That order has too many line items.");
+
+  const lines: Row[] = [];
+  let subtotal = 0, cases = 0;
+  for (const l of rawLines) {
+    const qty = Math.floor(Number(l.qty));
+    if (!Number.isFinite(qty) || qty <= 0 || qty > 100_000) throw new GuardError("A line item has an invalid quantity.");
+    const p = await getItem("products", String(l.id));
+    if (!p || p.active === false) throw new GuardError("A product in your cart is no longer available.");
+    const stock = Number(p.stock);
+    if (Number.isFinite(stock) && qty > stock) throw new GuardError(`Only ${stock} case(s) of ${String(p.name ?? "an item")} are in stock.`);
+    // server price = live offer price when one is active, else the list price
+    const list = Number(p.price);
+    const offer = Number(p.offerPrice);
+    const onOffer = p.onOffers === true && Number.isFinite(offer) && offer > 0 && offer < list;
+    const price = onOffer ? offer : list;
+    if (!Number.isFinite(price) || price < 0) throw new GuardError("A product in your cart has no valid price.");
+    subtotal += price * qty;
+    cases += qty;
+    lines.push({ id: Number(p.id) || String(l.id), name: String(p.name ?? ""), qty, price });
+  }
+  return { lines, subtotal: Math.round(subtotal * 100) / 100, cases };
+}
+
+/** Build a brand-new buyer order from trusted data. Client controls only the
+    line ids/quantities and free-text delivery details; everything financial
+    and every state field is set here. */
+export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row> {
+  const { lines, subtotal, cases } = await priceLines(body.lines);
+  const rate = await taxRate();
+  const tax = Math.round(subtotal * rate) / 100; // resale exemption is an admin decision, applied later
+
+  const payment = clampStr(body.payment, 60);
+  const fulfilment = clampStr(body.fulfilment, 60);
+  const isPickup = /pickup/i.test(fulfilment);
+  const owner = user.store ?? user.email;
+  const ref = isValidId(body.ref) ? String(body.ref) : "SW-" + Math.floor(4000 + Math.random() * 5000);
+
+  return {
+    ref,
+    placed: Date.now(),
+    store: owner,
+    lines, cases,
+    total: subtotal,
+    status: "Pending",
+    payment, fulfilment,
+    notes: clampStr(body.notes, 500) || undefined,
+    tracking: isPickup ? "PICKUP" : undefined, // warehouse assigns real tracking on ship
+    deliveryFee: 0,
+    tax,
+    discount: 0,
+    paymentStatus: /net/i.test(payment) ? "Unpaid" : "Paid",
+    billing: clampStr(body.billing, 200) || owner,
+    shipping: clampStr(body.shipping ?? body.billing, 200) || owner,
+    taxExempt: false,
+  };
+}
+
+/** Constrain a buyer's PATCH to their own order: they may cancel a
+    still-cancellable order, or edit lines/details only while it's Pending.
+    Re-prices any line edits; refuses to let a buyer touch status→anything
+    but Cancelled, payment status, tracking, discounts, or totals. */
+export async function sanitizeBuyerOrderPatch(current: Row, patch: Row): Promise<Row> {
+  const status = String(current.status ?? "");
+
+  // Cancel path — ignores every other field in the patch.
+  if (patch.status === "Cancelled") {
+    if (status !== "Pending" && status !== "Processing") throw new GuardError("This order can no longer be cancelled.");
+    return { status: "Cancelled" };
+  }
+  if (patch.status !== undefined && patch.status !== status) {
+    throw new GuardError("You can only cancel an order, not change its status.");
+  }
+
+  // Edit path — only while Pending.
+  if (status !== "Pending") throw new GuardError("This order can no longer be edited.");
+
+  const out: Row = {};
+  if (patch.lines !== undefined) {
+    const { lines, subtotal, cases } = await priceLines(patch.lines);
+    out.lines = lines;
+    out.total = subtotal;
+    out.cases = cases;
+    const rate = await taxRate();
+    out.tax = current.taxExempt === true ? 0 : Math.round(subtotal * rate) / 100;
+  }
+  if (patch.fulfilment !== undefined) out.fulfilment = clampStr(patch.fulfilment, 60);
+  if (patch.shipping !== undefined) out.shipping = clampStr(patch.shipping, 200) || String(current.store ?? "");
+  if (patch.notes !== undefined) out.notes = clampStr(patch.notes, 500) || undefined;
+  return out;
+}

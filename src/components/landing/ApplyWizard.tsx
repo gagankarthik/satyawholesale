@@ -6,7 +6,7 @@ import { fileApplication } from "@/lib/wms";
 import { Arrow, Check } from "@/components/Icons";
 import { Button } from "@/components/ui";
 
-/* Trade-account application: a three-step onboarding wizard.
+/* Customer account application: a three-step onboarding wizard.
    Lives on /apply; the landing contact form stays a plain contact form. */
 const STEPS = ["Your store", "Licenses", "Review"] as const;
 

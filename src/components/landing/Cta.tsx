@@ -9,11 +9,11 @@ export default function Cta() {
       <div className="wrap">
         <h2 data-lines>
           <span className="lm"><span className="lm-in">Set up your</span></span>
-          <span className="lm"><span className="lm-in">trade account.</span></span>
+          <span className="lm"><span className="lm-in">customer account.</span></span>
         </h2>
         <p className="reveal">Apply online in a few minutes, or call the warehouse and we&apos;ll set you up.</p>
         <div className="ca reveal">
-          <Link className="btn btn-ink" href="/apply">Open a trade account</Link>
+          <Link className="btn btn-ink" href="/apply">Open a customer account</Link>
           <a className="btn btn-light" href={CONTACT.phoneHref}>Call {CONTACT.phone}</a>
         </div>
       </div>

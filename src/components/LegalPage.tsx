@@ -38,7 +38,7 @@ export default function LegalPage({
             <a href={CONTACT.phoneHref}>{CONTACT.phone}</a>. Mailing address: {CONTACT.address1}, {CONTACT.address2}.
           </p>
         </div>
-        <p className="legal-foot">© 2026 {CONTACT.legalName}. Trade-only · 21+. This summary is provided for convenience and is not legal advice.</p>
+        <p className="legal-foot">© 2026 {CONTACT.legalName}. Wholesale · 21+. This summary is provided for convenience and is not legal advice.</p>
       </main>
     </div>
   );

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, LOW_STOCK,
-  CONTACT, CUSTOMERS, orderGrand,
+  CONTACT, orderGrand,
   type DeptKey, type Product, type Tag, type Order, type OrderStatus, type PayStatus,
 } from "@/lib/store";
 import {
@@ -131,7 +131,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <label className="field full"><span>Product name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Mr Fog Max Pro 1500" required /></label>
             <label className="field full"><span>Description</span><input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="e.g. 5% nicotine, 15-pack display, assorted flavors" /></label>
             <div className="field full">
-              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" onError={flash} hint="Optional. Shown in the portal and admin; a placeholder is used until you add one." />
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" folder="products" onError={flash} hint="Optional. Shown in the portal and admin; a placeholder is used until you add one." />
             </div>
             <label className="field"><span>Category *</span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
             <div className="field"><span>Barcode (UPC/EAN)</span>
@@ -427,7 +427,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.name.trim()) { flash("Name is required"); return; }
-    const patch = { name: draft.name.trim(), details: draft.details, icon: draft.icon || "📦", group: draft.group || "Front counter", image: draft.image, parent: draft.parent || null };
+    const patch = { name: draft.name.trim(), details: draft.details, icon: "", group: draft.group || "Front counter", image: draft.image, parent: draft.parent || null };
     if (editing) { update(existing!.key, patch); flash("Category updated"); }
     else {
       const key = draft.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -465,7 +465,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             <label className="field"><span>Group</span><input value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} /></label>
             <label className="field full"><span>Details</span><input value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} placeholder="e.g. Disposables, pods and e-liquids" /></label>
             <div className="field full">
-              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Category image" aspect="wide" onError={flash} hint="Shown across the storefront. A tag glyph is used until you add one." />
+              <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Category image" aspect="wide" folder="categories" onError={flash} hint="Shown across the storefront. A tag glyph is used until you add one." />
             </div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
@@ -750,7 +750,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
             <div className="field"><span>Visibility</span>
               <Switch checked={d.active} onChange={(v) => setD({ ...d, active: v })} label={d.active ? "Live on the portal carousel" : "Hidden from the portal"} />
             </div>
-            <div className="field full"><ImageUpload value={d.image} onChange={(v) => setD({ ...d, image: v })} label="Banner image" aspect="wide" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
+            <div className="field full"><ImageUpload value={d.image} onChange={(v) => setD({ ...d, image: v })} label="Banner image" aspect="wide" folder="promos" onError={flash} hint="Shown on the buyer dashboard carousel." /></div>
           </div>
           <div className="modalbtns" style={{ marginTop: 8 }}>
             <Button variant="ghost" type="button" onClick={() => router.push("/admin/promotions")}>Cancel</Button>

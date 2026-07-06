@@ -61,11 +61,11 @@ export const PRODUCT_FLOW: FlowStep[] = [
   { key: "live", label: "Live to customers", desc: "Sold in the portal", href: "/portal" },
 ];
 
-/** Customer / trade-account onboarding flow: apply → ordering. */
+/** Customer / customer account onboarding flow: apply → ordering. */
 export const CUSTOMER_FLOW: FlowStep[] = [
   { key: "apply", label: "Application", desc: "Store applies on the site" },
   { key: "review", label: "Review docs", desc: "Licenses & business info", href: "/admin/accounts" },
-  { key: "approve", label: "Approve", desc: "Activate the trade account", href: "/admin/accounts" },
+  { key: "approve", label: "Approve", desc: "Activate the customer account", href: "/admin/accounts" },
   { key: "order", label: "Orders & invoices", desc: "They buy in the portal", href: "/admin/orders" },
 ];
 

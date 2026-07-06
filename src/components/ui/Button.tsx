@@ -29,7 +29,7 @@ export interface ButtonProps
  * button classes plus loading/disabled/icon affordances and accessibility.
  *
  * @example <Button variant="primary" loading={saving}>Save changes</Button>
- * @example <Button href="/portal" variant="ghost">Trade login</Button>
+ * @example <Button href="/portal" variant="ghost">Customer login</Button>
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { variant = "primary", size = "md", loading = false, fullWidth, iconLeft, iconRight, href, className, children, disabled, ...rest },

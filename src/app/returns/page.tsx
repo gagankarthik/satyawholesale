@@ -24,7 +24,7 @@ export default function Returns() {
           "If a product is recalled, we will notify affected accounts and coordinate return or destruction per the manufacturer and regulator instructions.",
         ] },
         { h: "Credits", p: [
-          "Approved credits are applied to your trade account and reflected on your next statement, or refunded to the original payment method where applicable.",
+          "Approved credits are applied to your customer account and reflected on your next statement, or refunded to the original payment method where applicable.",
         ] },
       ]}
     />

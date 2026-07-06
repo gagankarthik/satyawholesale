@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  fmt, productImg, offerActive, effPrice, useOrders, useSettings, computeTax, commitStockForOrder,
+  fmt, productImg, offerActive, effPrice, useOrders, useSettings, computeTax,
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
 import { Package, Check } from "@/components/Icons";
 import { Button, EmptyState } from "@/components/ui";
 import Image from "next/image";
 import { usePortal } from "../PortalShell";
-import { ADDRESSES } from "../meta";
+import { useAddresses } from "@/lib/addresses";
 
 const FULFILMENTS = ["Next-day delivery", "Cash & carry pickup", "Scheduled delivery"];
 const PAYMENTS = ["Net 15 terms", "Net 30 terms", "Card on delivery", "Cash on delivery"];
@@ -19,13 +19,19 @@ export default function CartPage() {
   const { products, cart, changeQty, removeLine, clearCart, STORE, flash } = usePortal();
   const { placeOrder } = useOrders();
   const { settings } = useSettings();
+  const { addresses } = useAddresses(STORE);
   const router = useRouter();
 
-  const [address, setAddress] = useState(ADDRESSES[0].addr);
+  const [address, setAddress] = useState("");
   const [payment, setPayment] = useState(PAYMENTS[0]);
   const [fulfilment, setFulfilment] = useState(FULFILMENTS[0]);
   const [notes, setNotes] = useState("");
   const [placing, setPlacing] = useState(false);
+
+  // Default to the first saved address once the account's list loads.
+  useEffect(() => {
+    if (!address && addresses[0]) setAddress(addresses[0].addr);
+  }, [addresses, address]);
 
   const cartLines = useMemo(
     () =>
@@ -46,7 +52,7 @@ export default function CartPage() {
   const grand = subtotal + tax + deliveryFee;
 
   const submit = () => {
-    if (!cartLines.length || placing) return;
+    if (!cartLines.length || placing || !address.trim()) return;
     setPlacing(true);
     const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: effPrice(l.p) }));
     const order: Order = {
@@ -62,8 +68,7 @@ export default function CartPage() {
       paymentStatus: payment.includes("Net") ? "Unpaid" : "Paid",
       billing: address, shipping: address,
     };
-    placeOrder(order);
-    commitStockForOrder(lines);
+    placeOrder(order); // stock is decremented server-side on create
     clearCart();
     flash(`Order ${order.ref} placed`);
     router.push(`/portal/orders/${order.ref}`);
@@ -112,15 +117,21 @@ export default function CartPage() {
           <div className="panel-h"><h3>Checkout</h3></div>
           <div className="cofield">
             <span className="colabel">Delivery address</span>
-            <div className="addrlist">
-              {ADDRESSES.map((a) => (
-                <label key={a.id} className={`addropt ${address === a.addr ? "on" : ""}`}>
-                  <input type="radio" name="ship" checked={address === a.addr} onChange={() => setAddress(a.addr)} />
-                  <span className="addrtext"><b>{a.label}</b><small>{a.addr}</small></span>
-                  <span className="addrtick" aria-hidden="true"><Check /></span>
-                </label>
-              ))}
-            </div>
+            {addresses.length > 0 && (
+              <div className="addrlist" style={{ marginBottom: 10 }}>
+                {addresses.map((a) => (
+                  <label key={a.id} className={`addropt ${address === a.addr ? "on" : ""}`}>
+                    <input type="radio" name="ship" checked={address === a.addr} onChange={() => setAddress(a.addr)} />
+                    <span className="addrtext"><b>{a.label}</b><small>{a.addr}</small></span>
+                    <span className="addrtick" aria-hidden="true"><Check /></span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <label className="field">
+              <span className="sr-only">Delivery address</span>
+              <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, city, state ZIP" aria-label="Delivery address" required />
+            </label>
           </div>
           <label className="field"><span>Fulfilment</span>
             <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}>
@@ -144,10 +155,10 @@ export default function CartPage() {
             <div className="ln"><span>{isPickup ? "Pickup" : "Delivery"}</span><span className="mono" style={{ color: "var(--green)" }}>{isPickup ? "At warehouse" : "Next-day · Free"}</span></div>
             <div className="ln tot"><span>Order total</span><b>${fmt(grand)}</b></div>
           </div>
-          <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing}>
+          <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing || !address.trim()}>
             {placing ? "Placing order…" : "Place order →"}
           </Button>
-          <p className="ordersum-note">{payment} · ships to {address.split(",")[0]}. A tracking number is added once the warehouse ships your order.</p>
+          <p className="ordersum-note">{payment}{address.trim() ? ` · ships to ${address.split(",")[0]}` : ""}. A tracking number is added once the warehouse ships your order.</p>
         </div>
       </aside>
     </div>

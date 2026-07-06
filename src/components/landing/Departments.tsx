@@ -13,7 +13,7 @@ export default function Departments() {
           </h2>
           <p>
             Seven wholesale categories for convenience stores, gas stations and smoke shops, stocked
-            deep and restocked weekly. The live catalog with case pricing opens after your trade
+            deep and restocked weekly. The live catalog with case pricing opens after your customer
             account is verified.
           </p>
         </div>

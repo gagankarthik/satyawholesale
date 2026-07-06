@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, useSettings, computeTax,
-  commitStockForOrder, LOW_STOCK,
-  CONTACT, CUSTOMERS, orderGrand, ORDER_FLOW, statusSlug,
+  LOW_STOCK,
+  CONTACT, orderGrand, ORDER_FLOW, statusSlug,
   type DeptKey, type Product, type Tag, type Order, type OrderLine, type OrderStatus, type PayStatus,
 } from "@/lib/store";
 import Image from "next/image";
@@ -92,7 +92,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
   const { products } = useInventory();
   const { orders } = useOrders();
   const { pos } = usePurchaseOrders();
-  const { customers } = useCustomers(CUSTOMERS);
+  const { customers } = useCustomers();
   const { suppliers } = useSuppliers();
 
   const [rangeKey, setRangeKey] = useState("7d");
@@ -583,7 +583,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const router = useRouter();
   const { placeOrder } = useOrders();
   const { products } = useInventory();
-  const { customers } = useCustomers(CUSTOMERS);
+  const { customers } = useCustomers();
   const { settings } = useSettings();
 
   const [custId, setCustId] = useState(customers[0]?.id ?? "");
@@ -631,8 +631,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
       billing: cust.address ?? cust.store, shipping: cust.address ?? cust.store,
       taxExempt,
     };
-    placeOrder(order);
-    commitStockForOrder(lines);
+    placeOrder(order); // stock is decremented server-side on create
     flash("Order created");
     router.push(`/admin/orders/${order.ref}`);
   };
@@ -641,14 +640,14 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
     <>
       <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: "New order" }]} />
       <header className="adminbar">
-        <div><h1>New order</h1><p>Create an order on behalf of a trade account</p></div>
+        <div><h1>New order</h1><p>Create an order on behalf of a customer account</p></div>
       </header>
 
       <div className="detail-grid">
         <div className="detail-main">
           <div className="panel anim-in">
             <div className="panel-h"><h3>Customer</h3></div>
-            <label className="field"><span>Trade account</span>
+            <label className="field"><span>Customer account</span>
               <select value={custId} onChange={(e) => setCustId(e.target.value)}>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.store} · {c.id}{c.status !== "Active" ? ` (${c.status})` : ""}</option>)}
               </select>
@@ -791,7 +790,7 @@ export function OrdersTab() {
 
   return (
     <>
-      <Head title="Orders" sub="Orders from the trade portal. Open any order for the full receipt">
+      <Head title="Orders" sub="Orders from the customer portal. Open any order for the full receipt">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}>+ New order</Button>
       </Head>
       <Fab icon={<Plus />} href="/admin/orders/new">New order</Fab>
@@ -861,7 +860,7 @@ export function OrdersTab() {
    ======================================================================= */
 const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: "Net 15" };
 export function CustomersTab({ flash }: { flash: Flash }) {
-  const { customers, setStatus, update, add, remove } = useCustomers(CUSTOMERS);
+  const { customers, setStatus, update, add, remove } = useCustomers();
   const { orders } = useOrders();
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Hold">("all");
@@ -1050,7 +1049,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Trade accounts" sub="Review applications, approve stores, then they order in the portal">
+      <Head title="Customer accounts" sub="Review applications, approve stores, then they order in the portal">
         <Button variant="primary" size="sm" onClick={() => setInviting(true)}>+ Invite account</Button>
       </Head>
       <FlowGuide steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />
@@ -1077,7 +1076,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       {inviting && (
         <div className="modal-overlay" onClick={() => setInviting(false)}>
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={sendInvite}>
-            <h3>Invite a trade account</h3>
+            <h3>Invite a customer account</h3>
             <p className="auth-sub" style={{ marginTop: 0 }}>They&apos;ll be created as Pending until verified and approved.</p>
             <div className="formgrid">
               <label className="field full"><span>Store name *</span><input value={inv.store} onChange={(e) => setInv({ ...inv, store: e.target.value })} required placeholder="Jay's Stop & Shop" /></label>

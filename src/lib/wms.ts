@@ -1,52 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  DEPTS, CUSTOMERS, type DeptKey, type Product, type Customer,
-} from "./store";
+import { useCallback } from "react";
+import { useCollection } from "./collection";
+import { apiPost } from "./api";
+import type { Product, Customer, DeptKey } from "./store";
 
 /* =========================================================
-   WMS foundation — suppliers, categories, warehouse locations,
-   staff/roles, purchase orders, stock-movement ledger,
-   customer approval, and bulk-import validation.
-   All localStorage-backed (no backend).
+   WMS domain — suppliers, categories, warehouse locations,
+   staff, purchase orders, receipts, invoices, credits and
+   the stock-movement ledger. Backed by DynamoDB via
+   /api/data/*; hook interfaces match the old local store.
    ========================================================= */
-
-const DAY = 86400000;
-
-/* ---------- generic persisted collection ---------- */
-function read<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function write<T>(key: string, value: T) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(key, JSON.stringify(value));
-  window.dispatchEvent(new CustomEvent(`wms:${key}`));
-}
-function usePersisted<T>(key: string, seed: T[]) {
-  const [items, setItems] = useState<T[]>(seed);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    setItems(read(key, seed));
-    setReady(true);
-    const sync = () => setItems(read(key, seed));
-    window.addEventListener(`wms:${key}`, sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener(`wms:${key}`, sync);
-      window.removeEventListener("storage", sync);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  const persist = useCallback((next: T[]) => { setItems(next); write(key, next); }, [key]);
-  return { items, ready, persist };
-}
 
 /* =========================================================
    SUPPLIERS
@@ -60,84 +24,51 @@ export interface Supplier {
   email: string;
   phone: string;
   leadDays: number;
-  terms: string; // payment terms
+  terms: string;
   status: "Active" | "Inactive";
-  // invoice-header details (all optional — older saved suppliers won't have them)
   address?: string;
   city?: string;
   state?: string;
   zip?: string;
   website?: string;
-  accountNo?: string; // our account number with this supplier
-  salesRep?: string; // their salesperson on our account
-  csr?: string; // customer service rep
-  deliveryDay?: string; // e.g. "Thursday"
-  truck?: string; // route truck #
-  stop?: string; // route stop #
-  categories?: string; // what they distribute, free text
+  accountNo?: string;
+  salesRep?: string;
+  csr?: string;
+  deliveryDay?: string;
+  truck?: string;
+  stop?: string;
+  categories?: string;
   notes?: string;
 }
 
-export const SEED_SUPPLIERS: Supplier[] = [
-  { id: "SUP-06", name: "A.H. Jamra Company", contact: "Kyle Weldon", email: "orders@ahjamra.com", phone: "(419) 248-3393",
-    leadDays: 1, terms: "COD Cash Only", status: "Active",
-    address: "201 South Saint Clair Street", city: "Toledo", state: "OH", zip: "43604",
-    accountNo: "92100016", salesRep: "Kyle Weldon", deliveryDay: "Thursday", truck: "402", stop: "92",
-    categories: "Cigarettes, tobacco, cigars, candy, groceries", notes: "OTP tax paid by supplier. Claims within 24 hours of delivery." },
-  { id: "SUP-07", name: "Topicz", contact: "Chris Fessenden", email: "account.receivable@topicz.com", phone: "(513) 351-7700",
-    leadDays: 2, terms: "7 Days EFT", status: "Active",
-    address: "2121 Section Road", city: "Cincinnati", state: "OH", zip: "45222", website: "www.topicz.com",
-    accountNo: "904722", salesRep: "Allen Tucker", csr: "Chris Fessenden", deliveryDay: "Thursday", truck: "401", stop: "360",
-    categories: "Cigarettes, cigars, tobacco, candy, HBC, grocery", notes: "OH & WV tobacco tax paid. Tobacco licenses: OH 92-100-001, IN 10222, KY 2000005. Shortages must be reported within 24 hours of delivery; past-due invoices accrue 1.5% monthly service charges." },
-  { id: "SUP-01", name: "Midwest Tobacco Dist.", contact: "R. Olsen", email: "orders@midwesttob.com", phone: "(513) 555-0142", leadDays: 3, terms: "Net 15", status: "Active" },
-  { id: "SUP-02", name: "Great Lakes Vapor Supply", contact: "T. Brooks", email: "sales@glvapor.com", phone: "(614) 555-0188", leadDays: 5, terms: "Net 30", status: "Active" },
-  { id: "SUP-03", name: "Queen City Candy & Snacks", contact: "M. Alvarez", email: "wholesale@qccandy.com", phone: "(513) 555-0199", leadDays: 2, terms: "Net 15", status: "Active" },
-  { id: "SUP-04", name: "Tri-State HBA & Energy", contact: "S. Patel", email: "buy@tristatehba.com", phone: "(859) 555-0121", leadDays: 4, terms: "COD", status: "Active" },
-  { id: "SUP-05", name: "Reading Rd Auto & GM", contact: "D. Klein", email: "parts@rrauto.com", phone: "(513) 555-0177", leadDays: 6, terms: "Net 30", status: "Inactive" },
-];
-
 export const useSuppliers = () => {
-  const { items, ready, persist } = usePersisted<Supplier>("satya.suppliers.v1", SEED_SUPPLIERS);
-  const add = (s: Supplier) => persist([s, ...items]);
-  const update = (id: string, patch: Partial<Supplier>) =>
-    persist(items.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-  const remove = (id: string) => persist(items.filter((s) => s.id !== id));
-  return { suppliers: items, ready, add, update, remove };
+  const col = useCollection<Supplier>("suppliers", (s) => s.id);
+  return { suppliers: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
-   PROMOTIONS — admin-managed advertising shown on the portal
-   dashboard (image banners / featured offers).
+   PROMOTIONS
    ========================================================= */
 export interface Promotion {
   id: string;
   title: string;
   subtitle: string;
-  image: string; // full image URL (S3 / Unsplash)
+  image: string;
   tag: string;
   active: boolean;
   created: number;
 }
-const promoImg = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1400&q=70`;
-export const SEED_PROMOS: Promotion[] = [
-  { id: "PR-01", tag: "New arrivals", title: "Fresh vapor & disposables", subtitle: "The latest Mr Fog, Breeze and EB Design — just landed by the case.", image: promoImg("1586528116311-ad8dd3c8310d"), active: true, created: Date.now() - 2 * DAY },
-  { id: "PR-02", tag: "This week's deal", title: "Stock up & save by the case", subtitle: "Volume pricing across candy, snacks and beverages.", image: promoImg("1604719312566-8912e9227c6a"), active: true, created: Date.now() - 5 * DAY },
-  { id: "PR-03", tag: "Free next-day delivery", title: "Order by 2 PM, we deliver tomorrow", subtitle: "Across Greater Cincinnati.", image: promoImg("1601584115197-04ecc0da31d7"), active: true, created: Date.now() - 9 * DAY },
-];
 export const usePromotions = () => {
-  const { items, ready, persist } = usePersisted<Promotion>("satya.promos.v1", SEED_PROMOS);
-  const add = (p: Promotion) => persist([p, ...items]);
-  const update = (id: string, patch: Partial<Promotion>) => persist(items.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-  const remove = (id: string) => persist(items.filter((x) => x.id !== id));
-  return { promos: items, ready, add, update, remove };
+  const col = useCollection<Promotion>("promos", (p) => p.id);
+  return { promos: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
-   CATEGORIES (seeded from departments, extensible)
+   CATEGORIES
    ========================================================= */
 export interface Category {
   id: string;
-  key: string; // slug
+  key: string;
   name: string;
   parent: string | null;
   active: boolean;
@@ -147,75 +78,30 @@ export interface Category {
   group: string;
   created: number;
 }
-const CAT_GROUP: Record<string, string> = {
-  tobacco: "Tobacco & vapor", vape: "Tobacco & vapor", smoke: "Tobacco & vapor",
-  hba: "Center store", grocery: "Center store", auto: "General merch", acc: "General merch",
-};
-const CAT_DETAIL: Record<string, string> = {
-  tobacco: "Cigarettes, cigars, chewing, hookah and pipe.",
-  vape: "Disposables, pods and e-liquids.",
-  smoke: "Lighters, glass, rolling supplies and butane.",
-  hba: "Medicine, energy shots and personal care.",
-  grocery: "Candy, snacks, beverages and household.",
-  auto: "Air fresheners, fluids and road essentials.",
-  acc: "Charging cables, fashion and general merch.",
-};
-export const SEED_CATEGORIES: Category[] = DEPTS.map((d, i) => ({
-  id: "CAT-" + (101 + i),
-  key: d.key,
-  name: d.name,
-  parent: null,
-  active: true,
-  details: CAT_DETAIL[d.key] ?? "",
-  icon: d.icon,
-  image: "",
-  group: CAT_GROUP[d.key] ?? "Front counter",
-  created: Date.now() - (40 - i * 3) * 86400000,
-}));
-
 export const useCategories = () => {
-  const { items, ready, persist } = usePersisted<Category>("satya.categories.v1", SEED_CATEGORIES);
-  const add = (c: Category) => persist([...items, c]);
-  const update = (key: string, patch: Partial<Category>) =>
-    persist(items.map((c) => (c.key === key ? { ...c, ...patch } : c)));
-  const remove = (key: string) => persist(items.filter((c) => c.key !== key));
-  return { categories: items, ready, add, update, remove };
+  const col = useCollection<Category>("categories", (c) => c.key);
+  return { categories: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
-   WAREHOUSE LOCATIONS (zone → aisle → rack → bin)
+   WAREHOUSE LOCATIONS
    ========================================================= */
 export interface WLocation {
-  id: string; // e.g. A-01-R3-B2
+  id: string;
   zone: string;
   aisle: string;
   rack: string;
   bin: string;
-  capacity: number; // cases
+  capacity: number;
   used: number;
 }
-const mkLoc = (zone: string, aisle: string, rack: string, bin: string, capacity: number, used: number): WLocation =>
-  ({ id: `${zone}-${aisle}-${rack}-${bin}`, zone, aisle, rack, bin, capacity, used });
-
-export const SEED_LOCATIONS: WLocation[] = [
-  mkLoc("A", "01", "R1", "B1", 240, 180), mkLoc("A", "01", "R1", "B2", 240, 96),
-  mkLoc("A", "02", "R1", "B1", 240, 210), mkLoc("A", "02", "R2", "B1", 240, 60),
-  mkLoc("B", "01", "R1", "B1", 180, 150), mkLoc("B", "01", "R1", "B2", 180, 40),
-  mkLoc("B", "02", "R3", "B1", 180, 0), mkLoc("C", "01", "R1", "B1", 320, 300),
-  mkLoc("C", "02", "R2", "B4", 320, 120), mkLoc("D", "01", "R1", "B1", 120, 27),
-];
-
 export const useLocations = () => {
-  const { items, ready, persist } = usePersisted<WLocation>("satya.locations.v1", SEED_LOCATIONS);
-  const update = (id: string, patch: Partial<WLocation>) =>
-    persist(items.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-  const add = (l: WLocation) => persist([...items, l]);
-  const remove = (id: string) => persist(items.filter((l) => l.id !== id));
-  return { locations: items, ready, update, add, remove };
+  const col = useCollection<WLocation>("locations", (l) => l.id);
+  return { locations: col.items, ready: col.ready, update: col.update, add: col.add, remove: col.remove };
 };
 
 /* =========================================================
-   STAFF USERS + ROLES (with scanner device assignment)
+   STAFF USERS + ROLES
    ========================================================= */
 export type Role = "Admin" | "Inventory Manager" | "Buyer" | "Receiver" | "Viewer";
 export const ROLES: Role[] = ["Admin", "Inventory Manager", "Buyer", "Receiver", "Viewer"];
@@ -225,60 +111,46 @@ export interface StaffUser {
   name: string;
   email: string;
   role: Role;
-  device: string | null; // assigned scanner
+  device: string | null;
   status: "Active" | "Suspended";
 }
-export const SEED_STAFF: StaffUser[] = [
-  { id: "U-01", name: "Asha Rao", email: "asha@satyawholesalers.com", role: "Admin", device: null, status: "Active" },
-  { id: "U-02", name: "Marcus Bell", email: "marcus@satyawholesalers.com", role: "Inventory Manager", device: "SCN-114", status: "Active" },
-  { id: "U-03", name: "Priya Shah", email: "priya@satyawholesalers.com", role: "Buyer", device: null, status: "Active" },
-  { id: "U-04", name: "Diego Ramos", email: "diego@satyawholesalers.com", role: "Receiver", device: "SCN-118", status: "Active" },
-  { id: "U-05", name: "Lena Cho", email: "lena@satyawholesalers.com", role: "Viewer", device: null, status: "Suspended" },
-];
 export const useStaff = () => {
-  const { items, ready, persist } = usePersisted<StaffUser>("satya.staff.v1", SEED_STAFF);
-  const add = (u: StaffUser) => persist([u, ...items]);
-  const update = (id: string, patch: Partial<StaffUser>) =>
-    persist(items.map((u) => (u.id === id ? { ...u, ...patch } : u)));
-  return { staff: items, ready, add, update };
+  const col = useCollection<StaffUser>("staff", (u) => u.id);
+  return { staff: col.items, ready: col.ready, add: col.add, update: col.update };
 };
 
 /* =========================================================
-   CUSTOMERS (mutable, with approval workflow)
+   TRADE ACCOUNTS (customers) + public application intake
    ========================================================= */
 export interface TradeAccount extends Customer {
   phone?: string;
   businessLicense?: string;
   tobaccoLicense?: string;
   applied?: number;
+  invited?: number;
   docs?: { label: string; name: string; uploaded: number }[];
 }
-const SEED_ACCOUNTS_KEY = "satya.accounts.v1";
 
-export const useCustomers = (seed: Customer[]) => {
-  const { items, ready, persist } = usePersisted<TradeAccount>(SEED_ACCOUNTS_KEY, seed as TradeAccount[]);
-  const setStatus = (id: string, status: TradeAccount["status"]) =>
-    persist(items.map((c) => (c.id === id ? { ...c, status } : c)));
-  const update = (id: string, patch: Partial<TradeAccount>) =>
-    persist(items.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-  const add = (c: TradeAccount) => persist([c, ...items]);
-  const remove = (id: string) => persist(items.filter((c) => c.id !== id));
-  return { customers: items, ready, setStatus, update, add, remove };
+export const useCustomers = () => {
+  const col = useCollection<TradeAccount>("accounts", (c) => c.id);
+  const setStatus = useCallback(
+    (id: string, status: TradeAccount["status"]) => col.update(id, { status }),
+    [col.update] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  return { customers: col.items, ready: col.ready, setStatus, update: col.update, add: col.add, remove: col.remove };
 };
 
-/** Used by the public site's "open an account" form to file a pending application. */
+/** Files a Pending application from the public site (no auth). */
 export function fileApplication(a: Omit<TradeAccount, "id" | "since" | "status">) {
-  const list = read<TradeAccount[]>(SEED_ACCOUNTS_KEY, CUSTOMERS as TradeAccount[]);
-  const next: TradeAccount = {
-    ...a,
-    id: "C-" + Math.floor(1300 + Math.random() * 700),
-    since: String(new Date().getFullYear()),
-    status: "Pending",
-    applied: Date.now(),
-  };
-  write(SEED_ACCOUNTS_KEY, [next, ...list]);
-  return next;
+  void apiPost("/api/apply", a).catch(() => {
+    /* the /apply page shows success optimistically; failures surface on retry */
+  });
+  return { ...a, id: "pending", since: String(new Date().getFullYear()), status: "Pending" as const };
 }
+
+/** Approve + invite: creates the Cognito buyer login for an account. */
+export const inviteAccount = (accountId: string) =>
+  apiPost<{ item: TradeAccount }>("/api/accounts/invite", { accountId });
 
 /* =========================================================
    PURCHASE ORDERS
@@ -289,10 +161,10 @@ export const PO_APPROVAL_THRESHOLD = 2000;
 
 export interface POLine {
   sku: string; name: string; ordered: number; received: number; cost: number;
-  upc?: string; // supplier/manufacturer barcode
-  unit?: string; // sell unit, e.g. case / box / pkt
-  retail?: string | number; // suggested retail per unit (for GP%)
-  dep?: string; // category key, for the recap
+  upc?: string;
+  unit?: string;
+  retail?: string | number;
+  dep?: string;
 }
 export interface PurchaseOrder {
   id: string;
@@ -302,64 +174,49 @@ export interface PurchaseOrder {
   expected: number;
   lines: POLine[];
   approver?: string;
-  supplierRef?: string; // supplier's order / confirmation #
+  supplierRef?: string;
   notes?: string;
-  /** Downscaled photo of the vendor's paper invoice, kept for reference. */
   attachment?: string;
   attachmentName?: string;
 }
+export const poTotal = (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.ordered * l.cost, 0);
+
 /** GP% the way distributor invoices print it: (retail − cost) / retail. */
 export const gpPct = (retail: number | string | undefined, cost: number) => {
   const r = Number(retail);
   return r > 0 ? ((r - cost) / r) * 100 : null;
 };
-export const poTotal = (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.ordered * l.cost, 0);
-
-export const SEED_POS: PurchaseOrder[] = [
-  { id: "PO-3041", supplierId: "SUP-02", status: "Sent", created: Date.now() - 2 * DAY, expected: Date.now() + 3 * DAY,
-    lines: [{ sku: "SW-5310", name: "Mr Fog Switch 5500", ordered: 20, received: 0, cost: 120.0 }, { sku: "SW-5510", name: "Breeze Pro 2% Assorted", ordered: 30, received: 0, cost: 42.0 }] },
-  { id: "PO-3038", supplierId: "SUP-01", status: "Partially Received", created: Date.now() - 4 * DAY, expected: Date.now() - 1 * DAY,
-    lines: [{ sku: "SW-5127", name: "24/7 King Red Carton", ordered: 40, received: 25, cost: 52.0 }, { sku: "SW-2798", name: "4K'S Cigarillo 4F99 Diamond", ordered: 60, received: 60, cost: 8.4 }] },
-  { id: "PO-3032", supplierId: "SUP-03", status: "Draft", created: Date.now() - 1 * DAY, expected: Date.now() + 2 * DAY,
-    lines: [{ sku: "SW-6411", name: "Candy Treasure Assorted Mix", ordered: 24, received: 0, cost: 36.0 }] },
-  { id: "PO-3019", supplierId: "SUP-04", status: "Received", created: Date.now() - 9 * DAY, expected: Date.now() - 5 * DAY,
-    lines: [{ sku: "SW-7250", name: "5-Hour Energy Berry 12ct", ordered: 30, received: 30, cost: 14.5 }] },
-];
 
 export const usePurchaseOrders = () => {
-  const { items, ready, persist } = usePersisted<PurchaseOrder>("satya.pos.v1", SEED_POS);
-  const add = (po: PurchaseOrder) => persist([po, ...items]);
-  const update = (id: string, patch: Partial<PurchaseOrder>) =>
-    persist(items.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-  const advance = (id: string) =>
-    persist(items.map((p) => {
-      if (p.id !== id) return p;
-      const i = PO_FLOW.indexOf(p.status);
-      return i < PO_FLOW.length - 1 ? { ...p, status: PO_FLOW[i + 1] } : p;
-    }));
-  const receiveAll = (id: string) =>
-    persist(items.map((p) =>
-      p.id === id
-        ? { ...p, status: "Received", lines: p.lines.map((l) => ({ ...l, received: l.ordered })) }
-        : p
-    ));
-  return { pos: items, ready, add, update, advance, receiveAll };
+  const col = useCollection<PurchaseOrder>("pos", (p) => p.id);
+  const advance = useCallback((id: string) => {
+    const p = (col.items as PurchaseOrder[]).find((x) => x.id === id);
+    if (!p) return;
+    const i = PO_FLOW.indexOf(p.status);
+    if (i < PO_FLOW.length - 1) col.update(id, { status: PO_FLOW[i + 1] });
+  }, [col.items, col.update]); // eslint-disable-line react-hooks/exhaustive-deps
+  const receiveAll = useCallback((id: string) => {
+    const p = (col.items as PurchaseOrder[]).find((x) => x.id === id);
+    if (!p) return;
+    col.update(id, { status: "Received", lines: p.lines.map((l) => ({ ...l, received: l.ordered })) });
+  }, [col.items, col.update]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { pos: col.items, ready: col.ready, add: col.add, update: col.update, advance, receiveAll };
 };
 
 /* =========================================================
-   GOODS RECEIPTS (GRN) + SUPPLIER INVOICES + THREE-WAY MATCH
+   GOODS RECEIPTS + SUPPLIER INVOICES + CREDITS + 3-WAY MATCH
    ========================================================= */
-export const RECEIVE_TOLERANCE = 0.05; // ±5% over/under receipt tolerance
+export const RECEIVE_TOLERANCE = 0.05;
 
 export interface GRNLine { sku: string; qty: number; }
 export interface GRN { id: string; poId: string; received: number; lines: GRNLine[]; note?: string; by: string; }
 export interface InvoiceLine { sku: string; qty: number; cost: number; }
 export interface SupplierInvoice {
   id: string; poId: string; date: number; ref: string; lines: InvoiceLine[]; total: number;
-  charges?: number; // service / delivery charge on the invoice
-  tax?: number; // tobacco / OTP tax the vendor prints (Topicz "TAX" column total)
-  due?: number; // payment due date, derived from the supplier's terms at record time
-  paid?: boolean; // accounts payable state; vendors add service charges past due
+  charges?: number;
+  tax?: number;
+  due?: number;
+  paid?: boolean;
 }
 
 /** Days until payment is due for a given supplier terms string. */
@@ -367,38 +224,32 @@ export const termsDueDays = (terms: string) => {
   if (/net\s*30/i.test(terms)) return 30;
   if (/net\s*15/i.test(terms)) return 15;
   if (/7\s*days/i.test(terms)) return 7;
-  return 0; // COD variants: due on delivery
+  return 0;
 };
 
 export const useReceipts = () => {
-  const { items, ready, persist } = usePersisted<GRN>("satya.grns.v1", []);
-  const add = (g: GRN) => persist([g, ...items]);
-  return { receipts: items, ready, add };
+  const col = useCollection<GRN>("grns", (g) => g.id);
+  return { receipts: col.items, ready: col.ready, add: col.add };
 };
 export const useInvoices = () => {
-  const { items, ready, persist } = usePersisted<SupplierInvoice>("satya.invoices.v1", []);
-  const add = (inv: SupplierInvoice) => persist([inv, ...items]);
-  const markPaid = (id: string) =>
-    persist(items.map((i) => (i.id === id ? { ...i, paid: true } : i)));
-  return { invoices: items, ready, add, markPaid };
+  const col = useCollection<SupplierInvoice>("invoices", (i) => i.id);
+  const markPaid = useCallback((id: string) => col.update(id, { paid: true }), [col.update]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { invoices: col.items, ready: col.ready, add: col.add, markPaid };
 };
 
-/* ---------- credit memos — vendor credits for shortages/damage/price ---------- */
 export const CREDIT_REASONS = ["Shortage", "Damaged goods", "Price adjustment", "Return"];
 export interface CreditMemo {
   id: string;
   poId: string;
   date: number;
-  ref: string; // the vendor's credit memo number
+  ref: string;
   reason: string;
   amount: number;
   note?: string;
 }
 export const useCredits = () => {
-  const { items, ready, persist } = usePersisted<CreditMemo>("satya.credits.v1", []);
-  const add = (c: CreditMemo) => persist([c, ...items]);
-  const remove = (id: string) => persist(items.filter((c) => c.id !== id));
-  return { credits: items, ready, add, remove };
+  const col = useCollection<CreditMemo>("credits", (c) => c.id);
+  return { credits: col.items, ready: col.ready, add: col.add, remove: col.remove };
 };
 
 export type MatchStatus = "Awaiting receipt" | "Awaiting invoice" | "Matched" | "Variance";
@@ -419,14 +270,12 @@ export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: Supplier
     i.lines.forEach((l) => { invBySku[l.sku] = (invBySku[l.sku] || 0) + l.qty; invTotal += l.qty * l.cost; });
     invTotal += (i.charges ?? 0) + (i.tax ?? 0);
   });
-  // vendor credits (shortage/damage) reduce what's payable, letting a credited
-  // shortage still land on "Matched"
   invTotal -= credits.filter((c) => c.poId === po.id).reduce((s, c) => s + c.amount, 0);
 
   const ordered = po.lines.reduce((s, l) => s + l.ordered, 0);
   const received = po.lines.reduce((s, l) => s + (recBySku[l.sku] ?? l.received ?? 0), 0);
   const invoicedQty = Object.values(invBySku).reduce((s, n) => s + n, 0);
-  const poTotal = poTotal2(po);
+  const total = poTotal(po);
   const hasReceipt = received > 0;
   const hasInvoice = poInvoices.length > 0;
 
@@ -437,18 +286,14 @@ export function threeWayMatch(po: PurchaseOrder, grns: GRN[], invoices: Supplier
   let status: MatchStatus;
   if (!hasReceipt) status = "Awaiting receipt";
   else if (!hasInvoice) status = "Awaiting invoice";
-  else if (variances.length === 0 && Math.abs(invTotal - poTotal) <= poTotal * RECEIVE_TOLERANCE) status = "Matched";
+  else if (variances.length === 0 && Math.abs(invTotal - total) <= total * RECEIVE_TOLERANCE) status = "Matched";
   else status = "Variance";
 
-  return { ordered, received, invoicedQty, poTotal, invTotal, status, variances };
+  return { ordered, received, invoicedQty, poTotal: total, invTotal, status, variances };
 }
-const poTotal2 = (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.ordered * l.cost, 0);
 
 /* =========================================================
    INVOICE TEXT → PO LINES
-   Parses pasted or OCR'd vendor-invoice text (A.H. Jamra /
-   Topicz style: qty, description, UPC, unit price, extension)
-   and matches rows to the catalog: UPC first, fuzzy name second.
    ========================================================= */
 export interface ParsedInvoiceRow {
   raw: string;
@@ -456,7 +301,6 @@ export interface ParsedInvoiceRow {
   cost: number;
   desc: string;
   upc?: string;
-  /** Matched catalog product id ("" when no match). */
   productId: string;
   matchedName?: string;
   matchedBy?: "upc" | "name";
@@ -472,24 +316,19 @@ export function parseInvoiceText(text: string, products: Product[]): ParsedInvoi
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (line.length < 8) continue;
-    // money figures on the line; a real item row has a unit price (and usually an extension)
     const monies = [...line.matchAll(/\d{1,6}\.\d{2}\b/g)].map((mt) => ({ v: Number(mt[0]), i: mt.index! }));
     if (!monies.length) continue;
     if (/subtotal|total|service charge|taxable|please pay/i.test(line)) continue;
-    // unit price: second-to-last money when an extension follows, else the last
     const cost = monies.length >= 2 ? monies[monies.length - 2].v : monies[0].v;
     if (cost <= 0) continue;
 
     const upc = line.match(/\b\d{11,13}\b/)?.[0];
-    // qty: with a leading item number the qty is the 2nd bare integer, else the 1st
     const ints = [...line.slice(0, monies[0].i).matchAll(/\b\d{1,4}\b/g)].map((mt) => Number(mt[0])).filter((n) => n > 0 && String(n) !== upc?.slice(0, String(n).length));
     const qty = ints.length >= 2 ? ints[1] : ints[0] ?? 1;
     if (!qty || qty > 5000) continue;
 
-    // description: strip numbers/UPC, keep the words
     const desc = line.slice(0, monies[0].i).replace(/\b\d{11,13}\b/g, "").replace(/^\s*\d+\s+\d+\s*/, "").replace(/\s{2,}/g, " ").trim();
 
-    // match: exact UPC beats fuzzy name-token overlap (≥ half the tokens)
     let matched: Product | undefined = upc ? byGtin.get(upc) : undefined;
     let matchedBy: ParsedInvoiceRow["matchedBy"] = matched ? "upc" : undefined;
     if (!matched && desc) {
@@ -523,22 +362,16 @@ export interface StockMovement {
   sku: string;
   name: string;
   type: MoveType;
-  qty: number; // signed
+  qty: number;
   ref: string;
   loc?: string;
 }
-export const SEED_MOVEMENTS: StockMovement[] = [
-  { id: "M-9001", ts: Date.now() - 1 * 3600000, sku: "SW-2798", name: "4K'S Cigarillo 4F99 Diamond", type: "Receipt", qty: 60, ref: "PO-3038", loc: "A-01-R1-B1" },
-  { id: "M-9002", ts: Date.now() - 2 * 3600000, sku: "SW-5510", name: "Breeze Pro 2% Assorted", type: "Pick", qty: -8, ref: "SW-4810", loc: "B-01-R1-B1" },
-  { id: "M-9003", ts: Date.now() - 5 * 3600000, sku: "SW-7120", name: "ZYN Cool Mint 6mg", type: "Adjust", qty: -3, ref: "cycle count", loc: "B-01-R1-B2" },
-  { id: "M-9004", ts: Date.now() - 8 * 3600000, sku: "SW-6411", name: "Candy Treasure Assorted Mix", type: "Transfer", qty: 12, ref: "C-01 → C-02", loc: "C-02-R2-B4" },
-  { id: "M-9005", ts: Date.now() - 26 * 3600000, sku: "SW-5127", name: "24/7 King Red Carton", type: "Putaway", qty: 25, ref: "PO-3038", loc: "A-02-R1-B1" },
-];
 export const useMovements = () => {
-  const { items, ready, persist } = usePersisted<StockMovement>("satya.movements.v1", SEED_MOVEMENTS);
-  const log = (m: Omit<StockMovement, "id" | "ts">) =>
-    persist([{ ...m, id: "M-" + Math.floor(9100 + Math.random() * 900), ts: Date.now() }, ...read<StockMovement[]>("satya.movements.v1", SEED_MOVEMENTS)]);
-  return { movements: items, ready, log };
+  const col = useCollection<StockMovement>("movements", (m) => m.id);
+  const log = useCallback((m: Omit<StockMovement, "id" | "ts">) => {
+    col.add({ ...m, id: "M-" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 90 + 10), ts: Date.now() });
+  }, [col.add]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { movements: col.items, ready: col.ready, log };
 };
 
 /* =========================================================
@@ -551,7 +384,6 @@ export function validBarcode(code: string): boolean {
   const digits = code.split("").map(Number);
   const check = digits.pop()!;
   let sum = 0;
-  // weight pattern depends on length; compute from the right
   digits.reverse().forEach((d, i) => { sum += i % 2 === 0 ? d * 3 : d; });
   return (10 - (sum % 10)) % 10 === check;
 }
@@ -577,8 +409,8 @@ const IMPORT_COLUMNS = ["name", "category", "gtin", "cost", "price", "caseQty", 
 
 export function csvTemplate(): string {
   return IMPORT_COLUMNS.join(",") +
-    "\nMr Fog Max Pro 1500,vape,841238100277,120.00,149.50,10,case,15,120,SUP-02,40" +
-    "\nQueen City Gummies 24ct,grocery,036000291452,28.50,44.99,24,case,12,96,SUP-03,30";
+    "\nMr Fog Max Pro 1500,vape,841238100277,120.00,149.50,10,case,15,120,SUP-06,40" +
+    "\nQueen City Gummies 24ct,grocery,036000291452,28.50,44.99,24,case,12,96,SUP-07,30";
 }
 
 export function parseCsv(text: string): Record<string, string>[] {
@@ -593,7 +425,6 @@ export function parseCsv(text: string): Record<string, string>[] {
   });
 }
 
-/** Validate parsed rows in three layers; returns staging rows with per-row errors. */
 export function validateRows(
   rows: Record<string, string>[],
   ctx: { categories: string[]; suppliers: string[]; existingSkus: Set<string>; existingGtins: Set<string> }
@@ -606,7 +437,6 @@ export function validateRows(
     const name = r.name || "";
     const num = (v: string) => (v === "" || isNaN(Number(v)) ? NaN : Number(v));
 
-    // 1) schema
     if (!name) errors.push("name is required");
     if (!r.category) errors.push("category is required");
     if (isNaN(num(r.price))) errors.push("price must be numeric");
@@ -614,7 +444,6 @@ export function validateRows(
     if (r.caseQty && (isNaN(num(r.caseQty)) || num(r.caseQty) <= 0)) errors.push("caseQty must be > 0");
     if (errors.length) level = "schema";
 
-    // 2) integrity
     if (level === "ok") {
       if (r.category && !ctx.categories.includes(r.category)) errors.push(`unknown category "${r.category}"`);
       if (r.supplierId && !ctx.suppliers.includes(r.supplierId)) errors.push(`unknown supplier "${r.supplierId}"`);
@@ -623,7 +452,6 @@ export function validateRows(
       if (errors.length) level = "integrity";
     }
 
-    // 3) business
     if (level === "ok") {
       const rp = num(r.reorderPoint), ms = num(r.maxStock), cost = num(r.cost), price = num(r.price);
       if (!isNaN(rp) && !isNaN(ms) && rp > ms) errors.push("reorder point exceeds max stock");
@@ -648,7 +476,6 @@ export function rowToProduct(r: ImportRow, id: number): Product {
     id,
     name: r.name,
     dep: (r.category as DeptKey),
-    emoji: "📦",
     price: Number(r.price) || 0,
     pack: `${r.caseQty || 1}ct`,
     unit: r.uom || "case",
@@ -664,5 +491,6 @@ export function rowToProduct(r: ImportRow, id: number): Product {
     supplierId: r.supplierId || undefined,
     active: true,
     onArrivals: true,
+    created: Date.now(),
   };
 }

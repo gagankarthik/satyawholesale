@@ -1,62 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pin, Plus, Trash } from "@/components/Icons";
-import { Button } from "@/components/ui";
+import { Button, EmptyState } from "@/components/ui";
 import { useConfirm } from "@/components/Confirm";
 import { usePortal } from "../PortalShell";
-import { ADDRESSES } from "../meta";
-
-type Addr = { id: string; label: string; addr: string };
-const KEY = "satya.addresses";
+import { useAddresses, type Address } from "@/lib/addresses";
 
 export default function PortalAddresses() {
-  const { flash } = usePortal();
+  const { flash, STORE } = usePortal();
   const confirm = useConfirm();
-  const [list, setList] = useState<Addr[]>(ADDRESSES);
+  const { addresses, add, remove } = useAddresses(STORE);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ label: "", addr: "" });
-
-  useEffect(() => {
-    try { const s = localStorage.getItem(KEY); if (s) setList(JSON.parse(s)); } catch {}
-  }, []);
-  const persist = (next: Addr[]) => { setList(next); try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {} };
 
   const addAddr = (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.label.trim() || !draft.addr.trim()) return;
-    persist([...list, { id: "a" + Date.now(), label: draft.label.trim(), addr: draft.addr.trim() }]);
+    add(draft.label, draft.addr);
     setDraft({ label: "", addr: "" });
     setAdding(false);
     flash("Address added");
   };
-  const removeAddr = async (a: Addr) => {
+  const removeAddr = async (a: Address) => {
     if (!(await confirm({ title: "Remove this address?", message: `"${a.label}" will no longer be offered at checkout.`, confirmLabel: "Remove address", danger: true }))) return;
-    persist(list.filter((x) => x.id !== a.id));
+    remove(a.id);
     flash(`${a.label} removed`);
   };
 
   return (
     <>
-      <div className="addrgrid">
-        {list.map((a, i) => (
-          <div className="addrcard" key={a.id}>
-            <div className="addrcard-h">
-              <span className="addrcard-ic" aria-hidden="true"><Pin /></span>
-              <b>{a.label}</b>
-              {i === 0 && <span className="addrcard-def">Default</span>}
-            </div>
-            <p>{a.addr}</p>
-            {list.length > 1 && (
+      {addresses.length === 0 && !adding ? (
+        <EmptyState
+          variant="light"
+          icon={<Pin />}
+          title="No saved addresses yet"
+          description="Save the places you take delivery and they'll be one tap away at checkout."
+          action={<Button variant="primary" onClick={() => setAdding(true)}>Add address</Button>}
+        />
+      ) : (
+        <div className="addrgrid">
+          {addresses.map((a, i) => (
+            <div className="addrcard" key={a.id}>
+              <div className="addrcard-h">
+                <span className="addrcard-ic" aria-hidden="true"><Pin /></span>
+                <b>{a.label}</b>
+                {i === 0 && <span className="addrcard-def">Default</span>}
+              </div>
+              <p>{a.addr}</p>
               <button type="button" className="addrcard-rm" onClick={() => removeAddr(a)} aria-label={`Remove ${a.label}`}><Trash /> Remove</button>
-            )}
-          </div>
-        ))}
-        <button type="button" className="addrcard addrcard-add" onClick={() => setAdding(true)}>
-          <span className="addrcard-add-ic"><Plus /></span>
-          Add address
-        </button>
-      </div>
+            </div>
+          ))}
+          <button type="button" className="addrcard addrcard-add" onClick={() => setAdding(true)}>
+            <span className="addrcard-add-ic"><Plus /></span>
+            Add address
+          </button>
+        </div>
+      )}
 
       {adding && (
         <div className="modal-overlay" onClick={() => setAdding(false)}>

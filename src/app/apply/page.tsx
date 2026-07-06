@@ -5,9 +5,9 @@ import ApplyWizard from "@/components/landing/ApplyWizard";
 import { REQS } from "@/components/landing/data";
 
 export const metadata: Metadata = {
-  title: "Apply for a wholesale trade account",
+  title: "Apply for a wholesale customer account",
   description:
-    "Open a wholesale trade account with Satya Wholesale, Cincinnati's cash-and-carry distributor for convenience stores. Apply online in three short steps; most stores are approved the same business day.",
+    "Open a wholesale customer account with Satya Wholesale, Cincinnati's cash-and-carry distributor for convenience stores. Apply online in three short steps; most stores are approved the same business day.",
   alternates: { canonical: "/apply" },
 };
 
@@ -20,7 +20,7 @@ export default function ApplyPage() {
       </header>
       <main className="apply-main">
         <div className="apply-intro">
-          <h1>Open your trade account</h1>
+          <h1>Open your customer account</h1>
           <p>Three short steps. We review the same business day, and most stores place their first case order within a day.</p>
         </div>
         <div className="apply-grid">

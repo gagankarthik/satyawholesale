@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  useInventory, useSettings, LOW_STOCK, CONTACT,
+  useSettings, LOW_STOCK, CONTACT,
 } from "@/lib/store";
 import {
   useStaff, PO_APPROVAL_THRESHOLD, ROLES, type Role,
 } from "@/lib/wms";
-import { useConfirm } from "@/components/Confirm";
 import { ListToolbar, Menu, Tabs, type ToolbarOption } from "@/components/ui";
 import { Head, m, type Flash } from "./shared";
 
@@ -86,9 +85,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
    WAREHOUSE
    ======================================================================= */
 export function SettingsTab({ flash }: { flash: Flash }) {
-  const { reset } = useInventory();
   const { settings, update } = useSettings();
-  const confirm = useConfirm();
   const [rate, setRate] = useState(String(settings.taxRate));
   const [label, setLabel] = useState(settings.taxLabel);
 
@@ -157,7 +154,6 @@ export function SettingsTab({ flash }: { flash: Flash }) {
               <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
               <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ marginTop: 18 }} onClick={async () => { if (await confirm({ title: "Reset demo catalog?", message: "All products revert to the seeded data. Orders and accounts are kept.", confirmLabel: "Reset", danger: true })) { reset(); flash("Catalog reset"); } }}>Reset demo catalog</button>
           </div>
         )}
       </div>

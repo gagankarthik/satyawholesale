@@ -3,11 +3,7 @@
 /* department iconography now lives in the shared component so admin reuses it */
 export { DEPT_ICON, DEPT_COLOR } from "@/components/DeptIcon";
 
-/* saved ship-to addresses for the signed-in trade account */
-export const ADDRESSES = [
-  { id: "store", label: "Storefront", addr: "412 Vine St, Cincinnati, OH 45202" },
-  { id: "dock", label: "Back dock", addr: "88 Spring Grove Ave, Cincinnati, OH 45232" },
-];
+/* Saved ship-to addresses now live per-account in useAddresses (src/lib/addresses.ts). */
 
 /* "3m ago" / "2h ago" / "5d ago" */
 export const ago = (ms: number) => {
