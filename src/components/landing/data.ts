@@ -25,7 +25,7 @@ export const HERO_IMAGES = [
 
 export const SERVICE = [
   { Icon: Store, n: "At the warehouse", h: "Cash & carry", img: "1494412519320-aa613dfb7738", p: "Walk our Reading Road floor, load your own cases and check out the same day. No appointment and no order minimum." },
-  { Icon: Truck, n: "Across the region", h: "Regional delivery", img: "1601584115197-04ecc0da31d7", p: "Order from the trade portal and we deliver across Greater Cincinnati, usually the next business day." },
+  { Icon: Truck, n: "Across the region", h: "Regional delivery", img: "1601584115197-04ecc0da31d7", p: "Order from the customer portal and we deliver across Greater Cincinnati, usually the next business day." },
   { Icon: Receipt, n: "One invoice", h: "A single account", img: "1605902711622-cfb43c4437b5", p: "Put tobacco, grocery, health and beauty, and automotive on one bill and one delivery instead of managing five separate suppliers." },
 ];
 

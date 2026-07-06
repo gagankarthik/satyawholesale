@@ -47,7 +47,7 @@ export default function Footer() {
             <Link href="/returns">Returns</Link>
             <Link href="/terms">Terms</Link>
             <span className="sep">·</span>
-            <span>21+ · Verified to state &amp; federal law</span>
+            <span>21+ · Sales comply with state and federal law</span>
           </div>
         </div>
       </div>

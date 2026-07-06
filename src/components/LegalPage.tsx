@@ -17,7 +17,7 @@ export default function LegalPage({
           <Link href="/" className="brand" aria-label="Satya Wholesale home">
             <Image src="/logo.webp" alt="Satya Wholesale" width={200} height={50} />
           </Link>
-          <Link href="/" className="legal-back">← Back to site</Link>
+          <Link href="/" className="legal-back">← Back to the site</Link>
         </div>
       </header>
       <main className="wrap legal-body" id="main">

@@ -41,20 +41,20 @@ export default function Login() {
 
   return (
     <div className="auth">
-      <Link href="/" className="auth-back mono">&larr; Back to site</Link>
+      <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
 
       <div className="auth-grid rise-in">
         {/* Order-desk manifest */}
         <aside className="auth-manifest">
           <div className="mf-top">
             <Brand dark height={32} />
-            <span className="mf-ref mono">DESK&middot;01</span>
+            <span className="mf-ref mono">ACCOUNT</span>
           </div>
 
           <div className="mf-lead">
             <span className="auth-eyebrow mono">Customer order portal</span>
-            <h2>Sign in at the<br />order desk.</h2>
-            <p>Licensed wholesale for Greater Cincinnati c-stores. Browse the full catalog, build orders by the case, and reorder in two taps.</p>
+            <h2>Sign in to your<br />customer portal.</h2>
+            <p>Licensed wholesale for Greater Cincinnati c-stores. Browse the full catalog, build orders by the case, and reorder in seconds.</p>
           </div>
 
           <dl className="mf-specs mono">

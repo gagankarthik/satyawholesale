@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { fmt, statusSlug } from "@/lib/store";
 import { usePromotions } from "@/lib/wms";
 import { Package, Sparkles } from "@/components/Icons";
-import { EmptyState, KpiCard } from "@/components/ui";
+import { Button, EmptyState, KpiCard, Skeleton } from "@/components/ui";
 import { usePortal } from "./PortalShell";
 import ProductCard from "./ProductCard";
 import PosterCarousel from "./PosterCarousel";
@@ -15,7 +15,7 @@ import { ago } from "./meta";
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export default function PortalDashboard() {
-  const { products, myOrders, setDept, depts, matchDept } = usePortal();
+  const { products, myOrders, ready, error, reload, setDept, depts, matchDept } = usePortal();
   const { promos } = usePromotions();
   const ads = promos.filter((p) => p.active);
 
@@ -35,6 +35,26 @@ export default function PortalDashboard() {
   const openOrders = myOrders.filter((o) => o.status !== "Completed" && o.status !== "Cancelled").length;
   const lifetime = myOrders.reduce((s, o) => s + o.total, 0);
   const casesOrdered = myOrders.reduce((s, o) => s + o.cases, 0);
+
+  if (!ready) {
+    return (
+      <>
+        <Skeleton height={220} radius={16} />
+        <div className="kpis rise-in">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={104} radius={16} />)}</div>
+        <div className="catrow"><div className="catrow-scroll">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} width={200} height={220} />)}</div></div>
+      </>
+    );
+  }
+
+  if (error && !products.length && !myOrders.length) {
+    return (
+      <EmptyState
+        title="Couldn't load"
+        description="There was a problem loading your data."
+        action={<Button variant="ghost" onClick={reload}>Retry</Button>}
+      />
+    );
+  }
 
   return (
     <>

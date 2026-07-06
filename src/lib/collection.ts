@@ -46,10 +46,33 @@ async function load(entity: string, force = false) {
 /** Force-refresh an entity from anywhere (e.g. after order placement). */
 export const refreshCollection = (entity: string) => load(entity, true);
 
+/* ---------------------------------------------------------------
+   Real-time: keep every on-screen collection fresh by refetching
+   the entities that currently have mounted subscribers, both on a
+   steady interval and whenever the tab regains focus/visibility.
+   Refreshes are silent (items stay put until new data lands, and
+   `ready` never flips back), so there is no skeleton flicker.
+   --------------------------------------------------------------- */
+const REFRESH_MS = 20000;
+
+function refreshActive() {
+  for (const [entity, e] of cache) if (e.subs.size > 0) void load(entity, true);
+}
+
+let autoStarted = false;
+function startAutoRefresh() {
+  if (autoStarted || typeof window === "undefined") return;
+  autoStarted = true;
+  window.setInterval(() => { if (document.visibilityState === "visible") refreshActive(); }, REFRESH_MS);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshActive(); });
+  window.addEventListener("focus", refreshActive);
+}
+
 export function useCollection<T>(entity: string, idOf: (item: T) => string) {
   const [, bump] = useState(0);
 
   useEffect(() => {
+    startAutoRefresh();
     const e = entry(entity);
     const sub = () => bump((n) => n + 1);
     e.subs.add(sub);

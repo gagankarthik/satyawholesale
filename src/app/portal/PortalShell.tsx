@@ -21,6 +21,8 @@ type Cart = Record<number, number>; // id -> cases
 interface PortalCtx {
   products: Product[];
   ready: boolean;
+  error: string | null;
+  reload: () => void;
   orders: Order[];
   myOrders: Order[];
   STORE: string;
@@ -58,17 +60,24 @@ export function usePortal() {
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { ready: sessionReady, signedIn, store, email, signOut } = useSession();
+  const { ready: sessionReady, signedIn, isAdmin, store, email, signOut } = useSession();
 
   /* The signed-in customer account. Orders come back already scoped to this
      store by the API, so no client-side store filter is needed. */
   const STORE = store ?? email ?? "";
   const initials = (STORE || email || "SW").split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "SW";
 
-  const { products, ready } = useInventory();
-  const { orders } = useOrders();
-  const { categories } = useCategories();
+  const { products, ready, error: productsError, refresh: refreshProducts } = useInventory();
+  const { orders, error: ordersError, refresh: refreshOrders } = useOrders();
+  const { categories, refresh: refreshCategories } = useCategories();
   const myOrders = orders;
+
+  const error = productsError ?? ordersError;
+  const reload = useCallback(() => {
+    refreshProducts();
+    refreshOrders();
+    refreshCategories();
+  }, [refreshProducts, refreshOrders, refreshCategories]);
 
   /* ---- admin-managed catalog taxonomy (departments + sub-categories) ---- */
   const depts = useMemo(() => categories.filter((c) => c.parent === null && c.active), [categories]);
@@ -186,7 +195,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   );
 
   const value: PortalCtx = {
-    products, ready, orders, myOrders, STORE, counts,
+    products, ready, error, reload, orders, myOrders, STORE, counts,
     depts, subsFor, catName, matchDept,
     dept, setDept, sub, setSub, query, setQuery,
     cart, add, changeQty, removeLine, clearCart, cases, flash,
@@ -259,7 +268,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               <div className="menu-head"><div className="mh-nm">{STORE || "Customer account"}</div><div className="mh-em">{email}</div></div>
               <Link href="/portal/profile" className="menu-item" role="menuitem"><User /> Profile</Link>
               <Link href="/portal/addresses" className="menu-item" role="menuitem"><Pin /> Addresses</Link>
-              <Link href="/admin" className="menu-item" role="menuitem"><Shield /> Admin console</Link>
+              {isAdmin && <Link href="/admin" className="menu-item" role="menuitem"><Shield /> Admin console</Link>}
               <div className="menu-sep" />
               <button type="button" className="menu-item danger" role="menuitem" onClick={() => { signOut(); router.replace("/auth/login"); }}><LogOut /> Sign out</button>
             </Dropdown>

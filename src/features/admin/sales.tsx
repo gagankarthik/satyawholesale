@@ -20,8 +20,8 @@ import {
 } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip, Plus } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
-import { Head, FlowGuide, CUSTOMER_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { KpiCard, DataTable, Badge, Breadcrumb, Button, Combobox, Fab, ListToolbar, Menu, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { Head, FlowGuide, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
+import { KpiCard, DataTable, Badge, Breadcrumb, Button, Combobox, EmptyState, Fab, ListToolbar, Menu, Skeleton, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
 const statusTone = (s: OrderStatus): BadgeTone =>
@@ -89,11 +89,12 @@ function TrendChart({ cur, prev }: { cur: Bucket[]; prev: Bucket[] }) {
 }
 
 export function DashboardTab({ go }: { go: (t: Tab) => void }) {
-  const { products } = useInventory();
-  const { orders } = useOrders();
-  const { pos } = usePurchaseOrders();
-  const { customers } = useCustomers();
+  const { products, ready: prodReady } = useInventory();
+  const { orders, ready: ordReady } = useOrders();
+  const { pos, ready: poReady } = usePurchaseOrders();
+  const { customers, ready: custReady } = useCustomers();
   const { suppliers } = useSuppliers();
+  const ready = prodReady && ordReady && poReady && custReady;
 
   const [rangeKey, setRangeKey] = useState("7d");
   const [custom, setCustom] = useState<{ from: string; to: string }>({ from: "", to: "" });
@@ -190,10 +191,10 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
       </Head>
 
       <div className="kpis">
-        <KpiCard tone="accent" label="Revenue" value={k(stats.rev)} foot={<DeltaFoot cur={stats.rev} prev={stats.revPrev} />} />
-        <KpiCard label="Orders" value={stats.cur.length} foot={<DeltaFoot cur={stats.cur.length} prev={stats.prev.length} />} />
-        <KpiCard label="Avg order" value={k(stats.aov)} foot={<DeltaFoot cur={stats.aov} prev={stats.aovPrev} />} />
-        <KpiCard label="Cases shipped" value={stats.cases} foot={<DeltaFoot cur={stats.cases} prev={stats.casesPrev} />} />
+        <KpiCard tone="accent" label="Revenue" value={k(stats.rev)} loading={!ready} foot={<DeltaFoot cur={stats.rev} prev={stats.revPrev} />} />
+        <KpiCard label="Orders" value={stats.cur.length} loading={!ready} foot={<DeltaFoot cur={stats.cur.length} prev={stats.prev.length} />} />
+        <KpiCard label="Avg order" value={k(stats.aov)} loading={!ready} foot={<DeltaFoot cur={stats.aov} prev={stats.aovPrev} />} />
+        <KpiCard label="Cases shipped" value={stats.cases} loading={!ready} foot={<DeltaFoot cur={stats.cases} prev={stats.casesPrev} />} />
       </div>
 
       <div className="panel anim-in" style={{ marginBottom: 18 }}>
@@ -246,10 +247,10 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
       </div>
 
       <div className="kpis" style={{ marginTop: 18 }}>
-        <KpiCard label="Inventory value" value={k(invValue)} foot={`${products.length} SKUs at cost`} />
-        <KpiCard tone="warn" label="Reorder needed" value={low.length} foot="at/below reorder point" />
-        <KpiCard label="Open POs" value={openPOs} foot="in fulfillment" />
-        <KpiCard tone="danger" label="Pending accounts" value={pending} foot="awaiting approval" />
+        <KpiCard label="Inventory value" value={k(invValue)} loading={!ready} foot={`${products.length} SKUs at cost`} />
+        <KpiCard tone="warn" label="Reorder needed" value={low.length} loading={!ready} foot="at/below reorder point" />
+        <KpiCard label="Open POs" value={openPOs} loading={!ready} foot="in fulfillment" />
+        <KpiCard tone="danger" label="Pending accounts" value={pending} loading={!ready} foot="awaiting approval" />
       </div>
 
       <div className="dash" style={{ marginTop: 18 }}>
@@ -736,7 +737,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
 }
 
 export function OrdersTab() {
-  const { orders, setStatus } = useOrders();
+  const { orders, setStatus, ready, error, refresh } = useOrders();
   const router = useRouter();
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [query, setQuery] = useState("");
@@ -828,14 +829,23 @@ export function OrdersTab() {
           rows={rows}
           rowKey={(o) => o.ref}
           onRowClick={(o) => router.push(`/admin/orders/${o.ref}`)}
-          empty="No orders match."
+          loading={!ready}
+          empty={tableEmpty(error, refresh, "No orders match.")}
           selectable
           selected={selected}
           onToggle={toggleSel}
           onToggleAll={toggleAllSel}
         />
+      ) : !ready ? (
+        <div className="ocg">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="ocg-card"><Skeleton width="50%" height={16} /><Skeleton width="70%" height={14} /><Skeleton width="40%" height={14} /></div>
+          ))}
+        </div>
       ) : rows.length === 0 ? (
-        <div className="empty light"><div className="ei" aria-hidden="true"><Search /></div><h3>No orders match</h3></div>
+        error
+          ? <EmptyState title="Couldn't load" description="There was a problem loading orders." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
+          : <div className="empty light"><div className="ei" aria-hidden="true"><Search /></div><h3>No orders match</h3></div>
       ) : (
         <div className="ocg">
           {rows.map((o) => {
@@ -860,7 +870,7 @@ export function OrdersTab() {
    ======================================================================= */
 const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: "Net 15" };
 export function CustomersTab({ flash }: { flash: Flash }) {
-  const { customers, setStatus, update, add, remove } = useCustomers();
+  const { customers, setStatus, update, add, remove, ready, error, refresh } = useCustomers();
   const { orders } = useOrders();
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Hold">("all");
@@ -1070,7 +1080,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         rowKey={(c) => c.id}
         onRowClick={(c) => setOpenId(c.id)}
         rowClassName={(c) => (c.status === "Pending" ? "rowflag" : undefined)}
-        empty="No accounts match."
+        loading={!ready}
+        empty={tableEmpty(error, refresh, "No accounts match.")}
       />
 
       {inviting && (

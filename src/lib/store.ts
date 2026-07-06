@@ -182,7 +182,7 @@ export function useInventory() {
     (id: number) => col.remove(String(id)),
     [col.remove] // eslint-disable-line react-hooks/exhaustive-deps
   );
-  return { products: col.items, ready: col.ready, updateProduct, addProduct, removeProduct, reset: col.refresh };
+  return { products: col.items, ready: col.ready, error: col.error, refresh: col.refresh, updateProduct, addProduct, removeProduct, reset: col.refresh };
 }
 
 /* ---- orders hook ----
@@ -197,7 +197,7 @@ export function useOrders() {
   const setStatus = useCallback((ref: string, status: Order["status"]) => col.update(ref, { status }), [col.update]); // eslint-disable-line react-hooks/exhaustive-deps
   const patchOrder = useCallback((ref: string, patch: Partial<Order>) => col.update(ref, patch), [col.update]); // eslint-disable-line react-hooks/exhaustive-deps
   const removeOrder = useCallback((ref: string) => col.remove(ref), [col.remove]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { orders: col.items, ready: col.ready, placeOrder, setStatus, patchOrder, removeOrder };
+  return { orders: col.items, ready: col.ready, error: col.error, refresh: col.refresh, placeOrder, setStatus, patchOrder, removeOrder };
 }
 
 /* ---- app settings (tax, thresholds) ---- */
@@ -216,7 +216,7 @@ export function useSettings() {
     if (col.items.length === 0) col.add({ ...DEFAULT_SETTINGS, ...patch, id: "main" });
     else col.update("main", patch);
   }, [col.items.length, col.add, col.update]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { settings, update };
+  return { settings, update, ready: col.ready, error: col.error, refresh: col.refresh };
 }
 
 /** Tax applies to everyone by default; only an explicit resale exemption skips it. */

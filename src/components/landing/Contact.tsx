@@ -47,7 +47,7 @@ export default function Contact() {
                   <label className="field"><span>Email</span><input name="email" type="email" required placeholder="you@store.com" /></label>
                   <label className="field"><span>Phone</span><input name="phone" placeholder="(513) 555-0100" /></label>
                 </div>
-                <label className="field"><span>How can we help?</span><textarea name="message" required placeholder="Delivery days for the West Side? Do you carry a brand we need?" /></label>
+                <label className="field"><span>How can we help?</span><textarea name="message" required placeholder="Which delivery areas do you serve? Do you carry a specific brand we need?" /></label>
                 <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }}>Send message <Arrow /></button>
               </form>
             )}

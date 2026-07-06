@@ -9,7 +9,7 @@ import {
 import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, Skeleton } from "@/components/ui";
 import { Search, Chat, Close } from "@/components/Icons";
 import { usePortal } from "../../PortalShell";
 
@@ -17,7 +17,7 @@ const FULFILMENTS = ["Next-day delivery", "Cash & carry pickup", "Scheduled deli
 
 export default function PortalOrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { orders, patchOrder, setStatus } = useOrders();
+  const { orders, ready, patchOrder, setStatus } = useOrders();
   const { flash, products } = usePortal();
   const { settings } = useSettings();
   const o = orders.find((x) => x.ref === id);
@@ -30,6 +30,19 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   if (!o) {
+    if (!ready) {
+      return (
+        <div className="odetail">
+          <Link className="detail-back" href="/portal/orders">← Back to orders</Link>
+          <Skeleton height={72} radius={14} />
+          <div className="panel od-trackwrap" style={{ marginTop: 16 }}><Skeleton height={64} radius={12} /></div>
+          <div className="od-cols">
+            <div className="panel"><Skeleton height={280} radius={12} /></div>
+            <aside className="od-side"><div className="panel"><Skeleton height={180} radius={12} /></div></aside>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="odetail">
         <Link className="detail-back" href="/portal/orders">← Back to orders</Link>

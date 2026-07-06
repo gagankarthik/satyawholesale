@@ -5,16 +5,27 @@ import Link from "next/link";
 import { use } from "react";
 import { fmt, sku, productImg, offerActive, effPrice, type Product } from "@/lib/store";
 import { Search } from "@/components/Icons";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../../PortalShell";
 import ProductCard from "../../ProductCard";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { products, cart, add, changeQty, catName } = usePortal();
+  const { products, ready, cart, add, changeQty, catName } = usePortal();
   const p = products.find((x) => String(x.id) === id) as Product | undefined;
 
   if (!p) {
+    if (!ready) {
+      return (
+        <div className="odetail">
+          <Link className="detail-back" href="/portal/products">← Back to products</Link>
+          <div className="od-cols">
+            <div className="panel pd-hero"><Skeleton height={360} radius={12} /></div>
+            <aside className="od-side"><div className="panel"><Skeleton height={280} radius={12} /></div></aside>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="odetail">
         <Link className="detail-back" href="/portal/products">← Back to products</Link>

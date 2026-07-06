@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Tag } from "@/components/Icons";
-import { Button, EmptyState, Spinner } from "@/components/ui";
+import { Button, EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
 import PosterCarousel from "../PosterCarousel";
@@ -18,7 +18,7 @@ export default function PortalOffers() {
     return products.filter((p) => p.tag === "pop");
   }, [products]);
 
-  if (!ready) return <EmptyState icon={<Spinner />} title="Loading offers…" />;
+  if (!ready) return <div className="pgrid">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={220} />)}</div>;
 
   return (
     <>

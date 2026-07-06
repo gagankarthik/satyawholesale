@@ -4,15 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
 import { deptName, fmt, sku, productImg, useInventory, LOW_STOCK, type Product } from "@/lib/store";
-import { Badge } from "@/components/ui";
+import { Badge, Skeleton } from "@/components/ui";
 import { Search } from "@/components/Icons";
 
 export default function AdminProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { products } = useInventory();
+  const { products, ready } = useInventory();
   const p = products.find((x) => String(x.id) === id) as Product | undefined;
 
   if (!p) {
+    if (!ready) {
+      return (
+        <>
+          <Link className="detail-back" href="/admin/products">← All products</Link>
+          <header className="adminbar">
+            <div><Skeleton width={220} height={26} /><Skeleton width={140} height={14} /></div>
+          </header>
+          <div className="detail-grid">
+            <div className="detail-main">
+              <div className="panel"><div className="panel-h"><Skeleton width={120} height={18} /></div><Skeleton width="100%" height={120} /></div>
+            </div>
+            <aside className="detail-side">
+              <div className="panel" style={{ minHeight: 210 }}><Skeleton width="100%" height={190} /></div>
+            </aside>
+          </div>
+        </>
+      );
+    }
     return (
       <>
         <button className="detail-back" onClick={() => history.back()}>← Products</button>

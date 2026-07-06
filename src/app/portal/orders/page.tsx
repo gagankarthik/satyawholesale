@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Receipt } from "@/components/Icons";
-import { Button, EmptyState, Tabs } from "@/components/ui";
+import { Button, EmptyState, Skeleton, Tabs } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import OrdersList from "../OrdersList";
 
@@ -14,8 +14,26 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function PortalOrders() {
-  const { myOrders } = usePortal();
+  const { myOrders, ready, error, reload } = usePortal();
   const [tab, setTab] = useState<TabKey>("upcoming");
+
+  if (!ready) {
+    return (
+      <div className="orders">
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={132} radius={14} />)}
+      </div>
+    );
+  }
+
+  if (error && !myOrders.length) {
+    return (
+      <EmptyState
+        title="Couldn't load"
+        description="There was a problem loading your data."
+        action={<Button variant="ghost" onClick={reload}>Retry</Button>}
+      />
+    );
+  }
 
   if (!myOrders.length) {
     return (

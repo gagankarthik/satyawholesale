@@ -7,12 +7,12 @@ import {
 import {
   useStaff, PO_APPROVAL_THRESHOLD, ROLES, type Role,
 } from "@/lib/wms";
-import { ListToolbar, Menu, Tabs, type ToolbarOption } from "@/components/ui";
+import { Button, EmptyState, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
 import { Head, m, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
 export function UsersTab({ flash }: { flash: Flash }) {
-  const { staff, add, update } = useStaff();
+  const { staff, add, update, ready, error, refresh } = useStaff();
   const [adding, setAdding] = useState(false);
   const [d, setD] = useState(EMPTY_STAFF);
   const [query, setQuery] = useState("");
@@ -43,23 +43,37 @@ export function UsersTab({ flash }: { flash: Flash }) {
         <table className="invtable">
           <thead><tr><th>User</th><th>Role</th><th>Scanner</th><th className="r">Status</th><th className="r"></th></tr></thead>
           <tbody>
-            {rows.map((u) => (
-              <tr key={u.id}>
-                <td><div className="prodcell"><span className="avatar">{u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><div><div className="pn">{u.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{u.email}</div></div></div></td>
-                <td><select className="rolesel" aria-label={`Role for ${u.name}`} value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash(`${u.name} is now ${e.target.value}`); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
-                <td className="mono muted">{u.device || "—"}</td>
-                <td className="r"><span className={`ustatus ${u.status === "Active" ? "active" : "hold"}`}>{u.status}</span></td>
-                <td className="r">
-                  <Menu
-                    label={`Actions for ${u.name}`}
-                    items={[
-                      { label: u.status === "Active" ? "Suspend user" : "Restore user", danger: u.status === "Active", onSelect: () => { const suspending = u.status === "Active"; update(u.id, { status: suspending ? "Suspended" : "Active" }); flash(suspending ? `${u.name} suspended` : `${u.name} restored`); } },
-                    ]}
-                  />
-                </td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td colSpan={5} className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No users match.</td></tr>}
+            {!ready ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`s${i}`} aria-hidden="true"><td colSpan={5}><Skeleton width="100%" height={18} /></td></tr>
+              ))
+            ) : (
+              <>
+                {rows.map((u) => (
+                  <tr key={u.id}>
+                    <td><div className="prodcell"><span className="avatar">{u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><div><div className="pn">{u.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{u.email}</div></div></div></td>
+                    <td><select className="rolesel" aria-label={`Role for ${u.name}`} value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash(`${u.name} is now ${e.target.value}`); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
+                    <td className="mono muted">{u.device || "—"}</td>
+                    <td className="r"><span className={`ustatus ${u.status === "Active" ? "active" : "hold"}`}>{u.status}</span></td>
+                    <td className="r">
+                      <Menu
+                        label={`Actions for ${u.name}`}
+                        items={[
+                          { label: u.status === "Active" ? "Suspend user" : "Restore user", danger: u.status === "Active", onSelect: () => { const suspending = u.status === "Active"; update(u.id, { status: suspending ? "Suspended" : "Active" }); flash(suspending ? `${u.name} suspended` : `${u.name} restored`); } },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+                {!rows.length && (
+                  <tr><td colSpan={5} style={{ padding: 0 }}>
+                    {error
+                      ? <EmptyState title="Couldn't load" description="There was a problem loading users." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
+                      : <div className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No users match.</div>}
+                  </td></tr>
+                )}
+              </>
+            )}
           </tbody>
         </table>
       </div>

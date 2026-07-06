@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fmt, orderGrand, type PayStatus } from "@/lib/store";
 import { Card } from "@/components/Icons";
-import { Badge, EmptyState, KpiCard, ListToolbar, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { Badge, Button, EmptyState, KpiCard, ListToolbar, Skeleton, type BadgeTone, type ToolbarOption } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import { ago } from "../meta";
 
@@ -24,7 +24,7 @@ const SORT_OPTS: ToolbarOption[] = [
 ];
 
 export default function PortalPayments() {
-  const { myOrders } = usePortal();
+  const { myOrders, ready, error, reload } = usePortal();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -44,6 +44,25 @@ export default function PortalPayments() {
     );
     return [...list].sort((a, b) => (sort === "amount-desc" ? orderGrand(b) - orderGrand(a) : b.placed - a.placed));
   }, [billed, q, status, sort]);
+
+  if (!ready) {
+    return (
+      <>
+        <div className="kpis auto rise-in">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={104} radius={16} />)}</div>
+        <div className="panel" style={{ padding: 4 }}>{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={56} radius={10} />)}</div>
+      </>
+    );
+  }
+
+  if (error && !billed.length) {
+    return (
+      <EmptyState
+        title="Couldn't load"
+        description="There was a problem loading your data."
+        action={<Button variant="ghost" onClick={reload}>Retry</Button>}
+      />
+    );
+  }
 
   if (!billed.length) {
     return (

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Search } from "@/components/Icons";
-import { EmptyState, ListToolbar, Spinner, type ToolbarOption } from "@/components/ui";
+import { Button, EmptyState, ListToolbar, Skeleton, type ToolbarOption } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
 
@@ -18,7 +18,7 @@ const STOCK_FILTERS: ToolbarOption[] = [
 ];
 
 export default function PortalProducts() {
-  const { products, ready, dept, setDept, sub, setSub, query, setQuery, depts, subsFor, catName, matchDept } = usePortal();
+  const { products, ready, error, reload, dept, setDept, sub, setSub, query, setQuery, depts, subsFor, catName, matchDept } = usePortal();
   const [sort, setSort] = useState("name");
   const [stock, setStock] = useState("all");
 
@@ -76,7 +76,13 @@ export default function PortalProducts() {
         />
       )}
       {!ready ? (
-        <EmptyState icon={<Spinner />} title="Loading catalog…" />
+        <div className="pgrid">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={220} />)}</div>
+      ) : error && !products.length ? (
+        <EmptyState
+          title="Couldn't load"
+          description="There was a problem loading your data."
+          action={<Button variant="ghost" onClick={reload}>Retry</Button>}
+        />
       ) : browse ? (
         <>
           <section className="catrow">

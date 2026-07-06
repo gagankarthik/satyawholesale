@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { fmt, LOW_STOCK } from "@/lib/store";
+import { Button, EmptyState } from "@/components/ui";
 
 /* =========================================================
    Admin shared kernel — cross-cutting types, formatters and
@@ -34,6 +35,21 @@ export const stockClass = (n: number) => (n <= 0 ? "oos" : n <= LOW_STOCK ? "low
 
 export const fmtDate = (ts?: number) =>
   ts ? new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+
+/**
+ * Empty-cell content for a DataTable / list. When the source hook reports an
+ * error, surface a retry; otherwise fall back to the list's usual empty text.
+ */
+export function tableEmpty(error: string | null, refresh: () => void, fallback: React.ReactNode): React.ReactNode {
+  if (!error) return fallback;
+  return (
+    <EmptyState
+      title="Couldn't load"
+      description="There was a problem loading this data."
+      action={<Button variant="ghost" onClick={refresh}>Retry</Button>}
+    />
+  );
+}
 
 export function Head({ title, sub, children }: { title: string; sub: string; children?: React.ReactNode }) {
   return (

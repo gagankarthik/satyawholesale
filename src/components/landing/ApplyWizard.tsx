@@ -39,7 +39,7 @@ export default function ApplyWizard() {
       <div className="apply-done" role="status">
         <div className="modal-check success-pop"><Check /></div>
         <b>Application received</b>
-        <p>We review applications the same business day. Watch {d.email || "your inbox"} for the approval email. Anything urgent, call {CONTACT.phone}.</p>
+        <p>We review applications the same business day. Watch {d.email || "your inbox"} for the approval email. For anything urgent, call {CONTACT.phone}.</p>
         <div style={{ marginTop: 18 }}><Button href="/" variant="ghost">Back to the site</Button></div>
       </div>
     );

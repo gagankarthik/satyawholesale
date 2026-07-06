@@ -22,7 +22,7 @@ export default function Faq() {
             <span className="lm"><span className="lm-in">Questions,</span></span>
             <span className="lm"><span className="lm-in">answered.</span></span>
           </h2>
-          <p>What independent retailers ask most before opening an account. Anything else? Call the warehouse.</p>
+          <p>What independent retailers ask most before opening an account. For anything else, call the warehouse and a member of our team will help.</p>
         </div>
         <div className="faq-list reveal">
           {FAQS.map((f, i) => (

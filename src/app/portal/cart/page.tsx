@@ -7,7 +7,7 @@ import {
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
 import { Package, Check } from "@/components/Icons";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, EmptyState, Skeleton } from "@/components/ui";
 import Image from "next/image";
 import { usePortal } from "../PortalShell";
 import { useAddresses } from "@/lib/addresses";
@@ -16,7 +16,7 @@ const FULFILMENTS = ["Next-day delivery", "Cash & carry pickup", "Scheduled deli
 const PAYMENTS = ["Net 15 terms", "Net 30 terms", "Card on delivery", "Cash on delivery"];
 
 export default function CartPage() {
-  const { products, cart, changeQty, removeLine, clearCart, STORE, flash } = usePortal();
+  const { products, ready, cart, changeQty, removeLine, clearCart, STORE, flash } = usePortal();
   const { placeOrder } = useOrders();
   const { settings } = useSettings();
   const { addresses } = useAddresses(STORE);
@@ -73,6 +73,17 @@ export default function CartPage() {
     flash(`Order ${order.ref} placed`);
     router.push(`/portal/orders/${order.ref}`);
   };
+
+  // While the catalog loads, cart lines can't resolve yet — show a skeleton
+  // instead of flashing the empty-cart state.
+  if (!ready) {
+    return (
+      <div className="cartpage od-cols">
+        <div className="panel">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={72} radius={12} />)}</div>
+        <aside className="od-side"><div className="panel"><Skeleton height={220} radius={12} /></div></aside>
+      </div>
+    );
+  }
 
   if (!cartLines.length) {
     return (

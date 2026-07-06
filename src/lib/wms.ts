@@ -43,7 +43,7 @@ export interface Supplier {
 
 export const useSuppliers = () => {
   const col = useCollection<Supplier>("suppliers", (s) => s.id);
-  return { suppliers: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
+  return { suppliers: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
@@ -60,7 +60,7 @@ export interface Promotion {
 }
 export const usePromotions = () => {
   const col = useCollection<Promotion>("promos", (p) => p.id);
-  return { promos: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
+  return { promos: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
@@ -80,7 +80,7 @@ export interface Category {
 }
 export const useCategories = () => {
   const col = useCollection<Category>("categories", (c) => c.key);
-  return { categories: col.items, ready: col.ready, add: col.add, update: col.update, remove: col.remove };
+  return { categories: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
@@ -97,7 +97,7 @@ export interface WLocation {
 }
 export const useLocations = () => {
   const col = useCollection<WLocation>("locations", (l) => l.id);
-  return { locations: col.items, ready: col.ready, update: col.update, add: col.add, remove: col.remove };
+  return { locations: col.items, ready: col.ready, error: col.error, refresh: col.refresh, update: col.update, add: col.add, remove: col.remove };
 };
 
 /* =========================================================
@@ -116,7 +116,7 @@ export interface StaffUser {
 }
 export const useStaff = () => {
   const col = useCollection<StaffUser>("staff", (u) => u.id);
-  return { staff: col.items, ready: col.ready, add: col.add, update: col.update };
+  return { staff: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update };
 };
 
 /* =========================================================
@@ -137,7 +137,7 @@ export const useCustomers = () => {
     (id: string, status: TradeAccount["status"]) => col.update(id, { status }),
     [col.update] // eslint-disable-line react-hooks/exhaustive-deps
   );
-  return { customers: col.items, ready: col.ready, setStatus, update: col.update, add: col.add, remove: col.remove };
+  return { customers: col.items, ready: col.ready, error: col.error, refresh: col.refresh, setStatus, update: col.update, add: col.add, remove: col.remove };
 };
 
 /** Files a Pending application from the public site (no auth). */
@@ -200,7 +200,7 @@ export const usePurchaseOrders = () => {
     if (!p) return;
     col.update(id, { status: "Received", lines: p.lines.map((l) => ({ ...l, received: l.ordered })) });
   }, [col.items, col.update]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { pos: col.items, ready: col.ready, add: col.add, update: col.update, advance, receiveAll };
+  return { pos: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, advance, receiveAll };
 };
 
 /* =========================================================
@@ -229,12 +229,12 @@ export const termsDueDays = (terms: string) => {
 
 export const useReceipts = () => {
   const col = useCollection<GRN>("grns", (g) => g.id);
-  return { receipts: col.items, ready: col.ready, add: col.add };
+  return { receipts: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add };
 };
 export const useInvoices = () => {
   const col = useCollection<SupplierInvoice>("invoices", (i) => i.id);
   const markPaid = useCallback((id: string) => col.update(id, { paid: true }), [col.update]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { invoices: col.items, ready: col.ready, add: col.add, markPaid };
+  return { invoices: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, markPaid };
 };
 
 export const CREDIT_REASONS = ["Shortage", "Damaged goods", "Price adjustment", "Return"];
@@ -249,7 +249,7 @@ export interface CreditMemo {
 }
 export const useCredits = () => {
   const col = useCollection<CreditMemo>("credits", (c) => c.id);
-  return { credits: col.items, ready: col.ready, add: col.add, remove: col.remove };
+  return { credits: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, remove: col.remove };
 };
 
 export type MatchStatus = "Awaiting receipt" | "Awaiting invoice" | "Matched" | "Variance";
@@ -371,7 +371,7 @@ export const useMovements = () => {
   const log = useCallback((m: Omit<StockMovement, "id" | "ts">) => {
     col.add({ ...m, id: "M-" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 90 + 10), ts: Date.now() });
   }, [col.add]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { movements: col.items, ready: col.ready, log };
+  return { movements: col.items, ready: col.ready, error: col.error, refresh: col.refresh, log };
 };
 
 /* =========================================================

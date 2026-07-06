@@ -19,8 +19,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { Head, FlowGuide, PRODUCT_FLOW, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { Button, Badge, Breadcrumb, DataTable, Fab, ListToolbar, Menu, ImageUpload, Switch, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
+import { Head, FlowGuide, PRODUCT_FLOW, tableEmpty, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
+import { Button, Badge, Breadcrumb, DataTable, EmptyState, Fab, ListToolbar, Menu, ImageUpload, Skeleton, Switch, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
 const stockTone = (n: number): BadgeTone => (n <= 0 ? "danger" : n <= LOW_STOCK ? "warning" : "success");
@@ -182,7 +182,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
 
 export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void }) {
   const router = useRouter();
-  const { products, updateProduct, removeProduct } = useInventory();
+  const { products, updateProduct, removeProduct, ready, error, refresh } = useInventory();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<DeptKey | "all">("all");
   const [sort, setSort] = useState("name");
@@ -254,7 +254,8 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
         rowKey={(p) => String(p.id)}
         rowClassName={(p) => (p.stock <= 0 ? "rowdim" : undefined)}
         onRowClick={(p) => router.push(`/admin/products/${p.id}`)}
-        empty="No products match."
+        loading={!ready}
+        empty={tableEmpty(error, refresh, "No products match.")}
         pageSize={25}
       />
       <Fab icon={<Plus />} href="/admin/products/new">Onboard product</Fab>
@@ -356,7 +357,7 @@ export function ImportTab({ flash }: { flash: Flash }) {
    ======================================================================= */
 export function CategoriesTab({ flash }: { flash: Flash }) {
   const router = useRouter();
-  const { categories, update, remove } = useCategories();
+  const { categories, update, remove, ready, error, refresh } = useCategories();
   const { products } = useInventory();
   const confirm = useConfirm();
   const count = (key: string) => products.filter((p) => p.dep === key).length;
@@ -392,7 +393,8 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
         rows={categories}
         rowKey={(c) => c.key}
         onRowClick={(c) => router.push(`/admin/categories/${c.key}`)}
-        empty="No categories."
+        loading={!ready}
+        empty={tableEmpty(error, refresh, "No categories.")}
       />
     </>
   );
@@ -497,7 +499,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
    ======================================================================= */
 export function SuppliersTab({ flash }: { flash: Flash }) {
   const router = useRouter();
-  const { suppliers, update } = useSuppliers();
+  const { suppliers, update, ready, error, refresh } = useSuppliers();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("name");
@@ -542,7 +544,8 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
         rows={rows}
         rowKey={(s) => s.id}
         onRowClick={(s) => router.push(`/admin/suppliers/${s.id}`)}
-        empty="No suppliers match."
+        loading={!ready}
+        empty={tableEmpty(error, refresh, "No suppliers match.")}
       />
     </>
   );
@@ -763,7 +766,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
 }
 
 export function PromotionsTab({ flash }: { flash: Flash }) {
-  const { promos, update, remove } = usePromotions();
+  const { promos, update, remove, ready, error, refresh } = usePromotions();
   const confirm = useConfirm();
   const router = useRouter();
 
@@ -772,6 +775,18 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
       <Head title="Promotions" sub="Image banners shown on the buyer dashboard in the order portal">
         <Link className="btn btn-primary btn-sm" href="/admin/promotions/new">+ New promotion</Link>
       </Head>
+      {!ready ? (
+        <div className="promogrid">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div className="promocard" key={i}>
+              <span className="promoshot"><Skeleton width="100%" height="100%" radius={0} /></span>
+              <div className="promobody"><Skeleton width="60%" height={18} /><Skeleton width="90%" height={14} /></div>
+            </div>
+          ))}
+        </div>
+      ) : error && promos.length === 0 ? (
+        <EmptyState title="Couldn't load" description="There was a problem loading promotions." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
+      ) : (
       <div className="promogrid">
         {promos.map((p) => (
           <div className={`promocard ${p.active ? "" : "off"}`} key={p.id}>
@@ -796,6 +811,7 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
           </div>
         ))}
       </div>
+      )}
     </>
   );
 }

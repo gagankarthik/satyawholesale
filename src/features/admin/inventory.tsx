@@ -14,8 +14,8 @@ import {
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
 import { Search, Close, Package, Plus } from "@/components/Icons";
-import { Breadcrumb, Button, Combobox, DataTable, Fab, ListToolbar, Progress, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
-import { Head, FlowGuide, PRODUCT_FLOW, m, timeAgo, type Flash } from "./shared";
+import { Breadcrumb, Button, Combobox, DataTable, EmptyState, Fab, ListToolbar, Progress, Skeleton, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { Head, FlowGuide, PRODUCT_FLOW, tableEmpty, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
 const matchClass = (s: string) => s === "Matched" ? "matched" : s === "Variance" ? "variance" : "awaiting";
@@ -218,7 +218,7 @@ function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose, flash
    PURCHASE ORDERS — list (opens /admin/purchaseorder/[id])
    ======================================================================= */
 export function POTab({ flash }: { flash: Flash }) {
-  const { pos, add } = usePurchaseOrders();
+  const { pos, add, ready, error, refresh } = usePurchaseOrders();
   const { suppliers } = useSuppliers();
   const { products } = useInventory();
   const { receipts } = useReceipts();
@@ -296,8 +296,17 @@ export function POTab({ flash }: { flash: Flash }) {
           rows={poRows}
           rowKey={(po) => po.id}
           onRowClick={(po) => router.push(`/admin/purchaseorder/${po.id}`)}
-          empty="No purchase orders match."
+          loading={!ready}
+          empty={tableEmpty(error, refresh, "No purchase orders match.")}
         />
+      ) : !ready ? (
+        <div className="orders">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="ordercard"><div className="oc-head"><Skeleton width="40%" height={16} /><Skeleton width={80} height={16} /></div><Skeleton width="70%" height={14} /></div>
+          ))}
+        </div>
+      ) : error && poRows.length === 0 ? (
+        <EmptyState icon={<Package />} title="Couldn't load" description="There was a problem loading purchase orders." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
       ) : (
       <div className="orders">
         {poRows.map((po) => {
@@ -889,7 +898,7 @@ export function AdminPOCreate({ flash }: { flash: Flash }) {
    INVENTORY LEDGER
    ======================================================================= */
 export function InventoryTab({ flash }: { flash: Flash }) {
-  const { movements, log } = useMovements();
+  const { movements, log, ready, error, refresh } = useMovements();
   const { products, updateProduct } = useInventory();
   const [pid, setPid] = useState("");
   const [qty, setQty] = useState("");
@@ -951,17 +960,31 @@ export function InventoryTab({ flash }: { flash: Flash }) {
         <table className="invtable">
           <thead><tr><th>Time</th><th>Type</th><th>SKU / Product</th><th>Location</th><th>Ref</th><th className="r">Qty</th></tr></thead>
           <tbody>
-            {ledger.map((mv) => (
-              <tr key={mv.id}>
-                <td className="muted" style={{ fontSize: 13 }}>{timeAgo(mv.ts)}</td>
-                <td><span className={`movebadge ${mv.type.toLowerCase()}`}>{mv.type}</span></td>
-                <td><div className="pn" style={{ fontSize: 13.5 }}>{mv.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{mv.sku}</div></td>
-                <td className="mono muted">{mv.loc || "—"}</td>
-                <td className="mono muted">{mv.ref}</td>
-                <td className="r mono" style={{ color: mv.qty < 0 ? "var(--red)" : "var(--green)", fontWeight: 600 }}>{mv.qty > 0 ? "+" : ""}{mv.qty}</td>
-              </tr>
-            ))}
-            {!ledger.length && <tr><td colSpan={6} className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No movements match.</td></tr>}
+            {!ready ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`s${i}`} aria-hidden="true"><td colSpan={6}><Skeleton width="100%" height={18} /></td></tr>
+              ))
+            ) : (
+              <>
+                {ledger.map((mv) => (
+                  <tr key={mv.id}>
+                    <td className="muted" style={{ fontSize: 13 }}>{timeAgo(mv.ts)}</td>
+                    <td><span className={`movebadge ${mv.type.toLowerCase()}`}>{mv.type}</span></td>
+                    <td><div className="pn" style={{ fontSize: 13.5 }}>{mv.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{mv.sku}</div></td>
+                    <td className="mono muted">{mv.loc || "—"}</td>
+                    <td className="mono muted">{mv.ref}</td>
+                    <td className="r mono" style={{ color: mv.qty < 0 ? "var(--red)" : "var(--green)", fontWeight: 600 }}>{mv.qty > 0 ? "+" : ""}{mv.qty}</td>
+                  </tr>
+                ))}
+                {!ledger.length && (
+                  <tr><td colSpan={6} style={{ padding: 0 }}>
+                    {error
+                      ? <EmptyState title="Couldn't load" description="There was a problem loading the stock ledger." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
+                      : <div className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No movements match.</div>}
+                  </td></tr>
+                )}
+              </>
+            )}
           </tbody>
         </table>
       </div>
@@ -974,7 +997,7 @@ export function InventoryTab({ flash }: { flash: Flash }) {
    ======================================================================= */
 const EMPTY_BIN = { zone: "A", aisle: "01", rack: "R1", bin: "B1", capacity: "240", used: "0" };
 export function WarehouseTab({ flash }: { flash: Flash }) {
-  const { locations, update, add, remove } = useLocations();
+  const { locations, update, add, remove, ready, error, refresh } = useLocations();
   const confirm = useConfirm();
   const [adding, setAdding] = useState(false);
   const [nb, setNb] = useState(EMPTY_BIN);
@@ -1001,26 +1024,38 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add bin</button>
       </Head>
       <div className="kpis">
-        <div className="kpi"><div className="kl">Bins</div><div className="kv">{locations.length}</div><div className="kf">across {new Set(locations.map((l) => l.zone)).size} zones</div></div>
-        <div className="kpi"><div className="kl">Total capacity</div><div className="kv">{totalCap.toLocaleString()}</div><div className="kf">cases</div></div>
-        <div className="kpi accent"><div className="kl">Utilization</div><div className="kv">{totalCap ? Math.round((totalUsed / totalCap) * 100) : 0}%</div><div className="kf">{totalUsed.toLocaleString()} cases stored</div></div>
-        <div className="kpi warn"><div className="kl">Near full</div><div className="kv">{locations.filter((l) => l.capacity && l.used / l.capacity >= 0.85).length}</div><div className="kf">bins ≥ 85%</div></div>
+        <div className="kpi"><div className="kl">Bins</div><div className="kv">{ready ? locations.length : <Skeleton width={70} height={28} />}</div><div className="kf">across {new Set(locations.map((l) => l.zone)).size} zones</div></div>
+        <div className="kpi"><div className="kl">Total capacity</div><div className="kv">{ready ? totalCap.toLocaleString() : <Skeleton width={70} height={28} />}</div><div className="kf">cases</div></div>
+        <div className="kpi accent"><div className="kl">Utilization</div><div className="kv">{ready ? `${totalCap ? Math.round((totalUsed / totalCap) * 100) : 0}%` : <Skeleton width={70} height={28} />}</div><div className="kf">{totalUsed.toLocaleString()} cases stored</div></div>
+        <div className="kpi warn"><div className="kl">Near full</div><div className="kv">{ready ? locations.filter((l) => l.capacity && l.used / l.capacity >= 0.85).length : <Skeleton width={70} height={28} />}</div><div className="kf">bins ≥ 85%</div></div>
       </div>
       <div className="tablewrap">
         <table className="invtable">
           <thead><tr><th>Bin</th><th>Zone</th><th>Aisle</th><th>Rack</th><th>Utilization</th><th className="r">Used / Cap</th><th className="r"></th></tr></thead>
           <tbody>
-            {locations.map((l) => {
-              const pct = l.capacity ? Math.round((l.used / l.capacity) * 100) : 0;
-              return (
-                <tr key={l.id} className="clickrow" style={{ cursor: "pointer" }} onClick={() => openEdit(l.id)}>
-                  <td className="mono">{l.id}</td><td>{l.zone}</td><td>{l.aisle}</td><td>{l.rack}</td>
-                  <td><div className="capbar"><span className={`capfill ${pct >= 85 ? "hot" : pct >= 60 ? "mid" : ""}`} style={{ width: `${pct}%` }} /></div></td>
-                  <td className="r mono muted">{l.used} / {l.capacity}</td>
-                  <td className="r" onClick={(e) => e.stopPropagation()}><button className="ia del" onClick={async () => { if (await confirm({ title: "Remove bin?", message: `${l.id} will be removed.`, confirmLabel: "Remove", danger: true })) { remove(l.id); flash("Bin removed"); } }} aria-label="Remove bin"><Close /></button></td>
-                </tr>
-              );
-            })}
+            {!ready ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`s${i}`} aria-hidden="true"><td colSpan={7}><Skeleton width="100%" height={18} /></td></tr>
+              ))
+            ) : locations.length === 0 ? (
+              <tr><td colSpan={7} style={{ padding: 0 }}>
+                {error
+                  ? <EmptyState title="Couldn't load" description="There was a problem loading warehouse bins." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
+                  : <div className="muted" style={{ textAlign: "center", padding: "28px 0" }}>No bins yet. Add one to start mapping the warehouse.</div>}
+              </td></tr>
+            ) : (
+              locations.map((l) => {
+                const pct = l.capacity ? Math.round((l.used / l.capacity) * 100) : 0;
+                return (
+                  <tr key={l.id} className="clickrow" style={{ cursor: "pointer" }} onClick={() => openEdit(l.id)}>
+                    <td className="mono">{l.id}</td><td>{l.zone}</td><td>{l.aisle}</td><td>{l.rack}</td>
+                    <td><div className="capbar"><span className={`capfill ${pct >= 85 ? "hot" : pct >= 60 ? "mid" : ""}`} style={{ width: `${pct}%` }} /></div></td>
+                    <td className="r mono muted">{l.used} / {l.capacity}</td>
+                    <td className="r" onClick={(e) => e.stopPropagation()}><button className="ia del" onClick={async () => { if (await confirm({ title: "Remove bin?", message: `${l.id} will be removed.`, confirmLabel: "Remove", danger: true })) { remove(l.id); flash("Bin removed"); } }} aria-label="Remove bin"><Close /></button></td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
