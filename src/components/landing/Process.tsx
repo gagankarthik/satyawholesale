@@ -32,7 +32,7 @@ export default function Process() {
           <div className="pinbar" aria-hidden="true"><span className="pinbar-fill" /></div>
           <div className="process-cta reveal">
             <span>Get started today.</span>
-            <Link className="btn btn-primary" href="/apply">Open a customer account <Arrow /></Link>
+            <Link className="btn btn-primary" href="/signup">Open a customer account <Arrow /></Link>
           </div>
         </div>
       </div>

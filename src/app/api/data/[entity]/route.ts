@@ -1,8 +1,17 @@
-import { getAuth, isAdmin, unauthorized, forbidden } from "@/server/auth";
+import { getAuth, isAdmin, unauthorized, forbidden, type AuthUser } from "@/server/auth";
 import { listByType, putItem, getItem, patchItem, type Row } from "@/server/db";
 import { ENTITIES, canRead, canWrite, scopeRows } from "@/server/entities";
 import { readJson, isValidId, guardResponse } from "@/server/guard";
 import { sanitizeBuyerOrder } from "@/server/orders";
+
+/** A buyer whose account has been frozen or blocked may not place orders. */
+async function orderingBlocked(user: AuthUser): Promise<boolean> {
+  const direct = await getItem("accounts", user.sub); // self-signup accounts key by sub
+  const acct = direct ?? (await listByType("accounts")).find(
+    (a) => a.email === user.email || (!!user.store && a.store === user.store)
+  );
+  return acct?.status === "Frozen" || acct?.status === "Blocked";
+}
 
 /* GET  /api/data/<entity>      → list (role-checked, buyer-scoped)
    POST /api/data/<entity>      → create (orders also decrement stock) */
@@ -31,6 +40,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ entity: string
 
     // Orders carry money — buyers never set prices, totals or state directly.
     if (entity === "orders" && !isAdmin(user)) {
+      if (await orderingBlocked(user)) {
+        return Response.json({ error: "Your account is on hold. Please contact the warehouse to place orders." }, { status: 403 });
+      }
       body = await sanitizeBuyerOrder(body, user);
     } else if (rule.buyerScope && !isAdmin(user)) {
       // stamp buyer-scoped rows with the caller's own store, never a chosen one

@@ -13,7 +13,7 @@ export default function Cta() {
         </h2>
         <p className="reveal">Apply online in a few minutes, or call the warehouse and we&apos;ll set you up.</p>
         <div className="ca reveal">
-          <Link className="btn btn-ink" href="/apply">Open a customer account</Link>
+          <Link className="btn btn-ink" href="/signup">Open a customer account</Link>
           <a className="btn btn-light" href={CONTACT.phoneHref}>Call {CONTACT.phone}</a>
         </div>
       </div>

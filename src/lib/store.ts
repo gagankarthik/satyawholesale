@@ -140,7 +140,7 @@ export interface Customer {
   email: string;
   city: string;
   since: string;
-  status: "Active" | "Pending" | "Hold";
+  status: "Active" | "Pending" | "Frozen" | "Blocked";
   phone?: string;
   address?: string;
   businessLicense?: string;

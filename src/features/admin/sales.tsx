@@ -16,6 +16,7 @@ import {
   usePurchaseOrders, useMovements, useReceipts, useInvoices, usePromotions,
   poTotal, PO_FLOW, PO_APPROVAL_THRESHOLD, RECEIVE_TOLERANCE, threeWayMatch,
   ROLES, csvTemplate, parseCsv, validateRows, rowToProduct,
+  setAccountStatus,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip, Plus } from "@/components/Icons";
@@ -28,8 +29,8 @@ const statusTone = (s: OrderStatus): BadgeTone =>
   s === "Completed" ? "success" : s === "Cancelled" ? "danger" : s === "Out for delivery" || s === "At Local Facility" ? "info" : s === "Processing" ? "warning" : "brand";
 const payTone = (p: PayStatus): BadgeTone =>
   p === "Paid" ? "success" : p === "Partial" ? "warning" : p === "Refunded" ? "neutral" : "danger";
-const acctTone = (s: "Active" | "Pending" | "Hold"): BadgeTone =>
-  s === "Active" ? "success" : s === "Pending" ? "brand" : "danger";
+const acctTone = (s: string): BadgeTone =>
+  s === "Active" ? "success" : s === "Pending" ? "brand" : s === "Frozen" ? "warning" : "danger";
 
 /* =======================================================================
    DASHBOARD — analytics with date ranges, deltas & comparison chart
@@ -873,7 +874,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   const { customers, setStatus, update, add, remove, ready, error, refresh } = useCustomers();
   const { orders } = useOrders();
   const router = useRouter();
-  const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Hold">("all");
+  const [filter, setFilter] = useState<"all" | "Pending" | "Active" | "Frozen" | "Blocked">("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("name");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -922,7 +923,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     { value: "all", label: "All statuses" },
     { value: "Pending", label: "Pending" },
     { value: "Active", label: "Active" },
-    { value: "Hold", label: "Hold" },
+    { value: "Frozen", label: "Frozen" },
+    { value: "Blocked", label: "Blocked" },
   ];
   const ACCT_SORT_OPTS: ToolbarOption[] = [
     { value: "name", label: "Store A–Z" },
@@ -936,6 +938,12 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   /* ---------- full-page account detail ---------- */
   if (cur) {
+    const st: string = cur.status;
+    const confirmBlock = async () => {
+      if (await confirm({ title: "Block account?", message: `${cur.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) {
+        await setAccountStatus(cur.id, "block"); refresh(); flash("Account blocked");
+      }
+    };
     return (
       <>
         <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}>← All accounts</button>
@@ -943,6 +951,21 @@ export function CustomersTab({ flash }: { flash: Flash }) {
           <div><h1>{cur.store}</h1><p>{cur.id} · {cur.contact} · account since {cur.since}</p></div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Badge tone={acctTone(cur.status)}>{cur.status}</Badge>
+            {(st === "Active" || st === "Pending") && (
+              <>
+                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Freeze account?", message: `${cur.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(cur.id, "freeze"); refresh(); flash("Account frozen"); } }}>Freeze</Button>
+                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={confirmBlock}>Block</Button>
+              </>
+            )}
+            {st === "Frozen" && (
+              <>
+                <Button variant="primary" size="sm" onClick={async () => { await setAccountStatus(cur.id, "unfreeze"); refresh(); flash("Account reactivated"); }}>Unfreeze</Button>
+                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={confirmBlock}>Block</Button>
+              </>
+            )}
+            {st === "Blocked" && (
+              <Button variant="primary" size="sm" onClick={async () => { await setAccountStatus(cur.id, "unblock"); refresh(); flash("Account reactivated"); }}>Unblock</Button>
+            )}
             {!edit && <Button variant="ghost" size="sm" onClick={startEdit}>Edit</Button>}
             <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Delete account?", message: `${cur.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(cur.id); setOpenId(null); flash("Account deleted"); } }}>Delete</Button>
           </div>
@@ -995,8 +1018,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <div className="panel-h"><h3>Approval</h3></div>
               <div className="modalactions" style={{ flexDirection: "column" }}>
                 {cur.status !== "Active" && <Button fullWidth onClick={() => { setStatus(cur.id, "Active"); flash("Account approved"); }}>Approve account</Button>}
-                {cur.status !== "Hold" && <Button variant="ghost" fullWidth onClick={() => { setStatus(cur.id, "Hold"); flash("Account on hold"); }}>Place on hold</Button>}
                 {cur.status !== "Pending" && <Button variant="ghost" fullWidth onClick={() => { setStatus(cur.id, "Pending"); flash("Marked pending"); }}>Mark pending</Button>}
+                <p className="hint" style={{ margin: "6px 2px 0" }}>Use Freeze or Block above to suspend ordering or sign-in.</p>
               </div>
             </div>
             <div className="panel">
@@ -1051,7 +1074,9 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         items={[
           { label: "Open account", onSelect: () => setOpenId(c.id) },
           ...(c.status !== "Active" ? [{ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } }] : []),
-          ...(c.status !== "Hold" ? [{ label: "Place on hold", onSelect: () => { setStatus(c.id, "Hold"); flash("Account on hold"); } }] : []),
+          ...(c.status === "Frozen"
+            ? [{ label: "Unfreeze account", onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } }]
+            : [{ label: "Freeze account", onSelect: async () => { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } }]),
         ]}
       />
     ) },
@@ -1071,7 +1096,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       </div>
       <ListToolbar
         search={{ value: query, onChange: setQuery, placeholder: "Search store, contact or email…" }}
-        filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as "all" | "Pending" | "Active" | "Hold"), options: ACCT_STATUS_OPTS }]}
+        filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as "all" | "Pending" | "Active" | "Frozen" | "Blocked"), options: ACCT_STATUS_OPTS }]}
         sort={{ value: sort, onChange: setSort, options: ACCT_SORT_OPTS }}
       />
       <DataTable

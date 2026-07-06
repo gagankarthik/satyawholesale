@@ -24,7 +24,7 @@ export default function Header() {
         </nav>
         <div className="nav-cta">
           <Link className="btn btn-ghost btn-sm" href="/portal">Login</Link>
-          <Link className="btn btn-primary btn-sm" href="/apply">Open an account <Arrow /></Link>
+          <Link className="btn btn-primary btn-sm" href="/signup">Open an account <Arrow /></Link>
           <button className="burger" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path d={menuOpen ? "M6 6l12 12M18 6 6 18" : "M4 7h16M4 12h16M4 17h16"} strokeLinecap="round" />
@@ -41,7 +41,7 @@ export default function Header() {
           <a href="#faq" onClick={close}>FAQ</a>
           <a href="#contact" onClick={close}>Contact</a>
           <Link href="/portal" onClick={close}>Login →</Link>
-          <Link className="btn btn-primary" href="/apply" onClick={close}>Open an account <Arrow /></Link>
+          <Link className="btn btn-primary" href="/signup" onClick={close}>Open an account <Arrow /></Link>
         </div>
       )}
     </header>

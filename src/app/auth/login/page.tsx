@@ -12,7 +12,7 @@ const DEPARTMENTS = "Tobacco · Vape · Smoke · HBA · Grocery · Auto · Acces
 
 export default function Login() {
   const router = useRouter();
-  const { ready, signedIn, isAdmin, signIn, completeNewPassword } = useSession();
+  const { ready, signedIn, isAdmin, needsOnboarding, signIn, completeNewPassword } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -23,8 +23,8 @@ export default function Login() {
 
   /* already signed in -> straight to the right surface */
   useEffect(() => {
-    if (ready && signedIn) router.replace(isAdmin ? "/admin" : "/portal");
-  }, [ready, signedIn, isAdmin, router]);
+    if (ready && signedIn) router.replace(isAdmin ? "/admin" : needsOnboarding ? "/onboarding" : "/portal");
+  }, [ready, signedIn, isAdmin, needsOnboarding, router]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +36,7 @@ export default function Login() {
     setBusy(false);
     if ("error" in r) { setError(r.error); return; }
     if ("challenge" in r) { setStep("newpassword"); return; }
-    router.replace("/portal");
+    // Signed in: the effect above routes by role (admin / onboarding / portal).
   };
 
   return (
@@ -119,7 +119,7 @@ export default function Login() {
           </Button>
 
           <div className="auth-alt">
-            No account yet? <Link href="/apply">Apply for customer access &rarr;</Link>
+            No account yet? <Link href="/signup">Create your account &rarr;</Link>
           </div>
         </form>
       </div>

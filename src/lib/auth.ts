@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  CognitoUserPool, CognitoUser, AuthenticationDetails, type CognitoUserSession,
+  CognitoUserPool, CognitoUser, CognitoUserAttribute, AuthenticationDetails, type CognitoUserSession,
 } from "amazon-cognito-identity-js";
 
 /* =========================================================
@@ -78,6 +78,57 @@ export function signIn(email: string, password: string): Promise<SignInResult> {
   });
 }
 
+/* ---- Customer self-signup (email + password, then email-code confirm) ---- */
+export function signUp(email: string, password: string): Promise<SignInResult> {
+  return new Promise((resolve) => {
+    const p = pool();
+    if (!p) return resolve({ error: "Sign-up isn't configured yet. Run the AWS provisioning script first." });
+    const attrs = [new CognitoUserAttribute({ Name: "email", Value: email })];
+    p.signUp(email, password, attrs, [], (err) => {
+      if (err) return resolve({ error: friendly(err) });
+      resolve({ ok: true });
+    });
+  });
+}
+
+export function confirmSignUp(email: string, code: string): Promise<SignInResult> {
+  return new Promise((resolve) => {
+    const p = pool();
+    if (!p) return resolve({ error: "Sign-up isn't configured yet." });
+    new CognitoUser({ Username: email, Pool: p }).confirmRegistration(code.trim(), true, (err) => {
+      if (err) return resolve({ error: friendly(err) });
+      resolve({ ok: true });
+    });
+  });
+}
+
+export function resendCode(email: string): Promise<SignInResult> {
+  return new Promise((resolve) => {
+    const p = pool();
+    if (!p) return resolve({ error: "Sign-up isn't configured yet." });
+    new CognitoUser({ Username: email, Pool: p }).resendConfirmationCode((err) => {
+      if (err) return resolve({ error: friendly(err) });
+      resolve({ ok: true });
+    });
+  });
+}
+
+/* Force-refresh the tokens so a just-added group claim (e.g. buyer, after
+   onboarding) takes effect without making the user sign out and back in. */
+export function refreshSession(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const user = pool()?.getCurrentUser();
+    if (!user) return resolve(false);
+    user.getSession((err: Error | null, session: CognitoUserSession | null) => {
+      if (err || !session) return resolve(false);
+      user.refreshSession(session.getRefreshToken(), (e2: Error | null) => {
+        if (!e2) notify();
+        resolve(!e2);
+      });
+    });
+  });
+}
+
 export function completeNewPassword(newPassword: string): Promise<SignInResult> {
   return new Promise((resolve) => {
     if (!pendingUser) return resolve({ error: "Start again from the sign-in form." });
@@ -96,10 +147,15 @@ export function signOutUser() {
 function friendly(err: unknown): string {
   const name = (err as { name?: string })?.name ?? "";
   if (name === "NotAuthorizedException") return "Wrong email or password.";
-  if (name === "UserNotFoundException") return "No account with that email. Apply for customer access first.";
+  if (name === "UserNotFoundException") return "No account with that email. Create one to get started.";
   if (name === "PasswordResetRequiredException") return "Your password needs a reset. Call the warehouse and we'll send a new invite.";
   if (name === "InvalidPasswordException") return "Passwords need 10+ characters with upper and lower case letters and a number.";
-  return (err as Error)?.message || "Sign-in failed. Try again.";
+  if (name === "UsernameExistsException") return "An account with this email already exists. Sign in instead.";
+  if (name === "CodeMismatchException") return "That verification code isn't correct. Check the email and try again.";
+  if (name === "ExpiredCodeException") return "That code has expired. Request a new one.";
+  if (name === "LimitExceededException") return "Too many attempts. Please wait a moment and try again.";
+  if (name === "UserNotConfirmedException") return "Please confirm your email with the code we sent before signing in.";
+  return (err as Error)?.message || "Something went wrong. Try again.";
 }
 
 export function useSession() {
@@ -122,11 +178,16 @@ export function useSession() {
 
   const signOut = useCallback(() => { signOutUser(); }, []);
 
+  const isAdmin = session?.isAdmin ?? false;
+  const isBuyer = session?.isBuyer ?? false;
   return {
     ready,
     signedIn: !!session,
-    isAdmin: session?.isAdmin ?? false,
-    isBuyer: session?.isBuyer ?? false,
+    isAdmin,
+    isBuyer,
+    /* Signed in but not yet in a role group => finished sign-up but hasn't
+       completed onboarding, so they can't order until they do. */
+    needsOnboarding: !!session && !isAdmin && !isBuyer,
     store: session?.store ?? null,
     email: session?.email ?? "",
     signIn,

@@ -152,6 +152,23 @@ export function fileApplication(a: Omit<TradeAccount, "id" | "since" | "status">
 export const inviteAccount = (accountId: string) =>
   apiPost<{ item: TradeAccount }>("/api/accounts/invite", { accountId });
 
+/** Finish a self-signup: tag store, join buyer group, write Active account. */
+export interface OnboardingInput {
+  store: string; contact: string; phone?: string; city?: string;
+  businessLicense?: string; tobaccoLicense?: string;
+}
+export const onboardAccount = (input: OnboardingInput) =>
+  apiPost<{ item: TradeAccount }>("/api/onboarding", input);
+
+/** Admin account controls: freeze / unfreeze / block / unblock. */
+export type AccountAction = "freeze" | "unfreeze" | "block" | "unblock";
+export const setAccountStatus = (accountId: string, action: AccountAction) =>
+  apiPost<{ item: TradeAccount }>("/api/accounts/status", { accountId, action });
+
+/** Admin: create a staff/admin or customer login (Cognito emails the temp password). */
+export const createUser = (email: string, role: "admin" | "buyer", store?: string) =>
+  apiPost<{ item: { email: string; role: string; store: string | null } }>("/api/users", { email, role, store });
+
 /* =========================================================
    PURCHASE ORDERS
    ========================================================= */

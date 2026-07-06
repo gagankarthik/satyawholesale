@@ -60,7 +60,7 @@ export function usePortal() {
 export default function PortalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { ready: sessionReady, signedIn, isAdmin, store, email, signOut } = useSession();
+  const { ready: sessionReady, signedIn, isAdmin, needsOnboarding, store, email, signOut } = useSession();
 
   /* The signed-in customer account. Orders come back already scoped to this
      store by the API, so no client-side store filter is needed. */
@@ -112,10 +112,13 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   useEffect(() => { setCollapsed(localStorage.getItem("satya.psidebar") === "1"); }, []);
   const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.psidebar", n ? "1" : "0"); } catch {} return n; });
 
-  /* redirect to login when the session is known and signed-out */
+  /* redirect to login when signed out; to onboarding when signed in but not
+     yet activated as a buyer (finished sign-up, hasn't completed onboarding) */
   useEffect(() => {
-    if (sessionReady && !signedIn) router.replace("/auth/login");
-  }, [sessionReady, signedIn, router]);
+    if (!sessionReady) return;
+    if (!signedIn) router.replace("/auth/login");
+    else if (needsOnboarding) router.replace("/onboarding");
+  }, [sessionReady, signedIn, needsOnboarding, router]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: products.length };
@@ -203,7 +206,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const goDept = (d: string, sk = "") => { setDept(d); setSub(sk); router.push("/portal/products"); setMobileNav(false); };
 
-  if (sessionReady && !signedIn) return <div className="papp" />;
+  if (sessionReady && (!signedIn || needsOnboarding)) return <div className="papp" />;
 
   return (
     <ConfirmProvider>
