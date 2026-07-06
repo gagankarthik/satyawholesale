@@ -124,7 +124,7 @@ export default function CartPage() {
       </div>
 
       <aside className="od-side">
-        <div className="panel">
+        <div className="panel co">
           <div className="panel-h"><h3>Checkout</h3></div>
           <div className="cofield">
             <span className="colabel">Delivery address</span>

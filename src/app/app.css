@@ -671,7 +671,8 @@ a.help-row:hover { background: var(--paper); }
 .dh .x svg { width: 1em; height: 1em; }
 .dh .x:hover { background: var(--ink); color: #fff; }
 .ditems { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
-.citem { display: grid; grid-template-columns: 44px 1fr auto; gap: 13px; background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 13px; }
+.citem { display: grid; grid-template-columns: 44px 1fr auto; gap: 13px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 13px; }
+.citem .th { align-self: start; }
 .citem .th { position: relative; width: 44px; height: 44px; border-radius: 10px; overflow: hidden; flex: none; background: #e8ecf1; }
 .citem .nm { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
 .citem .id { font-size: 10.5px; color: var(--slate-2); margin-top: 2px; }
@@ -1039,6 +1040,15 @@ a.fg-inner:hover { background: var(--paper); }
 .cartpage .cartitems { display: flex; flex-direction: column; gap: 12px; }
 .ordersum { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .ordersum-note { margin-top: 12px; font-size: 12px; color: var(--slate-2); line-height: 1.5; }
+
+/* checkout panel: even vertical rhythm between address, fulfilment,
+   payment and notes (they were stacking flush with no spacing) */
+.panel.co { display: flex; flex-direction: column; gap: 16px; }
+.panel.co .panel-h { margin-bottom: 0; }
+/* unify the field labels with the "Delivery address" label style */
+.panel.co .field > span:not(.sr-only) { font-size: 12px; font-weight: 700; color: var(--ink); }
+.panel.co .field select,
+.panel.co .field input { width: 100%; }
 
 /* =========================================================
    RESPONSIVE — app surfaces
