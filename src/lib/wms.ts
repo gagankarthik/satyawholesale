@@ -408,7 +408,9 @@ export const useMovements = () => {
   const log = useCallback((m: Omit<StockMovement, "id" | "ts">) => {
     col.add({ ...m, id: "M-" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 90 + 10), ts: Date.now() });
   }, [col.add]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { movements: col.items, ready: col.ready, error: col.error, refresh: col.refresh, log };
+  const update = useCallback((id: string, patch: Partial<StockMovement>) => col.update(id, patch), [col.update]); // eslint-disable-line react-hooks/exhaustive-deps
+  const remove = useCallback((id: string) => col.remove(id), [col.remove]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { movements: col.items, ready: col.ready, error: col.error, refresh: col.refresh, log, update, remove };
 };
 
 /* =========================================================
