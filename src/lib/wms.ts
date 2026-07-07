@@ -148,7 +148,7 @@ export interface TradeAccount extends Customer {
   tobaccoLicense?: string;
   applied?: number;
   invited?: number;
-  docs?: { label: string; name: string; uploaded: number }[];
+  docs?: { label: string; name: string; uploaded: number; url?: string; approved?: boolean }[];
 }
 
 export const useCustomers = () => {

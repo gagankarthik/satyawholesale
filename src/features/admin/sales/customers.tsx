@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrders } from "@/lib/store";
 import { useCustomers, setAccountStatus } from "@/lib/wms";
+import { resolveFileUrl } from "@/lib/api";
 import { Plus, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, type Flash } from "../shared";
@@ -84,6 +85,24 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     setOpenId(c.id); setEdit(true);
   };
   const saveEdit = () => { if (cur) { update(cur.id, draft); setEdit(false); flash("Account updated"); } };
+
+  /* Verification documents the customer uploaded from their profile: the
+     warehouse reviews each one and approves (or removes) it here. */
+  const setDocApproved = (i: number, approved: boolean) => {
+    if (!cur) return;
+    update(cur.id, { docs: (cur.docs || []).map((d, j) => (j === i ? { ...d, approved } : d)) });
+    flash(approved ? "Document approved" : "Approval removed");
+  };
+  const removeDoc = (i: number) => {
+    if (!cur) return;
+    update(cur.id, { docs: (cur.docs || []).filter((_, j) => j !== i) });
+    flash("Document removed");
+  };
+  const viewDoc = async (url?: string) => {
+    if (!url) return;
+    try { window.open(await resolveFileUrl(url), "_blank", "noopener"); }
+    catch { flash("Couldn't open that document"); }
+  };
 
   /* One source of truth for account actions, used by both the list row menu
      and the open-account header, so every surface offers the same options in
@@ -196,7 +215,18 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
                   <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
                   {(cur.docs || []).map((d, i) => (
-                    <div className="docchip" key={i}><span className="di" aria-hidden="true"><Paperclip /></span><div><div className="dn">{d.label}</div><div className="ds">uploaded {timeAgo(d.uploaded)}</div></div></div>
+                    <div className="docchip" key={i}>
+                      <span className="di" aria-hidden="true"><Paperclip /></span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="dn">{d.label}</div>
+                        <div className="ds">uploaded {timeAgo(d.uploaded)} · <b style={{ color: d.approved ? "var(--green)" : "var(--slate-2)" }}>{d.approved ? "Approved" : "Pending review"}</b></div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        {d.url && <Button variant="ghost" size="sm" onClick={() => viewDoc(d.url)}>View</Button>}
+                        <Button variant={d.approved ? "ghost" : "primary"} size="sm" onClick={() => setDocApproved(i, !d.approved)}>{d.approved ? "Unapprove" : "Approve"}</Button>
+                        <Menu label={`Actions for ${d.label}`} items={[{ label: "Remove document", danger: true, onSelect: () => removeDoc(i) }]} />
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}

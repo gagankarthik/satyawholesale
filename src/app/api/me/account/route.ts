@@ -55,9 +55,27 @@ export async function PATCH(req: Request) {
   }
   try {
     const body = await readJson<Row>(req);
-    const patch: Row = { contact: clamp(body.contact, 120), phone: clamp(body.phone, 40) };
     const found = await findOwnAccount(user.sub, user.email, user.store);
     if (!found) return Response.json({ error: "No account on file to update." }, { status: 404 });
+
+    // Only the fields present in the request are touched, so a document upload
+    // doesn't blank out contact details and vice-versa.
+    const patch: Row = {};
+    if (body.contact !== undefined) patch.contact = clamp(body.contact, 120);
+    if (body.phone !== undefined) patch.phone = clamp(body.phone, 40);
+
+    // Append a verification document. The customer supplies a label + the
+    // uploaded file URL; approval is always false here — only an admin approves.
+    if (body.addDoc && typeof body.addDoc === "object") {
+      const d = body.addDoc as Row;
+      const name = clamp(d.name, 200);
+      const doc = { label: clamp(d.label, 120) || name || "Document", name, url: clamp(d.url, 600), uploaded: Date.now(), approved: false };
+      const cur = Array.isArray(found.row.docs) ? (found.row.docs as Row[]) : [];
+      if (cur.length >= 30) return Response.json({ error: "Too many documents on file. Remove one first." }, { status: 400 });
+      patch.docs = [...cur, doc];
+    }
+
+    if (Object.keys(patch).length === 0) return Response.json({ account: view(found.row) });
     const updated = await patchItem("accounts", found.key, patch);
     return Response.json({ account: updated ? view(updated) : view({ ...found.row, ...patch }) });
   } catch (e) {

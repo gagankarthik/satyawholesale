@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth";
 import { CONTACT } from "@/lib/store";
 import { useAddresses } from "@/lib/addresses";
-import { apiGet, apiPatchPath } from "@/lib/api";
+import { apiGet, apiPatchPath, uploadFile } from "@/lib/api";
 import { paymentTermInfo } from "@/lib/paymentTerms";
 import { Button } from "@/components/ui";
 import { Check, Paperclip } from "@/components/Icons";
@@ -23,7 +22,7 @@ interface MyAccount {
   terms: string | null;
   businessLicense: string | null;
   tobaccoLicense: string | null;
-  docs: { label: string; name: string; uploaded: number }[];
+  docs: { label: string; name: string; uploaded: number; url?: string; approved?: boolean }[];
 }
 
 const fmtDate = (ms: number) => {
@@ -32,9 +31,8 @@ const fmtDate = (ms: number) => {
 };
 
 export default function PortalProfile() {
-  const { store, email, isAdmin, signOut } = useSession();
+  const { store, email, isAdmin } = useSession();
   const { addresses } = useAddresses(store ?? email ?? "");
-  const router = useRouter();
 
   const [account, setAccount] = useState<MyAccount | null>(null);
   const [loadingAcct, setLoadingAcct] = useState(true);
@@ -42,6 +40,7 @@ export default function PortalProfile() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ contact: "", phone: "" });
   const [saving, setSaving] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
@@ -70,6 +69,24 @@ export default function PortalProfile() {
       setNote({ kind: "err", text: e instanceof Error ? e.message : "Couldn't save your changes." });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setUploadingDoc(true);
+    setNote(null);
+    try {
+      const url = await uploadFile(f, f.type, "documents");
+      const r = await apiPatchPath<{ account: MyAccount | null }>("/api/me/account", { addDoc: { label: f.name, name: f.name, url } });
+      setAccount(r.account);
+      setNote({ kind: "ok", text: "Document uploaded. The warehouse will review it." });
+    } catch (err) {
+      setNote({ kind: "err", text: err instanceof Error ? err.message : "Couldn't upload that file." });
+    } finally {
+      setUploadingDoc(false);
     }
   };
 
@@ -117,10 +134,11 @@ export default function PortalProfile() {
                   Update your contact name and phone below. Store details, licenses and payment terms are set by the warehouse ({CONTACT.phone}).
                 </p>
               )}
-              <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-                {!isAdmin && <Button variant="primary" onClick={startEdit}>Update my info</Button>}
-                <Button variant="ghost" onClick={() => { signOut(); router.replace("/auth/login"); }}>Sign out</Button>
-              </div>
+              {!isAdmin && (
+                <div style={{ marginTop: 16 }}>
+                  <Button variant="primary" onClick={startEdit}>Update my info</Button>
+                </div>
+              )}
             </>
           )}
 
@@ -132,27 +150,40 @@ export default function PortalProfile() {
           <div className="panel-h"><h3>Documents &amp; compliance</h3><span className="hint">On file with the warehouse</span></div>
           {loadingAcct ? (
             <p className="muted" style={{ fontSize: 13 }}>Loading your documents…</p>
-          ) : hasCompliance ? (
-            <div className="doclist">
-              <div className="docchip">
-                <span className="di" aria-hidden="true"><Check /></span>
-                <div><div className="dn">Business license</div><div className="ds mono">{account?.businessLicense || "Not provided"}</div></div>
-              </div>
-              <div className="docchip">
-                <span className="di" aria-hidden="true"><Check /></span>
-                <div><div className="dn">Tobacco license</div><div className="ds mono">{account?.tobaccoLicense || "Not provided"}</div></div>
-              </div>
-              {docs.map((d, i) => (
-                <div className="docchip" key={i}>
-                  <span className="di" aria-hidden="true"><Paperclip /></span>
-                  <div><div className="dn">{d.label || d.name}</div><div className="ds">Uploaded {fmtDate(d.uploaded)}</div></div>
-                </div>
-              ))}
-            </div>
           ) : (
-            <p className="muted" style={{ fontSize: 13 }}>
-              No documents on file yet. Licenses submitted during sign-up appear here. To add or update them, call the warehouse at {CONTACT.phone}.
-            </p>
+            <>
+              {hasCompliance ? (
+                <div className="doclist">
+                  <div className="docchip">
+                    <span className="di" aria-hidden="true"><Check /></span>
+                    <div><div className="dn">Business license</div><div className="ds mono">{account?.businessLicense || "Not provided"}</div></div>
+                  </div>
+                  <div className="docchip">
+                    <span className="di" aria-hidden="true"><Check /></span>
+                    <div><div className="dn">Tobacco license</div><div className="ds mono">{account?.tobaccoLicense || "Not provided"}</div></div>
+                  </div>
+                  {docs.map((d, i) => (
+                    <div className="docchip" key={i}>
+                      <span className="di" aria-hidden="true"><Paperclip /></span>
+                      <div>
+                        <div className="dn">{d.label || d.name}</div>
+                        <div className="ds">Uploaded {fmtDate(d.uploaded)} · <b style={{ color: d.approved ? "var(--green)" : "var(--slate-2)" }}>{d.approved ? "Approved" : "Pending review"}</b></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: 13 }}>
+                  No documents on file yet. Upload your business or tobacco license (PDF or photo) below and the warehouse will review it.
+                </p>
+              )}
+              {!isAdmin && (
+                <label className="btn btn-ghost btn-sm uploadbtn" style={{ marginTop: 14 }}>
+                  <Paperclip /> {uploadingDoc ? "Uploading…" : "Upload a document"}
+                  <input type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={uploadDoc} disabled={uploadingDoc} />
+                </label>
+              )}
+            </>
           )}
         </div>
       </div>
