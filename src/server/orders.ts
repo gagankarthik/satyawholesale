@@ -31,6 +31,14 @@ async function taxRate(): Promise<number> {
   return salesR + countyR;
 }
 
+/** Customer ordering policy from settings, with safe fallbacks (0 = disabled).
+    Enforced server-side so a buyer can't bypass the minimum or dodge freight. */
+async function orderPolicy(): Promise<{ orderMinimum: number; deliveryFee: number; freeFreightThreshold: number }> {
+  const s = await getItem("settings", "main");
+  const n = (v: unknown) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
+  return { orderMinimum: n(s?.orderMinimum), deliveryFee: n(s?.deliveryFee), freeFreightThreshold: n(s?.freeFreightThreshold) };
+}
+
 /** Re-price a client line list against the catalog. Rejects unknown/inactive
     products, bad quantities, and quantities beyond available stock. */
 async function priceLines(raw: unknown): Promise<{ lines: Row[]; subtotal: number; cases: number }> {
@@ -60,17 +68,34 @@ async function priceLines(raw: unknown): Promise<{ lines: Row[]; subtotal: numbe
   return { lines, subtotal: Math.round(subtotal * 100) / 100, cases };
 }
 
-/** Build a brand-new buyer order from trusted data. Client controls only the
-    line ids/quantities and free-text delivery details; everything financial
-    and every state field is set here. */
-export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row> {
+/** Build a brand-new buyer order from trusted data. The client controls only
+    the line ids/quantities and free-text delivery details; everything financial
+    and every state field is set here. In particular:
+    - the order minimum is enforced (reject below it),
+    - the delivery fee is computed from the freight policy, not the client,
+    - payment terms come from the account's approved terms, never buyer-chosen. */
+export async function sanitizeBuyerOrder(body: Row, user: AuthUser, account: Row | null): Promise<Row> {
   const { lines, subtotal, cases } = await priceLines(body.lines);
+
+  const policy = await orderPolicy();
+  if (policy.orderMinimum > 0 && subtotal < policy.orderMinimum) {
+    throw new GuardError(`Orders have a $${policy.orderMinimum.toFixed(2)} minimum. Your cart is $${subtotal.toFixed(2)} — add a little more to check out.`);
+  }
+
   const rate = await taxRate();
   const tax = Math.round(subtotal * rate) / 100; // resale exemption is an admin decision, applied later
 
-  const payment = clampStr(body.payment, 60);
   const fulfilment = clampStr(body.fulfilment, 60);
   const isPickup = /pickup/i.test(fulfilment);
+  const deliveryFee =
+    isPickup || (policy.freeFreightThreshold > 0 && subtotal >= policy.freeFreightThreshold)
+      ? 0
+      : policy.deliveryFee;
+
+  // Payment terms are the account's approved terms — a buyer can't upgrade
+  // themselves to longer credit at checkout. Falls back to Net 15.
+  const payment = clampStr(account?.terms, 60) || "Net 15 terms";
+
   const owner = user.store ?? user.email;
   // The client proposes a ref; the create path (create-only write) guarantees
   // it can never overwrite an existing order, and hands out a fresh ref if it
@@ -87,7 +112,7 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row
     payment, fulfilment,
     notes: clampStr(body.notes, 500) || undefined,
     tracking: isPickup ? "PICKUP" : undefined, // warehouse assigns real tracking on ship
-    deliveryFee: 0,
+    deliveryFee,
     tax,
     discount: 0,
     paymentStatus: /net/i.test(payment) ? "Unpaid" : "Paid",

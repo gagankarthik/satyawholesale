@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  fmt, productImg, offerActive, effPrice, useOrders, useSettings, taxBreakdown, orderRef,
+  fmt, productImg, offerActive, effPrice, useOrders, useSettings, taxBreakdown, orderRef, deliveryFeeFor,
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
 import { Package, Check, Trash, Truck, Store, Calendar, Plus, Minus } from "@/components/Icons";
@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePortal } from "../PortalShell";
 import { useAddresses } from "@/lib/addresses";
+import { apiGet } from "@/lib/api";
 import Confetti from "@/components/Confetti";
 import PrintReceipt from "@/components/PrintReceipt";
 
@@ -19,7 +20,6 @@ const FULFILMENTS = [
   { value: "Pickup", label: "Pickup", hint: "At the warehouse", icon: <Store /> },
   { value: "Scheduled delivery", label: "Scheduled", hint: "Pick a date", icon: <Calendar /> },
 ];
-const PAYMENTS = ["Net 15 terms", "Net 30 terms", "Card on delivery", "Cash on delivery"];
 const STEPS = ["Cart", "Delivery", "Payment", "Review"];
 
 /* format an ISO yyyy-mm-dd (from a <input type=date>) without a UTC shift */
@@ -39,7 +39,7 @@ export default function CartPage() {
   const [shipId, setShipId] = useState("");
   const [billSame, setBillSame] = useState(true);
   const [billId, setBillId] = useState("");
-  const [payment, setPayment] = useState(PAYMENTS[0]);
+  const [terms, setTerms] = useState<string | null>(null); // account's approved payment terms (server-authoritative)
   const [fulfilment, setFulfilment] = useState(FULFILMENTS[0].value);
   const [schedDate, setSchedDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -48,6 +48,16 @@ export default function CartPage() {
 
   useEffect(() => { if (!shipId && addresses[0]) setShipId(addresses[0].id); }, [addresses, shipId]);
   useEffect(() => { if (!billId && addresses[0]) setBillId(addresses[0].id); }, [addresses, billId]);
+
+  /* Payment terms are the account's approved terms, not a buyer choice; the
+     server binds them regardless, so this is display-only. */
+  useEffect(() => {
+    let live = true;
+    apiGet<{ account: { terms: string | null } | null }>("/api/me/account")
+      .then((r) => { if (live) setTerms(r.account?.terms ?? null); })
+      .catch(() => { /* fall back to the default label */ });
+    return () => { live = false; };
+  }, []);
 
   /* earliest schedulable date = tomorrow (local) */
   const minDate = useMemo(() => {
@@ -72,8 +82,14 @@ export default function CartPage() {
   const fulfilmentLabel = isScheduled && schedDate ? `Scheduled delivery · ${prettyDate(schedDate)}` : fulfilment;
   const taxes = useMemo(() => taxBreakdown(subtotal, false, settings), [subtotal, settings]);
   const tax = taxes.total;
-  const deliveryFee = 0;
+  const deliveryFee = deliveryFeeFor(subtotal, isPickup, settings);
   const grand = subtotal + tax + deliveryFee;
+
+  const termsLabel = terms ?? "Net 15 terms";
+  const orderMinimum = settings.orderMinimum ?? 0;
+  const belowMin = orderMinimum > 0 && subtotal < orderMinimum;
+  const shortBy = Math.max(0, orderMinimum - subtotal);
+  const freeAt = settings.freeFreightThreshold ?? 0;
 
   const shipAddr = useMemo(() => addresses.find((a) => a.id === shipId)?.addr ?? "", [addresses, shipId]);
   const billAddr = useMemo(
@@ -83,11 +99,12 @@ export default function CartPage() {
 
   const hasAddress = addresses.length > 0;
   const schedOk = !isScheduled || !!schedDate;
-  const canLeave = step === 0 ? cartLines.length > 0 : step === 1 ? !!shipAddr && !!billAddr && schedOk : true;
+  const canLeave = step === 0 ? cartLines.length > 0 && !belowMin : step === 1 ? !!shipAddr && !!billAddr && schedOk : true;
 
   const next = () => {
     if (!canLeave) {
-      if (step === 1) flash(!schedOk ? "Choose a delivery date" : "Choose a delivery and billing address");
+      if (step === 0 && belowMin) flash(`Add $${fmt(shortBy)} more to reach the $${fmt(orderMinimum)} order minimum`);
+      else if (step === 1) flash(!schedOk ? "Choose a delivery date" : "Choose a delivery and billing address");
       return;
     }
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
@@ -95,7 +112,7 @@ export default function CartPage() {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const submit = () => {
-    if (!cartLines.length || placing || !shipAddr || !billAddr) return;
+    if (!cartLines.length || placing || !shipAddr || !billAddr || belowMin) return;
     setPlacing(true);
     const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: effPrice(l.p) }));
     const order: Order = {
@@ -103,11 +120,11 @@ export default function CartPage() {
       placed: Date.now(),
       store: STORE,
       lines, cases, total: subtotal, status: "Pending",
-      payment, fulfilment: fulfilmentLabel, notes: notes.trim() || undefined,
+      payment: termsLabel, fulfilment: fulfilmentLabel, notes: notes.trim() || undefined,
       tracking: isPickup ? "PICKUP" : undefined,
       deliveryFee, tax, discount: 0,
       taxExempt: false,
-      paymentStatus: payment.includes("Net") ? "Unpaid" : "Paid",
+      paymentStatus: /net/i.test(termsLabel) ? "Unpaid" : "Paid",
       billing: billAddr, shipping: shipAddr,
     };
     placeOrder(order); // stock is decremented server-side on create
@@ -123,7 +140,13 @@ export default function CartPage() {
       {(settings.countyTaxRate ?? 0) > 0 && (
         <div className="ln"><span>{settings.countyTaxLabel} ({settings.countyTaxRate}%)</span><span className="mono">${fmt(taxes.county)}</span></div>
       )}
-      <div className="ln"><span>{isPickup ? "Pickup" : isScheduled ? "Scheduled" : "Delivery"}</span><span className="mono" style={{ color: "var(--green)" }}>{isPickup ? "At warehouse" : isScheduled && schedDate ? prettyDate(schedDate) : "Free"}</span></div>
+      <div className="ln"><span>{isPickup ? "Pickup" : isScheduled ? "Scheduled" : "Delivery"}</span><span className="mono" style={{ color: deliveryFee > 0 ? "inherit" : "var(--green)" }}>{isPickup ? "At warehouse" : deliveryFee > 0 ? `$${fmt(deliveryFee)}` : "Free"}</span></div>
+      {!isPickup && deliveryFee > 0 && freeAt > 0 && (
+        <div className="ln"><span className="muted" style={{ fontSize: 12.5 }}>Free delivery over ${fmt(freeAt)} — add ${fmt(Math.max(0, freeAt - subtotal))}</span><span /></div>
+      )}
+      {belowMin && (
+        <div className="ln" style={{ color: "var(--red)" }}><span>Order minimum ${fmt(orderMinimum)}</span><span className="mono">add ${fmt(shortBy)}</span></div>
+      )}
       <div className="ln tot"><span>Order total</span><b>${fmt(grand)}</b></div>
     </div>
   );
@@ -317,11 +340,11 @@ export default function CartPage() {
           {step === 2 && (
             <div className="panel co">
               <div className="panel-h"><h3>Payment</h3></div>
-              <label className="field"><span>Payment terms</span>
-                <select value={payment} onChange={(e) => setPayment(e.target.value)}>
-                  {PAYMENTS.map((p) => <option key={p}>{p}</option>)}
-                </select>
-              </label>
+              <div className="cofield">
+                <span className="colabel">Payment terms</span>
+                <div style={{ fontWeight: 600, fontSize: 15, padding: "8px 0 2px" }}>{termsLabel}</div>
+                <small className="muted" style={{ fontSize: 12 }}>Set by your account. Call the warehouse to change your terms.</small>
+              </div>
               <label className="field"><span>Delivery notes <em className="opt">optional</em></span>
                 <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Dock hours, PO number, etc." />
               </label>
@@ -343,7 +366,7 @@ export default function CartPage() {
               </div>
               <div className="co-review-meta">
                 <div className="kv2"><span>Fulfilment</span><b>{fulfilmentLabel}</b></div>
-                <div className="kv2"><span>Payment</span><b>{payment}</b></div>
+                <div className="kv2"><span>Payment</span><b>{termsLabel}</b></div>
                 <div className="kv2"><span>Ship to</span><b>{shipAddr}</b></div>
                 <div className="kv2"><span>Bill to</span><b>{billAddr}</b></div>
                 {notes.trim() && <div className="kv2 full"><span>Notes</span><b>{notes.trim()}</b></div>}

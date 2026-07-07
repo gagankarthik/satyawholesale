@@ -220,8 +220,26 @@ export interface AppSettings {
   countyTaxRate?: number;
   countyTaxLabel?: string;
   lowStock: number;
+  /** Customer ordering policy (buyer checkout). All in dollars; 0 disables. */
+  orderMinimum?: number;         // minimum order subtotal required to check out
+  deliveryFee?: number;          // flat delivery fee charged on delivery orders
+  freeFreightThreshold?: number; // subtotal at/above which delivery is free
 }
-export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", countyTaxRate: 0, countyTaxLabel: "County tax", lowStock: LOW_STOCK };
+export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", countyTaxRate: 0, countyTaxLabel: "County tax", lowStock: LOW_STOCK, orderMinimum: 0, deliveryFee: 0, freeFreightThreshold: 0 };
+
+/** Delivery fee for a buyer order: flat fee on delivery orders, waived for
+    pickup or once the subtotal clears the free-freight threshold. Shared by the
+    checkout UI and the server so both show the same number. */
+export const deliveryFeeFor = (
+  subtotal: number,
+  isPickup: boolean,
+  s: { deliveryFee?: number; freeFreightThreshold?: number }
+): number => {
+  const fee = s.deliveryFee ?? 0;
+  if (isPickup || fee <= 0) return 0;
+  const freeAt = s.freeFreightThreshold ?? 0;
+  return freeAt > 0 && subtotal >= freeAt ? 0 : fee;
+};
 
 export function useSettings() {
   const col = useCollection<AppSettings>("settings", (s) => s.id ?? "main");

@@ -147,11 +147,15 @@ export function SettingsTab({ flash }: { flash: Flash }) {
   const [label, setLabel] = useState(settings.taxLabel);
   const [countyRate, setCountyRate] = useState(String(settings.countyTaxRate ?? 0));
   const [countyLabel, setCountyLabel] = useState(settings.countyTaxLabel ?? "County tax");
+  const [orderMin, setOrderMin] = useState(String(settings.orderMinimum ?? 0));
+  const [delivFee, setDelivFee] = useState(String(settings.deliveryFee ?? 0));
+  const [freeAt, setFreeAt] = useState(String(settings.freeFreightThreshold ?? 0));
 
   useEffect(() => {
     setRate(String(settings.taxRate)); setLabel(settings.taxLabel);
     setCountyRate(String(settings.countyTaxRate ?? 0)); setCountyLabel(settings.countyTaxLabel ?? "County tax");
-  }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel]);
+    setOrderMin(String(settings.orderMinimum ?? 0)); setDelivFee(String(settings.deliveryFee ?? 0)); setFreeAt(String(settings.freeFreightThreshold ?? 0));
+  }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel, settings.orderMinimum, settings.deliveryFee, settings.freeFreightThreshold]);
 
   const [tab, setTab] = useState<"company" | "tax" | "policies">("company");
 
@@ -163,6 +167,14 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     if (Number.isNaN(cr) || cr < 0 || cr > 100) { flash("Enter a county tax rate between 0 and 100"); return; }
     update({ taxRate: r, taxLabel: label.trim() || "Sales tax", countyTaxRate: cr, countyTaxLabel: countyLabel.trim() || "County tax" });
     flash("Tax settings saved");
+  };
+
+  const savePolicies = (e: React.FormEvent) => {
+    e.preventDefault();
+    const om = Number(orderMin), df = Number(delivFee), fa = Number(freeAt);
+    if ([om, df, fa].some((n) => Number.isNaN(n) || n < 0)) { flash("Enter valid, non-negative dollar amounts"); return; }
+    update({ orderMinimum: om, deliveryFee: df, freeFreightThreshold: fa });
+    flash("Ordering policy saved");
   };
 
   return (
@@ -219,13 +231,32 @@ export function SettingsTab({ flash }: { flash: Flash }) {
         )}
 
         {tab === "policies" && (
-          <div className="panel anim-in" key="policies">
-            <div className="panel-h"><h3>Warehouse policies</h3></div>
-            <div className="setrows">
-              <div className="setrow"><span>Default low-stock threshold</span><b>{LOW_STOCK} cases</b></div>
-              <div className="setrow"><span>PO approval threshold</span><b>{m(PO_APPROVAL_THRESHOLD)}</b></div>
-              <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
-              <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
+          <div key="policies">
+            <div className="panel anim-in" style={{ marginBottom: 18 }}>
+              <div className="panel-h"><h3>Customer ordering &amp; delivery</h3><span className="hint">Applied at buyer checkout and enforced server-side</span></div>
+              <form className="formgrid" onSubmit={savePolicies}>
+                <label className="field"><span>Order minimum ($) <FieldHelp text="Smallest order subtotal a customer can check out with. Set 0 for no minimum." /></span>
+                  <input type="number" step="0.01" min={0} value={orderMin} onChange={(e) => setOrderMin(e.target.value)} placeholder="0" />
+                </label>
+                <label className="field"><span>Delivery fee ($) <FieldHelp text="Flat fee on delivery orders. Pickup is always free. Set 0 for free delivery." /></span>
+                  <input type="number" step="0.01" min={0} value={delivFee} onChange={(e) => setDelivFee(e.target.value)} placeholder="0" />
+                </label>
+                <label className="field"><span>Free delivery over ($) <FieldHelp text="Waive the delivery fee once the subtotal reaches this amount. Set 0 to always charge the fee." /></span>
+                  <input type="number" step="0.01" min={0} value={freeAt} onChange={(e) => setFreeAt(e.target.value)} placeholder="0" />
+                </label>
+                <div className="modalbtns full" style={{ marginTop: 4 }}>
+                  <button className="btn btn-primary btn-sm" type="submit">Save ordering policy</button>
+                </div>
+              </form>
+            </div>
+            <div className="panel anim-in">
+              <div className="panel-h"><h3>Warehouse policies</h3></div>
+              <div className="setrows">
+                <div className="setrow"><span>Default low-stock threshold</span><b>{LOW_STOCK} cases</b></div>
+                <div className="setrow"><span>PO approval threshold</span><b>{m(PO_APPROVAL_THRESHOLD)}</b></div>
+                <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
+                <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
+              </div>
             </div>
           </div>
         )}

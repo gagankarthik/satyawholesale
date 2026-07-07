@@ -5,13 +5,14 @@ import { readJson, isValidId, guardResponse, rateLimit, GuardError } from "@/ser
 import { sanitizeBuyerOrder, freshOrderRef } from "@/server/orders";
 import { logError } from "@/server/log";
 
-/** A buyer whose account has been frozen or blocked may not place orders. */
-async function orderingBlocked(user: AuthUser): Promise<boolean> {
+/** The caller's own trade account (self-signup keys by sub; older rows match on
+    email/store). Used both to gate ordering (frozen/blocked) and to source the
+    account's approved payment terms for the order. */
+async function getBuyerAccount(user: AuthUser): Promise<Row | null> {
   const direct = await getItem("accounts", user.sub); // self-signup accounts key by sub
-  const acct = direct ?? (await listByType("accounts")).find(
+  return direct ?? (await listByType("accounts")).find(
     (a) => a.email === user.email || (!!user.store && a.store === user.store)
-  );
-  return acct?.status === "Frozen" || acct?.status === "Blocked";
+  ) ?? null;
 }
 
 /* GET  /api/data/<entity>      → list (role-checked, buyer-scoped)
@@ -49,10 +50,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ entity: string
       if (!rateLimit(`order:${user.sub}`, 20, 60_000)) {
         return Response.json({ error: "Too many orders in a short time. Please wait a moment and try again." }, { status: 429 });
       }
-      if (await orderingBlocked(user)) {
+      const account = await getBuyerAccount(user);
+      if (account?.status === "Frozen" || account?.status === "Blocked") {
         return Response.json({ error: "Your account is on hold. Please contact the warehouse to place orders." }, { status: 403 });
       }
-      body = await sanitizeBuyerOrder(body, user);
+      body = await sanitizeBuyerOrder(body, user, account);
     } else if (rule.buyerScope && !isAdmin(user)) {
       // stamp buyer-scoped rows with the caller's own store, never a chosen one
       body[rule.buyerScope] = user.store ?? user.email;
