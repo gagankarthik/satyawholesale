@@ -449,7 +449,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
             {editing ? (
               <>
-                <div className="p-3">
+                <div className="p-3 overflow-x-auto">
                 <table className="invtable flat lineitems">
                   <thead><tr><th scope="col">Product</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit</th><th className="r" scope="col">Line</th><th scope="col"></th></tr></thead>
                   <tbody>
@@ -490,7 +490,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               </>
             ) : (
               <>
-                <div className="p-3">
+                <div className="p-3 overflow-x-auto">
                 <table className="invtable flat lineitems">
                   <thead><tr><th scope="col">Products</th><th scope="col">Code</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit price</th><th className="r" scope="col">Line total</th></tr></thead>
                   <tbody>
