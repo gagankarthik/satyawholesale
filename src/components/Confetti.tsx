@@ -17,12 +17,17 @@ export default function Confetti({ duration = 2400 }: { duration?: number }) {
     const resize = () => { canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; };
     resize();
 
+    const W = canvas.width, H = canvas.height;
+    // scale the burst to the viewport so it fills wide screens instead of a
+    // tight central spray; more pieces + wider spread as the screen grows.
+    const spread = Math.min(Math.max(W / (1200 * dpr), 1), 2.4);
+    const count = Math.round(150 * spread);
     const colors = ["#e8722b", "#f4a259", "#2a9d8f", "#e9c46a", "#264653", "#e76f51"];
-    const cx = canvas.width / 2;
-    const pieces = Array.from({ length: 150 }).map(() => ({
-      x: cx + (Math.random() - 0.5) * 120 * dpr,
-      y: canvas.height * 0.28,
-      vx: (Math.random() - 0.5) * 18 * dpr,
+    const cx = W / 2;
+    const pieces = Array.from({ length: count }).map(() => ({
+      x: cx + (Math.random() - 0.5) * W * 0.5,
+      y: H * 0.28,
+      vx: (Math.random() - 0.5) * W * 0.03,
       vy: (Math.random() * -1.2 - 0.4) * 15 * dpr,
       size: (Math.random() * 6 + 4) * dpr,
       rot: Math.random() * Math.PI,

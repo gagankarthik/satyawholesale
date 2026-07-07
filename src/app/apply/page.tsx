@@ -18,7 +18,7 @@ export default function ApplyPage() {
         <Link href="/" aria-label="Satya Wholesale home"><Brand height={38} /></Link>
         <Link className="btn btn-ghost btn-sm" href="/">Back to the site</Link>
       </header>
-      <main className="apply-main">
+      <main id="main" className="apply-main">
         <div className="apply-intro">
           <h1>Open your customer account</h1>
           <p>Three short steps. We review the same business day, and most stores place their first case order within a day.</p>

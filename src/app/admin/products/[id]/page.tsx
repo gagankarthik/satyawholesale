@@ -45,7 +45,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
     <>
       <Link className="detail-back" href="/admin/products">← All products</Link>
       <header className="adminbar">
-        <div><h1>{p.name}</h1><p>{deptName(p.dep)} · {sku(p)}</p></div>
+        <div><h1>{p.name}</h1><p>{deptName(p.dep)}{p.sku?.trim() ? ` · ${p.sku.trim()}` : ""}</p></div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Badge tone={tone}>{p.stock} cases</Badge>
           <Link href={`/admin/products/${p.id}/edit`} className="btn btn-primary btn-sm">Edit product</Link>
@@ -58,7 +58,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
             <div className="panel-h"><h3>Master data</h3></div>
             <div className="kvs two">
               <div className="kv2"><span>Item #</span><b className="mono">{p.id}</b></div>
-              <div className="kv2"><span>SKU</span><b className="mono">{sku(p)}</b></div>
+              <div className="kv2"><span>SKU</span><b className="mono">{p.sku?.trim() || "—"}</b></div>
               <div className="kv2"><span>GTIN</span><b className="mono">{p.gtin || "—"}</b></div>
               <div className="kv2"><span>Department</span><b>{deptName(p.dep)}</b></div>
               <div className="kv2"><span>Case pack</span><b>{p.pack}</b></div>

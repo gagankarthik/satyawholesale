@@ -8,6 +8,33 @@ import { Arrow, Check, Phone, Mail, Pin, Clock } from "@/components/Icons";
 /* Formal contact form. Account applications live on /apply. */
 export default function Contact() {
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (sending) return;
+    setError("");
+    setSending(true);
+    const fd = new FormData(e.currentTarget);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("name"), store: fd.get("store"), email: fd.get("email"),
+          phone: fd.get("phone"), message: fd.get("message"),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Couldn't send your message. Please try again.");
+      setSent(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <section id="contact" className="contact">
@@ -38,7 +65,7 @@ export default function Contact() {
                 <p>Thanks, we&apos;ll get back to you today. For anything urgent, call {CONTACT.phone}.</p>
               </div>
             ) : (
-              <form className="contact-form" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
+              <form className="contact-form" onSubmit={submit}>
                 <div className="row2">
                   <label className="field"><span>Your name</span><input name="name" required placeholder="Full name" /></label>
                   <label className="field"><span>Store name</span><input name="store" placeholder="Business name" /></label>
@@ -48,7 +75,8 @@ export default function Contact() {
                   <label className="field"><span>Phone</span><input name="phone" type="tel" placeholder="(513) 555-0100" autoComplete="tel" /></label>
                 </div>
                 <label className="field"><span>How can we help?</span><textarea name="message" required placeholder="Which delivery areas do you serve? Do you carry a specific brand we need?" /></label>
-                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }}>Send message <Arrow /></button>
+                {error && <p className="form-err" role="alert" style={{ color: "var(--red)", fontSize: 13 }}>{error}</p>}
+                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }} disabled={sending}>{sending ? "Sending…" : <>Send message <Arrow /></>}</button>
               </form>
             )}
           </div>

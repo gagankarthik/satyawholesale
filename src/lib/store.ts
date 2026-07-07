@@ -80,7 +80,10 @@ export const ORDER_FLOW: OrderStatus[] = [
 ];
 export const statusSlug = (s: OrderStatus) => s.replace(/\s+/g, "").toLowerCase();
 
-export const CANCELLABLE_STATUSES: OrderStatus[] = ["Pending", "Processing"];
+/* Buyers may only self-cancel while an order is still Pending. Once we start
+   processing it, cancellation has to go through a call so we can stop the pick
+   in the warehouse — an admin does it from the console. */
+export const CANCELLABLE_STATUSES: OrderStatus[] = ["Pending"];
 export const canCancelOrder = (s: OrderStatus) => CANCELLABLE_STATUSES.includes(s);
 export const canEditOrder = (s: OrderStatus) => s === "Pending";
 
@@ -146,7 +149,15 @@ export interface Customer {
   businessLicense?: string;
   tobaccoLicense?: string;
   terms?: string;
+  /** 12-digit Costco-style membership number, assigned when the account is created. */
+  memberNo?: string;
 }
+
+/**
+ * Order reference: 4-digit year + 10-digit Unix timestamp (seconds) = 14 digits,
+ * e.g. 20261767000000. Unique to the second; the server mirrors this format.
+ */
+export const orderRef = () => `${new Date().getUTCFullYear()}${Math.floor(Date.now() / 1000)}`;
 
 export const DEPTS: Dept[] = [
   { key: "tobacco", name: "Tobacco" },
@@ -205,9 +216,12 @@ export interface AppSettings {
   id?: string;
   taxRate: number;
   taxLabel: string;
+  /** Optional second (county/local) tax line, applied on top of the sales tax. */
+  countyTaxRate?: number;
+  countyTaxLabel?: string;
   lowStock: number;
 }
-export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", lowStock: LOW_STOCK };
+export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", countyTaxRate: 0, countyTaxLabel: "County tax", lowStock: LOW_STOCK };
 
 export function useSettings() {
   const col = useCollection<AppSettings>("settings", (s) => s.id ?? "main");
@@ -222,3 +236,15 @@ export function useSettings() {
 /** Tax applies to everyone by default; only an explicit resale exemption skips it. */
 export const computeTax = (subtotal: number, exempt: boolean | undefined, ratePct: number) =>
   exempt === true ? 0 : Math.round(subtotal * ratePct) / 100;
+
+/** Sales tax + optional county/local tax, split out for display and summed for
+    the order total. Keeps every surface consistent with the server calculation. */
+export const taxBreakdown = (
+  subtotal: number,
+  exempt: boolean | undefined,
+  s: { taxRate: number; countyTaxRate?: number }
+) => {
+  const sales = computeTax(subtotal, exempt, s.taxRate);
+  const county = computeTax(subtotal, exempt, s.countyTaxRate ?? 0);
+  return { sales, county, total: sales + county };
+};

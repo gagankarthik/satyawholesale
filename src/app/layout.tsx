@@ -3,6 +3,7 @@ import { Roboto, Open_Sans, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import "./app.css";
 import AgeGate from "@/components/AgeGate";
+import { Toaster } from "@/components/ui/Toaster";
 
 /* Two-family system: Roboto carries headlines and data (Roboto Mono for
    SKUs, prices, invoice numbers), Open Sans carries body text. */
@@ -25,7 +26,7 @@ const mono = Roboto_Mono({
 });
 
 const DESCRIPTION =
-  "Satya Wholesale is a licensed wholesale and cash-and-carry distributor in Cincinnati, Ohio, supplying independent convenience retailers across Greater Cincinnati with tobacco, vape, grocery, candy, HBA and more on one customer account.";
+  "Licensed cash-and-carry wholesale distributor in Cincinnati, OH. Tobacco, vape, grocery, candy, HBA and more for convenience stores on one account.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://satyawholesalers.com"),
@@ -78,6 +79,7 @@ export default function RootLayout({
         <a href="#main" className="skip">Skip to content</a>
         {process.env.NEXT_PUBLIC_SKIP_AGEGATE ? null : <AgeGate />}
         {children}
+        <Toaster />
       </body>
     </html>
   );

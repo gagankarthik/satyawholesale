@@ -43,7 +43,7 @@ export default function Onboarding() {
   if (!ready || !signedIn || isAdmin || isBuyer) return <div className="auth" />;
 
   return (
-    <div className="auth">
+    <div id="main" role="main" className="auth">
       <div className="auth-grid rise-in">
         <aside className="auth-manifest">
           <div className="mf-top">

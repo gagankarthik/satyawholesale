@@ -60,12 +60,22 @@ function refreshActive() {
 }
 
 let autoStarted = false;
+let lastRefresh = 0;
+/* Returning to a tab fires both `visibilitychange` and `focus`; coalesce any
+   calls within 1s so we don't refetch every active collection twice. */
+function refreshActiveWake() {
+  if (document.visibilityState !== "visible") return;
+  const now = Date.now();
+  if (now - lastRefresh < 1000) return;
+  lastRefresh = now;
+  refreshActive();
+}
 function startAutoRefresh() {
   if (autoStarted || typeof window === "undefined") return;
   autoStarted = true;
-  window.setInterval(() => { if (document.visibilityState === "visible") refreshActive(); }, REFRESH_MS);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshActive(); });
-  window.addEventListener("focus", refreshActive);
+  window.setInterval(() => { if (document.visibilityState === "visible") { lastRefresh = Date.now(); refreshActive(); } }, REFRESH_MS);
+  document.addEventListener("visibilitychange", refreshActiveWake);
+  window.addEventListener("focus", refreshActiveWake);
 }
 
 export function useCollection<T>(entity: string, idOf: (item: T) => string) {

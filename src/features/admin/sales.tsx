@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, useSettings, computeTax,
+  DEPTS, DEPT_BG, deptName, fmt, sku, productImg, useInventory, useOrders, useSettings, taxBreakdown, orderRef,
   LOW_STOCK,
   CONTACT, orderGrand, ORDER_FLOW, statusSlug,
   type DeptKey, type Product, type Tag, type Order, type OrderLine, type OrderStatus, type PayStatus,
@@ -19,10 +19,12 @@ import {
   setAccountStatus,
   type ImportRow, type PurchaseOrder, type Role,
 } from "@/lib/wms";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip, Plus } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Pin, Refresh, Search, Close, Check, Paperclip, Plus, Minus, Arrow, Calendar } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
-import { Head, FlowGuide, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
-import { KpiCard, DataTable, Badge, Breadcrumb, Button, Combobox, EmptyState, Fab, ListToolbar, Menu, Skeleton, ViewToggle, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, stockClass, fmtDate, type Tab, type Flash } from "./shared";
+import { KpiCard, DataTable, Badge, Breadcrumb, Button, Combobox, DialogFrame, Dropdown, EmptyState, Fab, ListToolbar, Menu, Skeleton, ViewToggle, cx, type Column, type BadgeTone, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { AreaTrend } from "@/components/ui/AreaTrend";
+import { PieBreakdown, BarBreakdown } from "@/components/ui";
 
 /** Map domain status → UI Badge tone (kept next to the data it describes). */
 const statusTone = (s: OrderStatus): BadgeTone =>
@@ -37,11 +39,11 @@ const acctTone = (s: string): BadgeTone =>
    ======================================================================= */
 const DAY = 86400000;
 const RANGES = [
-  { key: "1d", label: "1D", days: 1 },
-  { key: "7d", label: "7D", days: 7 },
-  { key: "30d", label: "30D", days: 30 },
-  { key: "90d", label: "90D", days: 90 },
-  { key: "1y", label: "1Y", days: 365 },
+  { key: "1d", label: "1D", full: "Today", days: 1 },
+  { key: "7d", label: "7D", full: "Last 7 days", days: 7 },
+  { key: "30d", label: "30D", full: "Last 30 days", days: 30 },
+  { key: "90d", label: "90D", full: "Last 90 days", days: 90 },
+  { key: "1y", label: "1Y", full: "Last 12 months", days: 365 },
 ];
 
 type Bucket = { label: string; revenue: number; orders: number };
@@ -56,38 +58,7 @@ function DeltaFoot({ cur, prev }: { cur: number; prev: number }) {
 }
 
 /* Interactive revenue chart: current period (area + line) vs previous (dashed). */
-function TrendChart({ cur, prev }: { cur: Bucket[]; prev: Bucket[] }) {
-  const [hi, setHi] = useState<number | null>(null);
-  const W = 720, H = 210, pad = 10, base = H - 22;
-  const n = cur.length;
-  const max = Math.max(1, ...cur.map((d) => d.revenue), ...prev.map((d) => d.revenue));
-  const xAt = (i: number) => pad + (i / Math.max(1, n - 1)) * (W - 2 * pad);
-  const yAt = (val: number) => 8 + (1 - val / max) * (base - 8);
-  const line = (arr: Bucket[]) => arr.map((d, i) => `${xAt(i).toFixed(1)},${yAt(d.revenue).toFixed(1)}`).join(" ");
-  const area = `${xAt(0)},${base} ${line(cur)} ${xAt(n - 1)},${base}`;
-
-  return (
-    <div className="trendwrap">
-      <svg viewBox={`0 0 ${W} ${H}`} className="trend" onMouseLeave={() => setHi(null)} role="img" aria-label="Revenue trend">
-        <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--signal)" stopOpacity="0.22" /><stop offset="1" stopColor="var(--signal)" stopOpacity="0" /></linearGradient></defs>
-        <polygon points={area} fill="url(#tg)" />
-        <polyline points={line(prev)} fill="none" stroke="var(--slate-3)" strokeWidth="1.6" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
-        <polyline points={line(cur)} fill="none" stroke="var(--signal)" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        {hi !== null && <line x1={xAt(hi)} x2={xAt(hi)} y1={6} y2={base} stroke="var(--kraft-edge)" strokeWidth="1" />}
-        {cur.map((d, i) => <circle key={i} cx={xAt(i)} cy={yAt(d.revenue)} r={hi === i ? 4.5 : 0} fill="var(--signal)" />)}
-        {cur.map((_, i) => <rect key={"h" + i} x={xAt(i) - (W / n) / 2} y={0} width={W / n} height={H} fill="transparent" onMouseEnter={() => setHi(i)} />)}
-      </svg>
-      {hi !== null && (
-        <div className="trendtip" style={{ left: `${(xAt(hi) / W) * 100}%` }}>
-          <div className="tt-l">{cur[hi].label}</div>
-          <div className="tt-v">{m(cur[hi].revenue)}</div>
-          <div className="tt-s">{cur[hi].orders} orders · prev {m(prev[hi]?.revenue ?? 0)}</div>
-        </div>
-      )}
-      <div className="trendx">{cur.map((d, i) => <span key={i}>{d.label}</span>)}</div>
-    </div>
-  );
-}
+/* Revenue trend now renders with the shadcn/ui area chart — see AreaTrend. */
 
 export function DashboardTab({ go }: { go: (t: Tab) => void }) {
   const { products, ready: prodReady } = useInventory();
@@ -177,14 +148,27 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
     <>
       <Head title="Dashboard" sub={`Sales analytics · ${CONTACT.city}`}>
         <div className="rangebar">
-          <div className="fchips">
-            {RANGES.map((r) => <button key={r.key} className={rangeKey === r.key ? "on" : ""} onClick={() => setRangeKey(r.key)}>{r.label}</button>)}
-            <button className={isCustom ? "on" : ""} onClick={() => setRangeKey("custom")}>Custom</button>
-          </div>
+          <Dropdown
+            align="end"
+            ariaLabel="Date range"
+            triggerClassName="rangedd-btn"
+            trigger={(open) => (
+              <>
+                <Calendar />
+                <span>{isCustom ? "Custom range" : (RANGES.find((r) => r.key === rangeKey)?.full ?? "Select range")}</span>
+                <svg className={cx("rangedd-caret", open && "up")} width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </>
+            )}
+          >
+            {RANGES.map((r) => (
+              <button key={r.key} type="button" className={cx("menu-item", rangeKey === r.key && "on")} onClick={() => setRangeKey(r.key)}>{r.full}</button>
+            ))}
+            <button type="button" className={cx("menu-item", isCustom && "on")} onClick={() => setRangeKey("custom")}>Custom range…</button>
+          </Dropdown>
           {isCustom && (
             <div className="customrange">
               <input type="date" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} aria-label="From date" />
-              <span>→</span>
+              <span><Arrow /></span>
               <input type="date" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} aria-label="To date" />
             </div>
           )}
@@ -203,48 +187,50 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <h3>Revenue · {isCustom ? "custom range" : `last ${days} days`}</h3>
           <div className="legend"><span className="lg cur">This period {k(stats.rev)}</span><span className="lg prev">Previous {k(stats.revPrev)}</span></div>
         </div>
-        <TrendChart cur={curBuckets} prev={prevBuckets} />
-      </div>
-
-      <div className="panel anim-in" style={{ marginBottom: 18 }}>
-        <div className="panel-h"><h3>Revenue by department</h3><span className="hint">in range</span></div>
-        {deptRevenue.length ? (
-          <div className="toplist">
-            {deptRevenue.map((d) => (
-              <div className="toprow" key={d.dep}>
-                <div className="tp-name">{deptName(d.dep as DeptKey)}</div>
-                <div className="tp-bar"><span style={{ width: `${(d.revenue / deptMax) * 100}%` }} /></div>
-                <div className="tp-val mono">{m(d.revenue)}</div>
-              </div>
-            ))}
-          </div>
-        ) : <p className="muted" style={{ fontSize: 14 }}>No sales in this range.</p>}
+        <AreaTrend
+          data={curBuckets.map((b, i) => ({ label: b.label, current: b.revenue, previous: prevBuckets[i]?.revenue ?? 0 }))}
+          xKey="label"
+          series={[{ key: "current", label: "This period", color: "var(--chart-1)" }, { key: "previous", label: "Previous", color: "var(--chart-5)" }]}
+          stacked={false}
+          height={240}
+          yFormatter={(v) => k(v)}
+        />
       </div>
 
       <div className="dash">
         <div className="panel anim-in">
           <div className="panel-h"><h3>Orders by status</h3><span className="hint">{stats.cur.length} in range</span></div>
           {statusMix.length ? (
-            <div className="statusmix">
-              <div className="smbar">{statusMix.map((s) => <span key={s.status} className={`smseg s-${statusSlug(s.status)}`} style={{ width: `${(s.n / statusTotal) * 100}%` }} title={`${s.status}: ${s.n}`} />)}</div>
-              <div className="smlegend">{statusMix.map((s) => <div key={s.status} className="smrow"><Badge tone={statusTone(s.status)}>{s.status}</Badge><span className="mono">{s.n} · {Math.round((s.n / statusTotal) * 100)}%</span></div>)}</div>
-            </div>
+            <PieBreakdown
+              donut
+              centerLabel="orders"
+              data={statusMix.map((s) => ({ name: s.status, value: s.n }))}
+              valueFormatter={(v) => String(v)}
+              height={300}
+            />
           ) : <p className="muted" style={{ fontSize: 14 }}>No orders in this range.</p>}
         </div>
         <div className="panel anim-in">
-          <div className="panel-h"><h3>Top products</h3><span className="hint">by revenue</span></div>
-          {topProducts.length ? (
-            <div className="toplist">
-              {topProducts.map((p) => (
-                <div className="toprow" key={p.name}>
-                  <div className="tp-name">{p.name}<span className="muted"> · {p.qty} cs</span></div>
-                  <div className="tp-bar"><span style={{ width: `${(p.revenue / topMax) * 100}%` }} /></div>
-                  <div className="tp-val mono">{m(p.revenue)}</div>
-                </div>
-              ))}
-            </div>
+          <div className="panel-h"><h3>Revenue by department</h3><span className="hint">in range</span></div>
+          {deptRevenue.length ? (
+            <PieBreakdown
+              data={deptRevenue.map((d) => ({ name: deptName(d.dep as DeptKey), value: d.revenue }))}
+              valueFormatter={(v) => m(v)}
+              height={300}
+            />
           ) : <p className="muted" style={{ fontSize: 14 }}>No sales in this range.</p>}
         </div>
+      </div>
+
+      <div className="panel anim-in" style={{ marginTop: 18 }}>
+        <div className="panel-h"><h3>Top products</h3><span className="hint">by revenue</span></div>
+        {topProducts.length ? (
+          <BarBreakdown
+            data={topProducts.map((p) => ({ name: p.name, value: p.revenue }))}
+            valueFormatter={(v) => m(v)}
+            height={320}
+          />
+        ) : <p className="muted" style={{ fontSize: 14 }}>No sales in this range.</p>}
       </div>
 
       <div className="kpis" style={{ marginTop: 18 }}>
@@ -256,7 +242,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
 
       <div className="dash" style={{ marginTop: 18 }}>
         <div className="panel anim-in">
-          <div className="panel-h"><h3>Reorder suggestions</h3><Button variant="ghost" size="sm" onClick={() => go("pos")}>Create POs</Button></div>
+          <div className="panel-h"><h3>Reorder suggestions</h3><Button variant="ghost" size="sm" onClick={() => go("pos")}><Plus /> Create POs</Button></div>
           <div className="minirows">
             {low.length ? low.slice(0, 6).map((p) => {
               const sup = suppliers.find((s) => s.id === p.supplierId);
@@ -379,7 +365,8 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
   const v = ov(cur);
   const exempt = cur.taxExempt === true;
-  const tax = computeTax(cur.total, cur.taxExempt, settings.taxRate);
+  const txb = taxBreakdown(cur.total, cur.taxExempt, settings);
+  const tax = txb.total;
   const grand = cur.total + (cur.deliveryFee ?? 0) + tax - (cur.discount ?? 0);
 
   const startEdit = () => { setDraft(cur.lines.map((l) => ({ ...l }))); setEditing(true); };
@@ -397,12 +384,12 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
     if (!draft.length) { flash("An order needs at least one item"); return; }
     const total = draft.reduce((s, l) => s + l.qty * l.price, 0);
     const cases = draft.reduce((s, l) => s + l.qty, 0);
-    patchOrder(cur.ref, { lines: draft, total, cases, tax: computeTax(total, cur.taxExempt, settings.taxRate) });
+    patchOrder(cur.ref, { lines: draft, total, cases, tax: taxBreakdown(total, cur.taxExempt, settings).total });
     setEditing(false);
     flash("Order items updated");
   };
   const toggleExempt = (next: boolean) => {
-    patchOrder(cur.ref, { taxExempt: next, tax: computeTax(cur.total, next, settings.taxRate) });
+    patchOrder(cur.ref, { taxExempt: next, tax: taxBreakdown(cur.total, next, settings).total });
     flash(next ? "Marked resale tax-exempt" : `${settings.taxLabel} applied`);
   };
 
@@ -427,18 +414,22 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               Cancel order
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            style={{ color: "var(--red)" }}
-            onClick={async () => {
-              if (await confirm({ title: "Delete order?", message: `Order ${cur.ref} will be permanently removed.`, confirmLabel: "Delete order", danger: true })) {
-                removeOrder(cur.ref); router.push("/admin/orders"); flash("Order deleted");
-              }
-            }}
-          >
-            Delete
-          </Button>
+          {/* permanent delete lives in the overflow so it isn't a same-weight
+              red button next to the reversible Cancel (Von Restorff) */}
+          <Menu
+            label="More order actions"
+            items={[
+              {
+                label: "Delete order",
+                danger: true,
+                onSelect: async () => {
+                  if (await confirm({ title: "Delete order?", message: `Order ${cur.ref} will be permanently removed.`, confirmLabel: "Delete order", danger: true })) {
+                    removeOrder(cur.ref); router.push("/admin/orders"); flash("Order deleted");
+                  }
+                },
+              },
+            ]}
+          />
         </div>
       </header>
 
@@ -458,18 +449,18 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
             {editing ? (
               <>
-                <div className="tablewrap">
-                <table className="invtable flat">
+                <div className="p-3">
+                <table className="invtable flat lineitems">
                   <thead><tr><th scope="col">Product</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit</th><th className="r" scope="col">Line</th><th scope="col"></th></tr></thead>
                   <tbody>
                     {draft.map((l) => (
                       <tr key={l.id}>
-                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
+                        <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>{products.find((p) => p.id === l.id)?.sku || "—"}</div></div></div></td>
                         <td className="r">
                           <div className="qstep">
-                            <button type="button" onClick={() => setQty(l.id, -1)} aria-label="Decrease">−</button>
+                            <button type="button" onClick={() => setQty(l.id, -1)} aria-label="Decrease"><Minus /></button>
                             <span className="mono">{l.qty}</span>
-                            <button type="button" onClick={() => setQty(l.id, 1)} aria-label="Increase">+</button>
+                            <button type="button" onClick={() => setQty(l.id, 1)} aria-label="Increase"><Plus /></button>
                           </div>
                         </td>
                         <td className="r mono">{m(l.price)}</td>
@@ -499,14 +490,14 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
               </>
             ) : (
               <>
-                <div className="tablewrap">
-                <table className="invtable flat">
-                  <thead><tr><th scope="col">Product</th><th scope="col">Code</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit price</th><th className="r" scope="col">Line total</th></tr></thead>
+                <div className="p-3">
+                <table className="invtable flat lineitems">
+                  <thead><tr><th scope="col">Products</th><th scope="col">Code</th><th className="r" scope="col">Qty</th><th className="r" scope="col">Unit price</th><th className="r" scope="col">Line total</th></tr></thead>
                   <tbody>
                     {cur.lines.map((l) => (
                       <tr key={l.id}>
                         <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><span style={{ fontSize: 13.5 }}>{l.name}</span></div></td>
-                        <td className="mono muted">SW-{l.id}</td>
+                        <td className="mono muted">{products.find((p) => p.id === l.id)?.sku || "—"}</td>
                         <td className="r mono">{l.qty}</td>
                         <td className="r mono">{m(l.price)}</td>
                         <td className="r mono">{m(l.qty * l.price)}</td>
@@ -518,7 +509,14 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
                 <div className="totals">
                   <div className="tl"><span>Subtotal · {cur.cases} cases</span><span className="mono">{m(cur.total)}</span></div>
                   <div className="tl"><span>Discount{cur.discountReason ? ` · ${cur.discountReason}` : ""}</span><span className="mono">−{m(v.discount)}</span></div>
-                  <div className="tl"><span>{exempt ? "Tax (resale exempt)" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">{m(tax)}</span></div>
+                  {exempt ? (
+                    <div className="tl"><span>Tax (resale exempt)</span><span className="mono">{m(0)}</span></div>
+                  ) : (
+                    <>
+                      <div className="tl"><span>{settings.taxLabel} ({settings.taxRate}%)</span><span className="mono">{m(txb.sales)}</span></div>
+                      {(settings.countyTaxRate ?? 0) > 0 && <div className="tl"><span>{settings.countyTaxLabel} ({settings.countyTaxRate}%)</span><span className="mono">{m(txb.county)}</span></div>}
+                    </>
+                  )}
                   <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: v.deliveryFee ? "inherit" : "var(--green)" }}>{v.deliveryFee ? m(v.deliveryFee) : "Free"}</span></div>
                   <div className="tl grand"><span>Order total</span><b>{m(grand)}</b></div>
                 </div>
@@ -533,7 +531,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
             <div className="kvs">
               <div className="kv2"><span>Order ID</span><b className="mono">{cur.ref}</b></div>
               <div className="kv2"><span>Tracking</span><b className="mono">{v.tracking}</b></div>
-              <div className="kv2"><span>Method</span><b>{cur.fulfilment || "Next-day delivery"}</b></div>
+              <div className="kv2"><span>Method</span><b>{cur.fulfilment || "Delivery"}</b></div>
               <div className="kv2"><span>Update status</span>
                 {cur.status === "Cancelled" ? (
                   <Button variant="ghost" size="sm" onClick={() => { setStatus(cur.ref, "Pending"); flash("Order reinstated"); }}>Reinstate order</Button>
@@ -590,7 +588,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
 
   const [custId, setCustId] = useState(customers[0]?.id ?? "");
   const [lines, setLines] = useState<OrderLine[]>([]);
-  const [fulfilment, setFulfilment] = useState("Next-day delivery");
+  const [fulfilment, setFulfilment] = useState("Delivery");
   const [payment, setPayment] = useState("Net 15 terms");
   const [taxExempt, setTaxExempt] = useState(false);
   const [deliv, setDeliv] = useState("");
@@ -601,7 +599,8 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const cust = customers.find((c) => c.id === custId);
   const subtotal = lines.reduce((s, l) => s + l.qty * l.price, 0);
   const cases = lines.reduce((s, l) => s + l.qty, 0);
-  const tax = computeTax(subtotal, taxExempt, settings.taxRate);
+  const ntx = taxBreakdown(subtotal, taxExempt, settings);
+  const tax = ntx.total;
   const deliveryFee = Math.max(0, Number(deliv) || 0);
   const discVnum = Number(discVal) || 0;
   const discount = Math.max(0, discKind === "percent" ? Math.round(subtotal * discVnum) / 100 : discVnum);
@@ -621,7 +620,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
     if (!lines.length) { flash("Add at least one product"); return; }
     const isPickup = fulfilment.includes("pickup");
     const order: Order = {
-      ref: "SW-" + Math.floor(4000 + Math.random() * 5000),
+      ref: orderRef(),
       placed: Date.now(),
       store: cust.store,
       lines, cases, total: subtotal, status: "Pending",
@@ -666,8 +665,8 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                 <tbody>
                   {lines.map((l) => (
                     <tr key={l.id}>
-                      <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>SW-{l.id}</div></div></div></td>
-                      <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}>−</button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}>+</button></div></td>
+                      <td className="pn"><div className="pn-cell"><span className="pn-thumb"><Image src={productImg(products.find((p) => p.id === l.id) ?? {})} alt="" fill sizes="30px" style={{ objectFit: "contain" }} /></span><div style={{ fontSize: 13.5 }}>{l.name}<div className="mono muted" style={{ fontSize: 11 }}>{products.find((p) => p.id === l.id)?.sku || "—"}</div></div></div></td>
+                      <td className="r"><div className="qstep"><button type="button" onClick={() => setQty(l.id, -1)}><Minus /></button><span className="mono">{l.qty}</span><button type="button" onClick={() => setQty(l.id, 1)}><Plus /></button></div></td>
                       <td className="r mono">{m(l.price)}</td>
                       <td className="r mono">{m(l.qty * l.price)}</td>
                       <td className="r"><button type="button" className="ia del" onClick={() => drop(l.id)} aria-label="Remove line"><Close /></button></td>
@@ -694,7 +693,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
             <div className="panel-h"><h3>Order setup</h3></div>
             <div className="kvs">
               <div className="kv2 col"><span>Fulfilment</span>
-                <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}><option>Next-day delivery</option><option>Cash &amp; carry pickup</option><option>Scheduled delivery</option></select>
+                <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}><option>Delivery</option><option>Pickup</option><option>Scheduled delivery</option></select>
               </div>
               <div className="kv2 col"><span>Payment</span>
                 <select value={payment} onChange={(e) => setPayment(e.target.value)}><option>Net 15 terms</option><option>Net 30 terms</option><option>Card on delivery</option><option>Cash on delivery</option></select>
@@ -722,7 +721,14 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
             <div className="totals">
               <div className="tl"><span>Subtotal · {cases} cases</span><span className="mono">{m(subtotal)}</span></div>
               {discount > 0 && <div className="tl"><span>Discount{discReason.trim() ? ` · ${discReason.trim()}` : discKind === "percent" ? ` · ${discVnum}%` : ""}</span><span className="mono">−{m(discount)}</span></div>}
-              <div className="tl"><span>{taxExempt ? "Tax (resale exempt)" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">{m(tax)}</span></div>
+              {taxExempt ? (
+                <div className="tl"><span>Tax (resale exempt)</span><span className="mono">{m(0)}</span></div>
+              ) : (
+                <>
+                  <div className="tl"><span>{settings.taxLabel} ({settings.taxRate}%)</span><span className="mono">{m(ntx.sales)}</span></div>
+                  {(settings.countyTaxRate ?? 0) > 0 && <div className="tl"><span>{settings.countyTaxLabel} ({settings.countyTaxRate}%)</span><span className="mono">{m(ntx.county)}</span></div>}
+                </>
+              )}
               <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: deliveryFee ? "inherit" : "var(--green)" }}>{deliveryFee ? m(deliveryFee) : "Free"}</span></div>
               <div className="tl grand"><span>Order total</span><b>{m(grand)}</b></div>
             </div>
@@ -793,9 +799,8 @@ export function OrdersTab() {
   return (
     <>
       <Head title="Orders" sub="Orders from the customer portal. Open any order for the full receipt">
-        <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}>+ New order</Button>
+        <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}><Plus /> New order</Button>
       </Head>
-      <Fab icon={<Plus />} href="/admin/orders/new">New order</Fab>
       <div className="kpis">
         <KpiCard tone="accent" label="All-time sales" value={k(rev)} foot={`${orders.length} orders`} />
         <KpiCard label="Open" value={orders.filter((o) => o.status !== "Completed").length} foot="in fulfillment" />
@@ -836,6 +841,7 @@ export function OrdersTab() {
           selected={selected}
           onToggle={toggleSel}
           onToggleAll={toggleAllSel}
+          pageSize={25}
         />
       ) : !ready ? (
         <div className="ocg">
@@ -948,7 +954,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       <>
         <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}>← All accounts</button>
         <header className="adminbar">
-          <div><h1>{cur.store}</h1><p>{cur.id} · {cur.contact} · account since {cur.since}</p></div>
+          <div><h1>{cur.store}</h1><p>Member #{cur.memberNo ?? "—"} · {cur.contact} · account since {cur.since}</p></div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Badge tone={acctTone(cur.status)}>{cur.status}</Badge>
             {(st === "Active" || st === "Pending") && (
@@ -1085,9 +1091,9 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Customer accounts" sub="Review applications, approve stores, then they order in the portal">
-        <Button variant="primary" size="sm" onClick={() => setInviting(true)}>+ Invite account</Button>
+        <Button variant="primary" size="sm" onClick={() => setInviting(true)}><Plus /> Invite account</Button>
       </Head>
-      <FlowGuide steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />
+      <FlowHelp steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />
       <div className="kpis">
         <KpiCard label="Total accounts" value={customers.length} foot="on file" />
         <KpiCard label="Active" value={stats.filter((c) => c.status === "Active").length} foot="cleared to order" />
@@ -1107,11 +1113,12 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         rowClassName={(c) => (c.status === "Pending" ? "rowflag" : undefined)}
         loading={!ready}
         empty={tableEmpty(error, refresh, "No accounts match.")}
+        pageSize={25}
       />
 
       {inviting && (
-        <div className="modal-overlay" onClick={() => setInviting(false)}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={sendInvite}>
+        <DialogFrame onClose={() => setInviting(false)} label="Invite a customer account">
+          <form className="modal" onSubmit={sendInvite}>
             <h3>Invite a customer account</h3>
             <p className="auth-sub" style={{ marginTop: 0 }}>They&apos;ll be created as Pending until verified and approved.</p>
             <div className="formgrid">
@@ -1124,7 +1131,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
             </div>
             <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setInviting(false)}>Cancel</Button><Button variant="primary" type="submit">Send invite</Button></div>
           </form>
-        </div>
+        </DialogFrame>
       )}
     </>
   );

@@ -1,13 +1,21 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { CONTACT, fmt, orderGrand, type Order } from "@/lib/store";
 
 /* =========================================================
    Printable order receipt. Hidden on screen (`.print-area`),
    revealed only by the print stylesheet — see app.css.
-   Header carries the logo + company contacts; the body
-   carries the order, line items, and amounts.
+   Rendered through a portal onto <body> so that, in print,
+   everything else can be display:none'd cleanly — no blank
+   pages from the app shell still taking up layout space.
    ========================================================= */
 export default function PrintReceipt({ order }: { order: Order }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const deliveryFee = order.deliveryFee ?? 0;
   const tax = order.tax ?? 0;
   const discount = order.discount ?? 0;
@@ -16,7 +24,9 @@ export default function PrintReceipt({ order }: { order: Order }) {
   const shipping = order.shipping ?? order.billing ?? order.store;
   const paid = order.paymentStatus ?? (order.payment?.includes("Net") ? "Unpaid" : "Paid");
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="print-area" aria-hidden="true">
       <div className="pr-doc">
         <header className="pr-head">
@@ -66,7 +76,7 @@ export default function PrintReceipt({ order }: { order: Order }) {
         <div className="pr-tot">
           <div className="pr-tline"><span>Subtotal · {order.cases} cases</span><span>${fmt(order.total)}</span></div>
           {discount > 0 && <div className="pr-tline"><span>Discount</span><span>−${fmt(discount)}</span></div>}
-          <div className="pr-tline"><span>{order.taxExempt === false ? "Sales tax" : "Tax (resale exempt)"}</span><span>${fmt(tax)}</span></div>
+          <div className="pr-tline"><span>{order.taxExempt === false ? "Tax" : "Tax (resale exempt)"}</span><span>${fmt(tax)}</span></div>
           <div className="pr-tline"><span>Delivery</span><span>{deliveryFee ? `$${fmt(deliveryFee)}` : "Free"}</span></div>
           <div className="pr-tline grand"><span>Total due</span><span>${fmt(grand)}</span></div>
         </div>
@@ -80,6 +90,7 @@ export default function PrintReceipt({ order }: { order: Order }) {
           {CONTACT.legalName} · {CONTACT.address1}, {CONTACT.address2} · Licensed wholesale distributor.
         </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

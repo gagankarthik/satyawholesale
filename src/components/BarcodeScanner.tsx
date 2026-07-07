@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera } from "./Icons";
+import { DialogFrame } from "@/components/ui";
 
 /* The BarcodeDetector API isn't in the TS DOM lib yet — minimal shapes. */
 interface DetectedBarcode { rawValue: string }
@@ -95,8 +96,8 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
         <Camera /> {label}
       </button>
       {open && (
-        <div className="modal-overlay" onClick={close}>
-          <div className="modal scanmodal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <DialogFrame onClose={close} label="Scan barcode">
+          <div className="modal scanmodal">
             <h3>Scan barcode</h3>
             {err ? (
               <p className="modalp">{err}</p>
@@ -113,7 +114,7 @@ export function BarcodeScanner({ onDetect, label = "Scan" }: { onDetect: (code: 
               <button type="button" className="btn btn-ghost" onClick={close}>Cancel</button>
             </div>
           </div>
-        </div>
+        </DialogFrame>
       )}
     </>
   );

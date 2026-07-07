@@ -13,9 +13,9 @@ import {
   type POLine, type ParsedInvoiceRow,
 } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
-import { Search, Close, Package, Plus } from "@/components/Icons";
-import { Breadcrumb, Button, Combobox, DataTable, EmptyState, Fab, ListToolbar, Progress, Skeleton, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
-import { Head, FlowGuide, PRODUCT_FLOW, tableEmpty, m, timeAgo, type Flash } from "./shared";
+import { Search, Close, Package, Plus, Check } from "@/components/Icons";
+import { Breadcrumb, Button, Combobox, DataTable, DialogFrame, EmptyState, Fab, ListToolbar, Menu, Progress, Skeleton, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, timeAgo, type Flash } from "./shared";
 
 const rid = (pre: string) => pre + Math.floor(1000 + Math.random() * 8999);
 const matchClass = (s: string) => s === "Matched" ? "matched" : s === "Variance" ? "variance" : "awaiting";
@@ -144,8 +144,8 @@ function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose, flash
   const matched = rows?.filter((r) => r.productId).length ?? 0;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-wide" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Import invoice lines">
+    <DialogFrame onClose={onClose} label="Import invoice lines">
+      <div className="modal modal-wide">
         <h3>Import lines from a vendor invoice</h3>
         <p className="modalp">Photograph the paper invoice and let the app read it, or paste the line items as text. Review every row before it lands on the PO.</p>
 
@@ -210,7 +210,7 @@ function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose, flash
           <Button variant="primary" onClick={addAll} disabled={!rows || matched === 0}>Add {matched > 0 ? `${matched} line${matched > 1 ? "s" : ""}` : "lines"} to PO</Button>
         </div>
       </div>
-    </div>
+    </DialogFrame>
   );
 }
 
@@ -261,9 +261,9 @@ export function POTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Purchase orders" sub={`Order stock from suppliers, then receive it to update inventory. Receiving tolerance ±${RECEIVE_TOLERANCE * 100}%`}>
-        <button className="btn btn-primary btn-sm" onClick={() => router.push("/admin/purchaseorder/new")}>+ New PO</button>
+        <Button variant="primary" size="sm" iconLeft={<Plus />} onClick={() => router.push("/admin/purchaseorder/new")}>New PO</Button>
       </Head>
-      <FlowGuide steps={PRODUCT_FLOW} active="po" title="Stock-in flow" />
+      <FlowHelp steps={PRODUCT_FLOW} active="po" title="Stock-in flow" />
       {Object.keys(suggestions).length > 0 && (
         <div className="panel" style={{ marginBottom: 18 }}>
           <div className="panel-h"><h3>Reorder suggestions</h3><span className="hint">SKUs at/below reorder point, grouped by supplier</span></div>
@@ -271,7 +271,7 @@ export function POTab({ flash }: { flash: Flash }) {
             {Object.entries(suggestions).map(([sid, items]) => (
               <div className="minirow" key={sid}>
                 <div><div className="ref" style={{ fontFamily: "var(--font-body-f)", fontWeight: 600 }}>{supName(sid)}</div><div className="st2">{items.length} SKU{items.length > 1 ? "s" : ""} need reordering</div></div>
-                <button className="btn btn-primary btn-sm" onClick={() => createDraft(sid, items)}>Create draft PO</button>
+                <Button variant="primary" size="sm" onClick={() => createDraft(sid, items)}>Create draft PO</Button>
               </div>
             ))}
           </div>
@@ -298,6 +298,7 @@ export function POTab({ flash }: { flash: Flash }) {
           onRowClick={(po) => router.push(`/admin/purchaseorder/${po.id}`)}
           loading={!ready}
           empty={tableEmpty(error, refresh, "No purchase orders match.")}
+          pageSize={25}
         />
       ) : !ready ? (
         <div className="orders">
@@ -315,7 +316,7 @@ export function POTab({ flash }: { flash: Flash }) {
           const ord = po.lines.reduce((s, l) => s + l.ordered, 0);
           const match = threeWayMatch(po, receipts, invoices, credits);
           return (
-            <div className="ordercard clickrow" key={po.id} onClick={() => router.push(`/admin/purchaseorder/${po.id}`)}>
+            <div className="ordercard clickrow" key={po.id} role="button" tabIndex={0} onClick={() => router.push(`/admin/purchaseorder/${po.id}`)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/admin/purchaseorder/${po.id}`); } }}>
               <div className="oc-head">
                 <div>
                   <div className="oc-ref mono">{po.id} · {supName(po.supplierId)}</div>
@@ -345,7 +346,8 @@ export function POTab({ flash }: { flash: Flash }) {
    PURCHASE ORDER — full-page detail (/admin/purchaseorder/[id])
    ======================================================================= */
 export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
-  const { pos, advance, update } = usePurchaseOrders();
+  const { pos, advance, update, remove } = usePurchaseOrders();
+  const confirm = useConfirm();
   const { suppliers } = useSuppliers();
   const { products, updateProduct } = useInventory();
   const { log } = useMovements();
@@ -476,6 +478,20 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
   const invBySku: Record<string, number> = {};
   poInvs.forEach((i) => i.lines.forEach((l) => { invBySku[l.sku] = (invBySku[l.sku] || 0) + l.qty; }));
 
+  /* ---- guided flow: one clear "next step", the rest de-emphasised (Hick's Law) ---- */
+  const PO_STAGES = ["Draft", "Approved", "Sent", "Received", "Closed"];
+  const curStage =
+    cur.status === "Draft" ? 0 : cur.status === "Approved" ? 1 : cur.status === "Sent" ? 2
+    : cur.status === "Partially Received" || cur.status === "Received" ? 3 : 4;
+  const canReceive = cur.status === "Sent" || cur.status === "Partially Received" || cur.status === "Approved";
+  const doAdvance = () => { advance(cur.id); flash(`${cur.id} → ${PO_FLOW[idx + 1]}`); };
+  const primaryAction =
+    cur.status === "Draft" ? { label: "Approve this PO", caption: "Confirm the order is correct, then send it to the supplier.", variant: "primary" as const, run: doAdvance }
+    : cur.status === "Approved" ? { label: "Mark as sent", caption: "Record that you've placed this order with the supplier.", variant: "primary" as const, run: doAdvance }
+    : (cur.status === "Sent" || cur.status === "Partially Received") ? { label: "Receive goods", caption: "Enter the cases that arrived to add them to your stock.", variant: "primary" as const, run: () => setMode("receive") }
+    : (cur.status === "Received" && poInvs.length === 0) ? { label: "Record invoice", caption: "Log the supplier invoice into Accounts Payable.", variant: "ink" as const, run: () => setMode("invoice") }
+    : null;
+
   return (
     <>
       <Breadcrumb items={[{ label: "Purchase orders", href: "/admin/purchaseorder" }, { label: cur.id }]} />
@@ -486,8 +502,22 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
           {editing && <span className="hint">editing</span>}
           <span className={`pobadge s-${cur.status.replace(/\s+/g, "").toLowerCase()}`}>{cur.status}</span>
           <span className={`matchbadge ${matchClass(match.status)}`}>{match.status}</span>
+          <Menu
+            label={`More actions for ${cur.id}`}
+            items={[{ label: "Delete purchase order", danger: true, onSelect: async () => { if (await confirm({ title: "Delete purchase order?", message: `${cur.id} will be permanently removed.`, confirmLabel: "Delete PO", danger: true })) { remove(cur.id); router.push("/admin/purchaseorder"); flash("Purchase order deleted"); } } }]}
+          />
         </div>
       </header>
+
+      {/* where this PO is in its lifecycle */}
+      <ol className="steps po-steps" aria-label="Purchase order progress">
+        {PO_STAGES.map((s, i) => (
+          <li key={s} className={`step ${i === curStage ? "on" : ""} ${i < curStage ? "done" : ""}`}>
+            <span className="step-n">{i < curStage ? <Check /> : i + 1}</span>
+            <span className="step-l">{s === "Received" && cur.status === "Partially Received" ? "Receiving" : s}</span>
+          </li>
+        ))}
+      </ol>
 
       <div className="detail-grid">
         <div className="detail-main">
@@ -658,31 +688,39 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
             <div className="postack">
               {mode === "view" ? (
                 <>
-                  {(cur.status === "Draft" || cur.status === "Approved") && (
-                    <button className="btn btn-ghost" onClick={() => { advance(cur.id); flash(`${cur.id} → ${PO_FLOW[idx + 1]}`); }}>
-                      {cur.status === "Draft" ? "Approve PO" : "Mark as sent"}
-                    </button>
+                  {primaryAction && (
+                    <div className="po-next">
+                      <Button variant={primaryAction.variant} fullWidth onClick={primaryAction.run}>{primaryAction.label}</Button>
+                      <p className="po-next-cap">{primaryAction.caption}</p>
+                    </div>
                   )}
-                  {(cur.status === "Sent" || cur.status === "Partially Received" || cur.status === "Approved") && (
-                    <button className="btn btn-primary" onClick={() => setMode("receive")}>Receive goods</button>
-                  )}
-                  <button className="btn btn-ink" onClick={() => setMode("invoice")}>Record invoice</button>
-                  {poInvs.length > 0 && <button className="btn btn-ghost" onClick={() => setMode("credit")}>Record credit memo</button>}
+                  <div className="po-secondary">
+                    {primaryAction && <span className="po-secondary-l">Other actions</span>}
+                    {canReceive && primaryAction?.label !== "Receive goods" && (
+                      <Button variant="ghost" size="sm" fullWidth onClick={() => setMode("receive")}>Receive goods</Button>
+                    )}
+                    {primaryAction?.label !== "Record invoice" && (
+                      <Button variant="ghost" size="sm" fullWidth onClick={() => setMode("invoice")}>Record invoice</Button>
+                    )}
+                    {poInvs.length > 0 && (
+                      <Button variant="ghost" size="sm" fullWidth onClick={() => setMode("credit")}>Record credit memo</Button>
+                    )}
+                  </div>
                 </>
               ) : mode === "receive" ? (
                 <>
-                  <button className="btn btn-primary" onClick={postReceipt}>Post goods receipt</button>
-                  <button className="btn btn-ghost" onClick={() => setMode("view")}>Cancel</button>
+                  <Button variant="primary" fullWidth onClick={postReceipt}>Post goods receipt</Button>
+                  <Button variant="ghost" fullWidth onClick={() => setMode("view")}>Cancel</Button>
                 </>
               ) : mode === "credit" ? (
                 <>
-                  <button className="btn btn-primary" onClick={postCredit}>Save credit memo</button>
-                  <button className="btn btn-ghost" onClick={() => setMode("view")}>Cancel</button>
+                  <Button variant="primary" fullWidth onClick={postCredit}>Save credit memo</Button>
+                  <Button variant="ghost" fullWidth onClick={() => setMode("view")}>Cancel</Button>
                 </>
               ) : (
                 <>
-                  <button className="btn btn-primary" onClick={postInvoice}>Save invoice</button>
-                  <button className="btn btn-ghost" onClick={() => setMode("view")}>Cancel</button>
+                  <Button variant="primary" fullWidth onClick={postInvoice}>Save invoice</Button>
+                  <Button variant="ghost" fullWidth onClick={() => setMode("view")}>Cancel</Button>
                 </>
               )}
             </div>
@@ -761,9 +799,9 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
         />
       )}
       {viewShot && cur.attachment && (
-        <div className="modal-overlay" onClick={() => setViewShot(false)}>
+        <DialogFrame onClose={() => setViewShot(false)} label="Vendor invoice, full size">
           <AuthImage src={cur.attachment} alt="Vendor invoice, full size" style={{ maxWidth: "94vw", maxHeight: "92vh", margin: "auto", borderRadius: 12 }} />
-        </div>
+        </DialogFrame>
       )}
     </>
   );
@@ -933,7 +971,7 @@ export function InventoryTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Stock ledger" sub="The running history of every stock change: receipts, picks, adjustments and transfers" />
-      <FlowGuide steps={PRODUCT_FLOW} active="ledger" title="Stock-in flow" />
+      <FlowHelp steps={PRODUCT_FLOW} active="ledger" title="Stock-in flow" />
       <div className="panel" style={{ marginBottom: 18 }}>
         <div className="panel-h"><h3>Manual adjustment</h3></div>
         <form style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }} onSubmit={adjust}>
@@ -1061,8 +1099,8 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
       </div>
 
       {adding && (
-        <div className="modal-overlay" onClick={() => setAdding(false)}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={createBin}>
+        <DialogFrame onClose={() => setAdding(false)} label="Add a bin">
+          <form className="modal" onSubmit={createBin}>
             <h3>Add a bin</h3>
             <div className="formgrid">
               <label className="field"><span>Zone</span><input value={nb.zone} onChange={(e) => setNb({ ...nb, zone: e.target.value })} maxLength={2} /></label>
@@ -1074,12 +1112,12 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
             </div>
             <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button type="submit" className="btn btn-primary">Add bin</button></div>
           </form>
-        </div>
+        </DialogFrame>
       )}
 
       {cur && (
-        <div className="modal-overlay" onClick={() => setEditId(null)}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={saveEdit}>
+        <DialogFrame onClose={() => setEditId(null)} label="Edit bin">
+          <form className="modal" onSubmit={saveEdit}>
             <h3>Bin {cur.id}</h3>
             <p className="modalp">{cur.zone} · aisle {cur.aisle} · rack {cur.rack}</p>
             <div className="formgrid">
@@ -1088,7 +1126,7 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
             </div>
             <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setEditId(null)}>Cancel</button><button type="submit" className="btn btn-primary">Save</button></div>
           </form>
-        </div>
+        </DialogFrame>
       )}
     </>
   );

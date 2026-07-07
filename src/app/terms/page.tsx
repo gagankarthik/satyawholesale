@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 
-export const metadata: Metadata = { title: "Terms of Service · Satya Wholesale" };
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "The terms that govern wholesale customer accounts, ordering, and delivery with Satya Wholesale.",
+  alternates: { canonical: "/terms" },
+};
 
 export default function Terms() {
   return (

@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Check, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut } from "@/components/Icons";
-import { Dropdown, Kbd } from "@/components/ui";
+import { toast } from "sonner";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail } from "@/components/Icons";
+import { Dropdown } from "@/components/ui";
+import { AdminSearchResults } from "./AdminSearchResults";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
 import { useSession } from "@/lib/auth";
+import { useMessages } from "@/lib/wms";
 import { type Tab, type Flash } from "@/features/admin/shared";
 
 /* tab key -> route, so feature components can keep their `go(tab)` API */
@@ -43,7 +46,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const { ready: sessionReady, signedIn, isAdmin, email, signOut } = useSession();
-  const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -58,18 +60,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => { setCollapsed(localStorage.getItem("satya.sidebar") === "1"); }, []);
   const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.sidebar", n ? "1" : "0"); } catch {} return n; });
 
-  const flash: Flash = (msg) => {
-    setToast(msg);
-    window.clearTimeout((flash as unknown as { t?: number }).t);
-    (flash as unknown as { t?: number }).t = window.setTimeout(() => setToast(""), 2000);
-  };
+  const flash: Flash = (msg) => toast(msg);
   const go = (t: Tab) => router.push(TAB_PATH[t]);
+
+  const { messages } = useMessages();
+  const unreadMsgs = messages.filter((m) => !m.read).length;
 
   const GROUPS: { label: string; items: { path: string; label: string; Icon: typeof Grid; soon?: boolean; hidden?: boolean }[] }[] = [
     { label: "Sales", items: [
       { path: "/admin/dashboard", label: "Dashboard", Icon: Grid },
       { path: "/admin/orders", label: "Orders", Icon: Receipt },
       { path: "/admin/accounts", label: "Accounts", Icon: Users },
+      { path: "/admin/messages", label: "Messages", Icon: Mail },
     ] },
     { label: "Catalog", items: [
       { path: "/admin/products", label: "Products", Icon: Boxes },
@@ -96,20 +98,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Ctrl/Cmd+K focuses the console search from anywhere in the admin
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-        searchRef.current?.select();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
   const destinations = GROUPS.flatMap((g) => g.items.filter((it) => !it.soon).map((it) => ({ path: it.path, label: it.label, group: g.label })));
-  const results = q.trim() ? destinations.filter((d) => d.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : [];
 
   // Hold the frame until the session is confirmed admin (the effect above redirects otherwise).
   if (!sessionReady || !signedIn || !isAdmin) return <div className="admin" />;
@@ -128,9 +117,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <div key={g.label} className="anav-group">
                   <div className="anav-label">{g.label}</div>
                   {g.items.filter((it) => !it.hidden).map(({ path, label, Icon, soon }) => (
-                    <Link key={path} href={path} className={isActive(path) ? "on" : ""} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
+                    <Link key={path} href={path} className={isActive(path) ? "on" : ""} aria-current={isActive(path) ? "page" : undefined} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
                       <Icon className="nicon" /> {label}
                       {soon && <span className="soon">soon</span>}
+                      {path === "/admin/messages" && unreadMsgs > 0 && <span className="navbadge">{unreadMsgs}</span>}
                     </Link>
                   ))}
                 </div>
@@ -160,15 +150,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
                   aria-label="Search console"
                 />
-                <span className="atb-kbd" aria-hidden="true"><Kbd>Ctrl</Kbd><Kbd>K</Kbd></span>
-                {searchOpen && results.length > 0 && (
-                  <div className="atb-results" role="listbox">
-                    {results.map((r) => (
-                      <button key={r.path} type="button" role="option" className="atb-result" onMouseDown={() => { router.push(r.path); setQ(""); setSearchOpen(false); }}>
-                        <span className="atb-r-label">{r.label}</span><span className="atb-r-grp">{r.group}</span>
-                      </button>
-                    ))}
-                  </div>
+                {searchOpen && (
+                  <AdminSearchResults
+                    query={q}
+                    destinations={destinations}
+                    onGo={(path) => { router.push(path); setQ(""); setSearchOpen(false); }}
+                  />
                 )}
               </div>
               <div className="atb-actions">
@@ -181,10 +168,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </Dropdown>
               </div>
             </div>
-            <div className="admincontent">{children}</div>
+            <main id="main" className="admincontent">{children}</main>
           </div>
-
-          {toast && <div className="toast show" key={toast}><Check /> {toast}</div>}
         </div>
       </Ctx.Provider>
     </ConfirmProvider>

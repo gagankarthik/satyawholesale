@@ -2,11 +2,37 @@
 
 import Link from "next/link";
 import { forwardRef, type ButtonHTMLAttributes, type MouseEventHandler, type ReactNode } from "react";
-import { cx } from "./cx";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 import { Spinner } from "./Spinner";
 
-export type ButtonVariant = "primary" | "ink" | "ghost" | "light" | "danger";
-export type ButtonSize = "sm" | "md";
+/**
+ * Button — shadcn/ui architecture (cva variants + Slot `asChild`), themed with
+ * the Satya design-system classes so the brand look is preserved.
+ */
+export const buttonVariants = cva("btn", {
+  variants: {
+    variant: {
+      primary: "btn-primary",
+      ink: "btn-ink",
+      ghost: "btn-ghost",
+      light: "btn-light",
+      danger: "btn-danger",
+    },
+    size: {
+      md: "",
+      sm: "btn-sm",
+    },
+    fullWidth: {
+      true: "btn-block",
+    },
+  },
+  defaultVariants: { variant: "primary", size: "md" },
+});
+
+export type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
+export type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
 
 interface BaseProps {
   variant?: ButtonVariant;
@@ -18,24 +44,19 @@ interface BaseProps {
   iconRight?: ReactNode;
   /** Render as a link (Next.js `Link`) instead of a `<button>`. */
   href?: string;
+  /** Merge props onto the child element instead of rendering a `<button>`. */
+  asChild?: boolean;
 }
 
 export interface ButtonProps
   extends BaseProps,
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof BaseProps> {}
 
-/**
- * The single button primitive for the app. Encapsulates the design-system
- * button classes plus loading/disabled/icon affordances and accessibility.
- *
- * @example <Button variant="primary" loading={saving}>Save changes</Button>
- * @example <Button href="/portal" variant="ghost">Customer login</Button>
- */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "primary", size = "md", loading = false, fullWidth, iconLeft, iconRight, href, className, children, disabled, ...rest },
+  { variant = "primary", size = "md", loading = false, fullWidth, iconLeft, iconRight, href, asChild, className, children, disabled, ...rest },
   ref
 ) {
-  const cls = cx("btn", `btn-${variant}`, size === "sm" && "btn-sm", fullWidth && "btn-block", className);
+  const cls = cn(buttonVariants({ variant, size, fullWidth }), className);
   const content = (
     <>
       {loading ? <Spinner /> : iconLeft}
@@ -44,9 +65,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     </>
   );
 
+  if (asChild) {
+    return <Slot className={cls} {...rest}>{children}</Slot>;
+  }
+
   if (href && !disabled && !loading) {
-    // Forward the props that make sense on an anchor so link-buttons stay
-    // as capable as button-buttons (onClick side-effects, layout style, a11y).
     const { style, title, onClick, tabIndex, ["aria-label"]: ariaLabel } = rest;
     return (
       <Link
@@ -64,13 +87,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   }
 
   return (
-    <button
-      ref={ref}
-      className={cls}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      {...rest}
-    >
+    <button ref={ref} className={cls} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
       {content}
     </button>
   );

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
 import { fmt, sku, productImg, offerActive, effPrice, type Product } from "@/lib/store";
-import { Search } from "@/components/Icons";
+import { Search, Plus, Minus } from "@/components/Icons";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../../PortalShell";
 import ProductCard from "../../ProductCard";
@@ -56,19 +56,19 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             </div>
             <div className="kvs">
               <div className="kv2"><span>Item #</span><b className="mono">#{p.id}</b></div>
-              <div className="kv2"><span>SKU</span><b className="mono">{sku(p)}</b></div>
+              <div className="kv2"><span>SKU</span><b className="mono">{p.sku?.trim() || "—"}</b></div>
               <div className="kv2"><span>Case pack</span><b>{p.pack}</b></div>
               <div className="kv2"><span>In stock</span><b>{p.stock} cases</b></div>
             </div>
             <div style={{ marginTop: 16 }}>
               {inCart ? (
                 <div className="stepper">
-                  <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case">−</button>
+                  <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case"><Minus /></button>
                   <span className="qv">{inCart}<small>cases</small></span>
-                  <button onClick={() => changeQty(p.id, 1)} disabled={inCart >= p.stock} aria-label="Add one case">+</button>
+                  <button onClick={() => changeQty(p.id, 1)} disabled={inCart >= p.stock} aria-label="Add one case"><Plus /></button>
                 </div>
               ) : (
-                <button className="addbtn" onClick={() => add(p.id)} disabled={out}>{out ? "Out of stock" : "+ Add to order"}</button>
+                <button className="addbtn" onClick={() => add(p.id)} disabled={out}>{out ? "Out of stock" : <><Plus /> Add to order</>}</button>
               )}
             </div>
           </div>

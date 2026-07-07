@@ -22,6 +22,7 @@ export const ENTITIES: Record<string, EntityRule> = {
   settings:   { read: "buyer", write: "admin", idField: "id" },
   orders:     { read: "buyer", write: "buyer", idField: "ref", buyerScope: "store" },
   accounts:   { read: "admin", write: "admin", idField: "id" },
+  messages:   { read: "admin", write: "admin", idField: "id" },
   suppliers:  { read: "admin", write: "admin", idField: "id" },
   pos:        { read: "admin", write: "admin", idField: "id" },
   grns:       { read: "admin", write: "admin", idField: "id" },

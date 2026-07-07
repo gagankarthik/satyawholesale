@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { fmt, productImg, offerActive, effPrice, LOW_STOCK, type Product } from "@/lib/store";
 import { usePortal } from "./PortalShell";
+import { Plus, Minus } from "@/components/Icons";
 
 export default function ProductCard({ p }: { p: Product }) {
   const { cart, add, changeQty, catName } = usePortal();
@@ -37,13 +38,13 @@ export default function ProductCard({ p }: { p: Product }) {
         </div>
         {inCart ? (
           <div className="stepper">
-            <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case">−</button>
+            <button onClick={() => changeQty(p.id, -1)} aria-label="Remove one case"><Minus /></button>
             <span className="qv">{inCart}<small>cases</small></span>
-            <button onClick={() => changeQty(p.id, 1)} disabled={inCart >= p.stock} aria-label="Add one case">+</button>
+            <button onClick={() => changeQty(p.id, 1)} disabled={inCart >= p.stock} aria-label="Add one case"><Plus /></button>
           </div>
         ) : (
           <button className="addbtn" onClick={() => add(p.id)} disabled={out}>
-            {out ? "Out of stock" : "+ Add to order"}
+            {out ? "Out of stock" : <><Plus /> Add to order</>}
           </button>
         )}
       </div>

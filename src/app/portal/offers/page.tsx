@@ -6,7 +6,7 @@ import { Tag } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
-import PosterCarousel from "../PosterCarousel";
+import PosterCards from "../PosterCards";
 
 export default function PortalOffers() {
   const { products, ready } = usePortal();
@@ -22,7 +22,7 @@ export default function PortalOffers() {
 
   return (
     <>
-      <PosterCarousel big cta="/portal/offers" ctaLabel="Shop the deals →" ariaLabel="Offers and promotions" />
+      <PosterCards />
       <section className="catrow" style={{ marginTop: 24 }}>
         <div className="catrow-head">
           <h3><Tag /> Featured deals <span className="cnt">by the case</span></h3>

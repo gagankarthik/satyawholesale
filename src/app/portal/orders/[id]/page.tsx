@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { use, useState } from "react";
 import {
-  CONTACT, fmt, productImg, orderGrand, useOrders, useSettings, computeTax, canCancelOrder, canEditOrder,
+  CONTACT, fmt, productImg, orderGrand, useOrders, useSettings, taxBreakdown, canCancelOrder, canEditOrder,
   type OrderLine,
 } from "@/lib/store";
 import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
 import { EmptyState, Skeleton } from "@/components/ui";
-import { Search, Chat, Close } from "@/components/Icons";
+import { Search, Chat, Close, Plus, Minus } from "@/components/Icons";
 import { usePortal } from "../../PortalShell";
 
-const FULFILMENTS = ["Next-day delivery", "Cash & carry pickup", "Scheduled delivery"];
+const FULFILMENTS = ["Delivery", "Pickup", "Scheduled delivery"];
 
 export default function PortalOrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -28,6 +28,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
   const [ship, setShip] = useState("");
   const [notes, setNotes] = useState("");
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [callToCancel, setCallToCancel] = useState(false);
 
   if (!o) {
     if (!ready) {
@@ -71,8 +72,8 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
       lines: draft,
       total: draftTotal,
       cases: draftCases,
-      // keep sales tax in step with the new subtotal (resale-exempt orders stay at $0)
-      tax: computeTax(draftTotal, o.taxExempt, settings.taxRate),
+      // keep tax (sales + county) in step with the new subtotal (resale-exempt orders stay at $0)
+      tax: taxBreakdown(draftTotal, o.taxExempt, settings).total,
       fulfilment: fulfil,
       shipping: ship.trim() || o.store,
       notes: notes.trim() || undefined,
@@ -91,11 +92,13 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
   const cases = editing ? draftCases : o.cases;
   const editable = canEditOrder(o.status);
   const cancellable = canCancelOrder(o.status);
+  const closed = o.status === "Completed" || o.status === "Cancelled";
 
   /* charge breakdown — tax/delivery/discount applied by admin (or the default rate) */
   const subtotal = editing ? draftTotal : o.total;
   const exempt = o.taxExempt === true;
-  const tax = editing ? computeTax(draftTotal, o.taxExempt, settings.taxRate) : (o.tax ?? 0);
+  const txb = taxBreakdown(subtotal, o.taxExempt, settings);
+  const tax = editing ? txb.total : (o.tax ?? 0);
   const deliveryFee = o.deliveryFee ?? 0;
   const discount = o.discount ?? 0;
   const grand = editing ? subtotal + tax + deliveryFee - discount : orderGrand(o);
@@ -118,7 +121,14 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
           ) : (
             <>
               {editable && <button className="btn btn-ghost btn-sm" onClick={startEdit}>Edit order</button>}
-              {cancellable && <button className="btn btn-ghost btn-sm od-cancel" onClick={() => setConfirmCancel(true)}>Cancel order</button>}
+              {!closed && (
+                <button
+                  className="btn btn-ghost btn-sm od-cancel"
+                  onClick={() => (cancellable ? (setConfirmCancel(true), setCallToCancel(false)) : (setCallToCancel(true), setConfirmCancel(false)))}
+                >
+                  Cancel order
+                </button>
+              )}
               <button className="btn btn-primary btn-sm" onClick={() => window.print()}>Print receipt</button>
             </>
           )}
@@ -138,6 +148,17 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
         </div>
       )}
 
+      {callToCancel && (
+        <div className="od-callcancel" role="status">
+          <span className="od-msg-ic" aria-hidden="true"><Chat /></span>
+          <div className="od-callcancel-tx">
+            <b>Need to change or cancel this order?</b>
+            <p>It&apos;s already being picked in the warehouse, so it can&apos;t be cancelled online. Call us at <a href={CONTACT.phoneHref}>{CONTACT.phone}</a> and we&apos;ll take care of it.</p>
+          </div>
+          <button className="od-callcancel-x" onClick={() => setCallToCancel(false)} aria-label="Dismiss"><Close /></button>
+        </div>
+      )}
+
       <div className="panel od-trackwrap"><OrderTracker status={o.status} /></div>
       {o.adminNote && (
         <div className="od-msg">
@@ -154,9 +175,9 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
                 <div className="rl rl-edit" key={l.id}>
                   <span className="rl-nm">{l.name}</span>
                   <div className="rl-stepper">
-                    <button onClick={() => setQty(l.id, -1)} disabled={l.qty <= 1} aria-label="Remove one case">−</button>
+                    <button onClick={() => setQty(l.id, -1)} disabled={l.qty <= 1} aria-label="Remove one case"><Minus /></button>
                     <span className="mono">{l.qty}</span>
-                    <button onClick={() => setQty(l.id, 1)} aria-label="Add one case">+</button>
+                    <button onClick={() => setQty(l.id, 1)} aria-label="Add one case"><Plus /></button>
                   </div>
                   <span className="a mono">${fmt(l.qty * l.price)}</span>
                   <button className="rl-rm" onClick={() => dropLine(l.id)} disabled={lines.length <= 1} aria-label={`Remove ${l.name}`}><Close /></button>
@@ -176,7 +197,14 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
           <div className="totals">
             <div className="tl"><span>Subtotal · {cases} cases</span><span className="mono">${fmt(subtotal)}</span></div>
             {discount > 0 && <div className="tl"><span>Discount{o.discountReason ? ` · ${o.discountReason}` : ""}</span><span className="mono">−${fmt(discount)}</span></div>}
-            <div className="tl"><span>{exempt ? "Tax · resale exempt" : `${settings.taxLabel} (${settings.taxRate}%)`}</span><span className="mono">${fmt(tax)}</span></div>
+            {exempt ? (
+              <div className="tl"><span>Tax · resale exempt</span><span className="mono">$0.00</span></div>
+            ) : (
+              <>
+                <div className="tl"><span>{settings.taxLabel} ({settings.taxRate}%)</span><span className="mono">${fmt(txb.sales)}</span></div>
+                {(settings.countyTaxRate ?? 0) > 0 && <div className="tl"><span>{settings.countyTaxLabel} ({settings.countyTaxRate}%)</span><span className="mono">${fmt(txb.county)}</span></div>}
+              </>
+            )}
             <div className="tl"><span>Delivery fee</span><span className="mono" style={{ color: deliveryFee ? "inherit" : "var(--green)" }}>{deliveryFee ? `$${fmt(deliveryFee)}` : "Free"}</span></div>
             <div className="tl grand"><span>Order total</span><b>${fmt(grand)}</b></div>
           </div>
@@ -200,7 +228,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
               </div>
             ) : (
               <div className="kvs">
-                <div className="kv2"><span>Method</span><b>{o.fulfilment || "Next-day delivery"}</b></div>
+                <div className="kv2"><span>Method</span><b>{o.fulfilment || "Delivery"}</b></div>
                 {o.tracking && o.tracking !== "PICKUP" && <div className="kv2"><span>Tracking</span><b className="mono">{o.tracking}</b></div>}
                 <div className="kv2"><span>Ship to</span><b>{o.shipping || o.store}</b></div>
                 {o.notes && <div className="kv2"><span>Notes</span><b>{o.notes}</b></div>}

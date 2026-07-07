@@ -48,6 +48,7 @@ const nextConfig: NextConfig = {
      NEXT_PUBLIC_* vars inline automatically; this covers the one that isn't. */
   env: { SATYA_BUCKET: process.env.SATYA_BUCKET ?? "" },
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       // Product & promo photos uploaded to the S3 media bucket

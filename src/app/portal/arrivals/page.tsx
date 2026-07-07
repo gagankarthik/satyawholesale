@@ -6,7 +6,7 @@ import { Sparkles } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
-import PosterCarousel from "../PosterCarousel";
+import PosterCards from "../PosterCards";
 
 export default function PortalArrivals() {
   const { products, ready } = usePortal();
@@ -22,7 +22,7 @@ export default function PortalArrivals() {
 
   return (
     <>
-      <PosterCarousel big cta="/portal/arrivals" ctaLabel="See what's new →" ariaLabel="New arrivals" />
+      <PosterCards />
       <section className="catrow" style={{ marginTop: 24 }}>
         <div className="catrow-head">
           <h3><Sparkles /> Just landed <span className="cnt">{list.length} item{list.length !== 1 ? "s" : ""}</span></h3>

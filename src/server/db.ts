@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand, GetCommand, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, GetCommand, PutCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { env } from "./env";
 import { awsClientConfig } from "./aws";
 
@@ -58,4 +58,59 @@ export async function patchItem(type: string, id: string, patch: Row): Promise<R
 
 export async function deleteItem(type: string, id: string): Promise<void> {
   await doc().send(new DeleteCommand({ TableName: env.table, Key: { PK: `T#${type}`, SK: id } }));
+}
+
+/** Atomic, strictly-sequential counter. One item per named sequence under
+    PK "T#counters"; DynamoDB's atomic increment guarantees no two concurrent
+    callers ever receive the same value. Returns the new (post-increment) count. */
+export async function nextSequence(name: string, start = 0): Promise<number> {
+  const r = await doc().send(new UpdateCommand({
+    TableName: env.table,
+    Key: { PK: "T#counters", SK: name },
+    UpdateExpression: "SET seq = if_not_exists(seq, :start) + :one",
+    ExpressionAttributeValues: { ":start": start, ":one": 1 },
+    ReturnValues: "UPDATED_NEW",
+  }));
+  return Number((r.Attributes as { seq?: number }).seq ?? 0);
+}
+
+/** Next 12-digit Costco-style membership number: strictly sequential, starting
+    at 100000000001. Backed by the atomic `memberNo` sequence. */
+export async function nextMemberNo(): Promise<string> {
+  const seq = await nextSequence("memberNo");
+  return String(100000000000 + seq);
+}
+
+/** Atomically subtract `by` from a numeric field in a single write, so
+    concurrent orders can't lose each other's decrements (read-merge-write
+    did). Behavior-preserving: if the field would go negative it clamps to 0
+    (as before), and a missing item is a no-op (as the old `if (!p) continue`). */
+export async function decrementField(type: string, id: string, field: string, by: number): Promise<void> {
+  if (!(by > 0)) return;
+  const Key = { PK: `T#${type}`, SK: id };
+  const names = { "#f": field };
+  try {
+    await doc().send(new UpdateCommand({
+      TableName: env.table, Key,
+      UpdateExpression: "SET #f = #f - :q",
+      ConditionExpression: "attribute_exists(SK) AND #f >= :q",
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: { ":q": by },
+    }));
+  } catch (e) {
+    if ((e as { name?: string }).name !== "ConditionalCheckFailedException") throw e;
+    // Item gone, or stock < qty — clamp to zero if the item still exists.
+    try {
+      await doc().send(new UpdateCommand({
+        TableName: env.table, Key,
+        UpdateExpression: "SET #f = :zero",
+        ConditionExpression: "attribute_exists(SK)",
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: { ":zero": 0 },
+      }));
+    } catch (e2) {
+      if ((e2 as { name?: string }).name !== "ConditionalCheckFailedException") throw e2;
+      // no such item — nothing to decrement
+    }
+  }
 }

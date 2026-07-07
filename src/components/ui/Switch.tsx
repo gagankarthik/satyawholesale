@@ -1,7 +1,8 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { cx } from "./cx";
+import * as SwitchPrimitive from "@radix-ui/react-switch";
+import { cn } from "@/lib/utils";
 
 export interface SwitchProps {
   checked: boolean;
@@ -15,25 +16,25 @@ export interface SwitchProps {
 }
 
 /**
- * On/off switch for a setting that takes effect immediately (visibility,
- * active/inactive). For choices that need a Save button, use a checkbox or
- * select instead — a switch promises instant effect.
+ * On/off switch (shadcn/ui architecture on Radix) for a setting that takes
+ * effect immediately (visibility, active/inactive). For choices that need a
+ * Save button, use a checkbox or select — a switch promises instant effect.
  *
  * @example <Switch checked={promo.active} onChange={togglePublish} label="Live on portal" />
  */
 export function Switch({ checked, onChange, label, ariaLabel, disabled, className }: SwitchProps) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label ? undefined : ariaLabel}
-      className={cx("switchrow", checked && "on", className)}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-    >
-      <span className="switch" aria-hidden="true"><span className="switch-knob" /></span>
+    <label className={cn("switchrow", checked && "on", disabled && "is-disabled", className)}>
+      <SwitchPrimitive.Root
+        checked={checked}
+        onCheckedChange={onChange}
+        disabled={disabled}
+        aria-label={label ? undefined : ariaLabel}
+        className="switch"
+      >
+        <SwitchPrimitive.Thumb className="switch-knob" />
+      </SwitchPrimitive.Root>
       {label && <span className="switch-label">{label}</span>}
-    </button>
+    </label>
   );
 }

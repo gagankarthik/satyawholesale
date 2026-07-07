@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pin, Plus, Trash } from "@/components/Icons";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, DialogFrame, EmptyState } from "@/components/ui";
 import { useConfirm } from "@/components/Confirm";
 import { usePortal } from "../PortalShell";
 import { useAddresses, type Address } from "@/lib/addresses";
@@ -67,8 +67,8 @@ export default function PortalAddresses() {
       )}
 
       {adding && (
-        <div className="modal-overlay" onClick={() => setAdding(false)}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={addAddr}>
+        <DialogFrame onClose={() => setAdding(false)} label="Add a delivery address">
+          <form className="modal flow" onSubmit={addAddr}>
             <h3>Add a delivery address</h3>
             <div className="formgrid">
               <label className="field full"><span>Label</span><input value={draft.label} onChange={set("label")} placeholder="e.g. Back dock" required autoFocus /></label>
@@ -83,7 +83,7 @@ export default function PortalAddresses() {
               <Button variant="primary" type="submit">Add address</Button>
             </div>
           </form>
-        </div>
+        </DialogFrame>
       )}
     </>
   );

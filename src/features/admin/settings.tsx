@@ -7,12 +7,14 @@ import {
 import {
   useStaff, createUser, PO_APPROVAL_THRESHOLD, ROLES, type Role,
 } from "@/lib/wms";
-import { Button, EmptyState, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
+import { Button, DialogFrame, EmptyState, FieldHelp, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
+import { useConfirm } from "@/components/Confirm";
 import { Head, m, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
 export function UsersTab({ flash }: { flash: Flash }) {
-  const { staff, add, update, ready, error, refresh } = useStaff();
+  const { staff, add, update, remove, ready, error, refresh } = useStaff();
+  const confirm = useConfirm();
   const [adding, setAdding] = useState(false);
   const [d, setD] = useState(EMPTY_STAFF);
   const [query, setQuery] = useState("");
@@ -100,6 +102,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
                         label={`Actions for ${u.name}`}
                         items={[
                           { label: u.status === "Active" ? "Suspend user" : "Restore user", danger: u.status === "Active", onSelect: () => { const suspending = u.status === "Active"; update(u.id, { status: suspending ? "Suspended" : "Active" }); flash(suspending ? `${u.name} suspended` : `${u.name} restored`); } },
+                          { label: "Remove user", danger: true, onSelect: async () => { if (await confirm({ title: "Remove user?", message: `${u.name} will lose access and be removed.`, confirmLabel: "Remove", danger: true })) { remove(u.id); flash(`${u.name} removed`); } } },
                         ]}
                       />
                     </td>
@@ -118,18 +121,18 @@ export function UsersTab({ flash }: { flash: Flash }) {
         </table>
       </div>
       {adding && (
-        <div className="modal-overlay" onClick={() => setAdding(false)}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); if (!d.name.trim()) return; add({ id: "U-" + Math.floor(10 + Math.random() * 89), name: d.name.trim(), email: d.email, role: d.role, device: d.device || null, status: "Active" }); setD(EMPTY_STAFF); setAdding(false); flash("User added"); }}>
+        <DialogFrame onClose={() => setAdding(false)} label="Add a user">
+          <form className="modal" onSubmit={(e) => { e.preventDefault(); if (!d.name.trim()) return; add({ id: "U-" + Math.floor(10 + Math.random() * 89), name: d.name.trim(), email: d.email, role: d.role, device: d.device || null, status: "Active" }); setD(EMPTY_STAFF); setAdding(false); flash("User added"); }}>
             <h3>Add a user</h3>
             <div className="formgrid">
               <label className="field full"><span>Full name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
               <label className="field"><span>Email</span><input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
               <label className="field"><span>Role</span><select value={d.role} onChange={(e) => setD({ ...d, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
-              <label className="field"><span>Scanner device</span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
+              <label className="field"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
             </div>
             <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn btn-primary" type="submit">Add user</button></div>
           </form>
-        </div>
+        </DialogFrame>
       )}
     </>
   );
@@ -142,16 +145,23 @@ export function SettingsTab({ flash }: { flash: Flash }) {
   const { settings, update } = useSettings();
   const [rate, setRate] = useState(String(settings.taxRate));
   const [label, setLabel] = useState(settings.taxLabel);
+  const [countyRate, setCountyRate] = useState(String(settings.countyTaxRate ?? 0));
+  const [countyLabel, setCountyLabel] = useState(settings.countyTaxLabel ?? "County tax");
 
-  useEffect(() => { setRate(String(settings.taxRate)); setLabel(settings.taxLabel); }, [settings.taxRate, settings.taxLabel]);
+  useEffect(() => {
+    setRate(String(settings.taxRate)); setLabel(settings.taxLabel);
+    setCountyRate(String(settings.countyTaxRate ?? 0)); setCountyLabel(settings.countyTaxLabel ?? "County tax");
+  }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel]);
 
   const [tab, setTab] = useState<"company" | "tax" | "policies">("company");
 
   const saveTax = (e: React.FormEvent) => {
     e.preventDefault();
     const r = Number(rate);
-    if (Number.isNaN(r) || r < 0 || r > 100) { flash("Enter a tax rate between 0 and 100"); return; }
-    update({ taxRate: r, taxLabel: label.trim() || "Sales tax" });
+    const cr = Number(countyRate);
+    if (Number.isNaN(r) || r < 0 || r > 100) { flash("Enter a sales tax rate between 0 and 100"); return; }
+    if (Number.isNaN(cr) || cr < 0 || cr > 100) { flash("Enter a county tax rate between 0 and 100"); return; }
+    update({ taxRate: r, taxLabel: label.trim() || "Sales tax", countyTaxRate: cr, countyTaxLabel: countyLabel.trim() || "County tax" });
     flash("Tax settings saved");
   };
 
@@ -183,12 +193,21 @@ export function SettingsTab({ flash }: { flash: Flash }) {
           <div className="panel anim-in" key="tax">
             <div className="panel-h"><h3>Tax &amp; invoicing</h3><span className="hint">Applied to orders that aren&apos;t resale-exempt</span></div>
             <form className="formgrid" onSubmit={saveTax}>
-              <label className="field"><span>Sales tax rate (%)</span>
+              <label className="field"><span>Sales tax rate (%) <FieldHelp text="Applied to taxable subtotals on customer orders. Resale-exempt customers are not charged." /></span>
                 <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
               </label>
-              <label className="field"><span>Tax label</span>
+              <label className="field"><span>Sales tax label <FieldHelp text="How this tax line is named on invoices (e.g. 'OH sales tax')." /></span>
                 <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="OH sales tax" />
               </label>
+              <label className="field"><span>County tax rate (%) <FieldHelp text="Additional local county tax, charged on top of the sales tax. Set 0 to disable." /></span>
+                <input type="number" step="0.01" min={0} max={100} value={countyRate} onChange={(e) => setCountyRate(e.target.value)} />
+              </label>
+              <label className="field"><span>County tax label <FieldHelp text="How the county tax line is named on invoices." /></span>
+                <input value={countyLabel} onChange={(e) => setCountyLabel(e.target.value)} placeholder="County tax" />
+              </label>
+              <div className="setrow full" style={{ borderBottom: "none" }}>
+                <span>Combined rate</span><b>{(Number(rate) || 0) + (Number(countyRate) || 0)}%</b>
+              </div>
               <div className="setrow full" style={{ borderBottom: "none" }}>
                 <span>Default for new orders</span><b>Resale-exempt (B2B)</b>
               </div>

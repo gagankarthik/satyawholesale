@@ -4,7 +4,7 @@
 const ITEMS = [
   "Licensed Distributor", "Tobacco", "Vape", "Smoking Accessories",
   "Health & Beauty", "Grocery & Candy", "Automotive", "Phone Accessories",
-  "Cash & Carry", "Next-Day Delivery", "One Invoice", "21+ Wholesale",
+  "Cash & Carry", "Store Delivery", "One Invoice", "21+ Wholesale",
 ];
 
 function Set({ hidden }: { hidden?: boolean }) {

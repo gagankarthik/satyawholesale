@@ -40,7 +40,7 @@ export default function Login() {
   };
 
   return (
-    <div className="auth">
+    <div id="main" role="main" className="auth">
       <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
 
       <div className="auth-grid rise-in">

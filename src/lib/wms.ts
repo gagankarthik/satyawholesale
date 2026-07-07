@@ -55,12 +55,32 @@ export interface Promotion {
   subtitle: string;
   image: string;
   tag: string;
+  /** Optional destination for the carousel "Shop now" button. When empty, no button is shown. */
+  link?: string;
   active: boolean;
   created: number;
 }
 export const usePromotions = () => {
   const col = useCollection<Promotion>("promos", (p) => p.id);
   return { promos: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove };
+};
+
+/* =========================================================
+   CONTACT MESSAGES — the public "Send us a message" inbox
+   ========================================================= */
+export interface Message {
+  id: string;
+  name: string;
+  store?: string;
+  email: string;
+  phone?: string;
+  message: string;
+  created: number;
+  read?: boolean;
+}
+export const useMessages = () => {
+  const col = useCollection<Message>("messages", (m) => m.id);
+  return { messages: col.items, ready: col.ready, error: col.error, refresh: col.refresh, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
@@ -116,7 +136,7 @@ export interface StaffUser {
 }
 export const useStaff = () => {
   const col = useCollection<StaffUser>("staff", (u) => u.id);
-  return { staff: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update };
+  return { staff: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove };
 };
 
 /* =========================================================
@@ -217,7 +237,7 @@ export const usePurchaseOrders = () => {
     if (!p) return;
     col.update(id, { status: "Received", lines: p.lines.map((l) => ({ ...l, received: l.ordered })) });
   }, [col.items, col.update]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { pos: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, advance, receiveAll };
+  return { pos: col.items, ready: col.ready, error: col.error, refresh: col.refresh, add: col.add, update: col.update, remove: col.remove, advance, receiveAll };
 };
 
 /* =========================================================

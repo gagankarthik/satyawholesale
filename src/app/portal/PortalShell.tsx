@@ -10,7 +10,8 @@ import {
 } from "@/lib/store";
 import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
-import { Bag, Search, Grid, GridView, Receipt, Card, Check, User, LogOut, Shield, Pin, Sparkles, Tag } from "@/components/Icons";
+import { toast } from "sonner";
+import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
@@ -104,7 +105,6 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const [query, setQuery] = useState("");
   const [sub, setSub] = useState("");
   const [cart, setCart] = useState<Cart>({});
-  const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
@@ -138,11 +138,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const goSearch = () => { setDept("all"); setSub(""); setSearchFocus(false); router.push("/portal/products"); };
 
-  const flash = (m: string) => {
-    setToast(m);
-    window.clearTimeout((flash as { t?: number }).t);
-    (flash as { t?: number }).t = window.setTimeout(() => setToast(""), 2200);
-  };
+  const flash = (m: string) => toast(m);
   const add = (id: number) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
     const p = products.find((x) => x.id === id);
@@ -191,7 +187,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : `Welcome back, ${STORE || "customer"}`;
 
   const navItem = (href: string, active: boolean, icon: React.ReactNode, label: string, badge?: number) => (
-    <Link href={href} className={`sitem ${active ? "on" : ""}`} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
+    <Link href={href} className={`sitem ${active ? "on" : ""}`} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
       <span className="ic">{icon}</span> {label}
       {badge != null ? <span className="cb">{badge}</span> : null}
     </Link>
@@ -332,13 +328,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             <HelpFlyout />
           </aside>
 
-          <main className="pcontent">
+          <main id="main" className="pcontent">
             {!isDetail && <div className="pagehead"><h1>{title}</h1><p>{subtitle}</p></div>}
             {children}
           </main>
         </div>
-
-        {toast && <div className="toast show" key={toast}><Check /> {toast}</div>}
       </div>
     </Ctx.Provider>
     </ConfirmProvider>

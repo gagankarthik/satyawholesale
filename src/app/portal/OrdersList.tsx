@@ -82,7 +82,7 @@ export default function OrdersList({
                 <div className="oc-head">
                   <div>
                     <div className="oc-ref mono">{o.ref}</div>
-                    <div className="oc-meta">{o.cases} cases · {o.fulfilment || "Next-day delivery"} · {ago(o.placed)}</div>
+                    <div className="oc-meta">{o.cases} cases · {o.fulfilment || "Delivery"} · {ago(o.placed)}</div>
                   </div>
                   <div className="oc-right">
                     <span className="oc-total mono">${fmt(o.total)}</span>

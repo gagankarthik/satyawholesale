@@ -1,7 +1,11 @@
 ﻿import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 
-export const metadata: Metadata = { title: "Return Policy · Satya Wholesale" };
+export const metadata: Metadata = {
+  title: "Return Policy",
+  description: "How returns, credits, and damaged or short shipments are handled for Satya Wholesale customer accounts.",
+  alternates: { canonical: "/returns" },
+};
 
 export default function Returns() {
   return (

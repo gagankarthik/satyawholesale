@@ -1,6 +1,71 @@
 @import "tailwindcss";
 
 /* =========================================================
+   shadcn/ui token layer — maps the shadcn semantic tokens to
+   the Satya brand palette so shadcn components inherit the
+   existing look. Added for the shadcn migration.
+   ========================================================= */
+:root {
+  --radius: 0.7rem;
+  --background: #f5f1e8;        /* --paper */
+  --foreground: #1b2138;        /* --ink */
+  --card: #ffffff;
+  --card-foreground: #1b2138;
+  --popover: #ffffff;
+  --popover-foreground: #1b2138;
+  --primary: #c24f10;          /* --signal-deep (white text ≥ 4.5:1) */
+  --primary-foreground: #ffffff;
+  --secondary: #faf7f0;        /* --paper-2 */
+  --secondary-foreground: #1b2138;
+  --muted: #faf7f0;
+  --muted-foreground: #6b6650; /* --slate-2 */
+  --accent: #fdecdf;           /* --signal-soft */
+  --accent-foreground: #a8440d;/* --signal-text */
+  --destructive: #c53a1b;      /* --red */
+  --destructive-foreground: #ffffff;
+  --border: #e6dfd0;           /* --line */
+  --input: #e6dfd0;
+  --ring: #f26a1b;             /* --signal */
+  /* chart palette — brand-forward, WCAG-tuned */
+  --chart-1: #f26a1b;
+  --chart-2: #2f9e44;
+  --chart-3: #1b2138;
+  --chart-4: #e0a02f;
+  --chart-5: #7a8bbd;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* =========================================================
    SATYA WHOLESALE — enterprise rebrand design system
    Navy ink · stencil orange · in-stock green · kraft paper
    ========================================================= */
@@ -132,6 +197,8 @@ img {
 .skip:focus { top: 14px; outline: 2.5px solid var(--signal); outline-offset: 2px; }
 .mono {
   font-family: var(--font-mono-f);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 .wrap {
   max-width: var(--maxw);
@@ -536,6 +603,11 @@ h1.headline .stroke {
    fluid rhythm: spacing scales with the viewport, small screens first */
 section {
   padding: clamp(68px, 9vw, 104px) 0;
+}
+/* The Sonner toast region is a bare <section>; keep the marketing section
+   padding off it (it was adding empty space at the bottom of every page). */
+section[aria-label^="Notifications"] {
+  padding: 0;
 }
 .shead {
   max-width: 680px;
@@ -1109,20 +1181,8 @@ footer .brand img {
 .fcol a:hover {
   color: var(--signal);
 }
-.foot-bot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 52px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
-  font-family: var(--font-mono-f);
-  font-size: 11.5px;
-  letter-spacing: 0.5px;
-  color: var(--slate);
-  flex-wrap: wrap;
-  gap: 12px;
-}
+/* (An orphaned `.foot-bot` lived here from an old footer and leaked a border +
+   spacing onto the live footer, which is fully styled in app.css. Removed.) */
 
 /* ---------- reveal ---------- */
 .reveal {
@@ -1242,9 +1302,6 @@ footer .brand img {
   .cat.feature {
     grid-column: span 2;
     grid-row: auto;
-  }
-  .steps {
-    grid-template-columns: 1fr;
   }
   .gate-card {
     padding: 40px 28px;

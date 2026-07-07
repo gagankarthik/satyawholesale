@@ -12,10 +12,15 @@ interface RawLine { id: number | string; qty: number | string }
 
 const clampStr = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
+/** Combined sales + county/local rate. The order stores one tax figure; the
+    UI splits it back into its two lines from the same settings. */
 async function taxRate(): Promise<number> {
   const s = await getItem("settings", "main");
-  const r = Number(s?.taxRate);
-  return Number.isFinite(r) && r >= 0 ? r : 6.5;
+  const sales = Number(s?.taxRate);
+  const county = Number(s?.countyTaxRate);
+  const salesR = Number.isFinite(sales) && sales >= 0 ? sales : 6.5;
+  const countyR = Number.isFinite(county) && county >= 0 ? county : 0;
+  return salesR + countyR;
 }
 
 /** Re-price a client line list against the catalog. Rejects unknown/inactive
@@ -59,7 +64,8 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row
   const fulfilment = clampStr(body.fulfilment, 60);
   const isPickup = /pickup/i.test(fulfilment);
   const owner = user.store ?? user.email;
-  const ref = isValidId(body.ref) ? String(body.ref) : "SW-" + Math.floor(4000 + Math.random() * 5000);
+  // Order ref: 4-digit year + 10-digit Unix seconds = 14 digits (mirrors the client).
+  const ref = isValidId(body.ref) ? String(body.ref) : `${new Date().getUTCFullYear()}${Math.floor(Date.now() / 1000)}`;
 
   return {
     ref,
@@ -88,9 +94,10 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row
 export async function sanitizeBuyerOrderPatch(current: Row, patch: Row): Promise<Row> {
   const status = String(current.status ?? "");
 
-  // Cancel path — ignores every other field in the patch.
+  // Cancel path — ignores every other field in the patch. Buyers can only
+  // cancel while Pending; once it's Processing or later they must call us.
   if (patch.status === "Cancelled") {
-    if (status !== "Pending" && status !== "Processing") throw new GuardError("This order can no longer be cancelled.");
+    if (status !== "Pending") throw new GuardError("This order is already being processed and can't be cancelled online. Call us to cancel it.");
     return { status: "Cancelled" };
   }
   if (patch.status !== undefined && patch.status !== status) {

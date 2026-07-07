@@ -9,6 +9,8 @@ export interface Column<T> {
   render: (row: T) => ReactNode;
   align?: "left" | "right";
   width?: string;
+  /** Hide this column on narrow (phone) viewports to keep dense tables readable. */
+  hideOnMobile?: boolean;
   /** Provide a comparable value to make this column header sortable. */
   sortValue?: (row: T) => string | number;
 }
@@ -34,6 +36,8 @@ export interface DataTableProps<T> {
   onToggleAll?: (keys: string[], select: boolean) => void;
   /** Paginate when rows exceed this size; the pager renders under the table. */
   pageSize?: number;
+  /** Row-count choices for the "rows per page" selector. */
+  pageSizeOptions?: number[];
   className?: string;
 }
 
@@ -44,11 +48,12 @@ export interface DataTableProps<T> {
  */
 export function DataTable<T>({
   columns, rows, rowKey, loading = false, skeletonRows = 5, empty, onRowClick, rowClassName, defaultSort,
-  selectable = false, selected, onToggle, onToggleAll, pageSize, className,
+  selectable = false, selected, onToggle, onToggleAll, pageSize, pageSizeOptions = [25, 50, 100], className,
 }: DataTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(defaultSort ?? null);
   const [page, setPage] = useState(0);
-  const colCls = (c: Column<T>) => (c.align === "right" ? "r" : undefined);
+  const [size, setSize] = useState<number | undefined>(pageSize);
+  const colCls = (c: Column<T>) => cx(c.align === "right" && "r", c.hideOnMobile && "dt-hide-mobile");
   const span = columns.length + (selectable ? 1 : 0);
 
   const toggleSort = (key: string) =>
@@ -67,12 +72,21 @@ export function DataTable<T>({
   }, [rows, sort, columns]);
 
   // pagination — clamp the page when the row set shrinks (filtering, deletes)
-  const pages = pageSize ? Math.max(1, Math.ceil(sortedRows.length / pageSize)) : 1;
+  const pages = size ? Math.max(1, Math.ceil(sortedRows.length / size)) : 1;
   useEffect(() => { setPage((p) => Math.min(p, pages - 1)); }, [pages]);
   const pagedRows = useMemo(
-    () => (pageSize ? sortedRows.slice(page * pageSize, (page + 1) * pageSize) : sortedRows),
-    [sortedRows, page, pageSize]
+    () => (size ? sortedRows.slice(page * size, (page + 1) * size) : sortedRows),
+    [sortedRows, page, size]
   );
+
+  // compact numbered page window: first, last, and current ±1, ellipses between
+  const pageList: (number | "…")[] = [];
+  if (size && pages > 1) {
+    for (let i = 0; i < pages; i++) {
+      if (i === 0 || i === pages - 1 || Math.abs(i - page) <= 1) pageList.push(i);
+      else if (pageList[pageList.length - 1] !== "…") pageList.push("…");
+    }
+  }
 
   const visibleKeys = useMemo(() => pagedRows.map(rowKey), [pagedRows, rowKey]);
   const allSelected = !!selected && visibleKeys.length > 0 && visibleKeys.every((k) => selected.has(k));
@@ -127,9 +141,10 @@ export function DataTable<T>({
                 <tr
                   key={k}
                   className={cx(onRowClick && "clickrow", selected?.has(k) && "rowsel", rowClassName?.(row))}
+                  role={onRowClick ? "button" : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   tabIndex={onRowClick ? 0 : undefined}
-                  onKeyDown={onRowClick ? (e) => { if (e.key === "Enter") onRowClick(row); } : undefined}
+                  onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(row); } } : undefined}
                 >
                   {selectable && (
                     <td className="dt-check" onClick={(e) => e.stopPropagation()}>
@@ -143,13 +158,23 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
-      {pageSize != null && sortedRows.length > pageSize && (
+      {size != null && sortedRows.length > pageSizeOptions[0] && (
         <nav className="pager" aria-label="Table pages">
-          <button type="button" className="pager-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>← Previous</button>
-          <span className="pager-info">
-            {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sortedRows.length)} of {sortedRows.length}
-          </span>
-          <button type="button" className="pager-btn" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)}>Next →</button>
+          <label className="pager-size">
+            <span>Rows per page</span>
+            <select value={size} onChange={(e) => { setSize(Number(e.target.value)); setPage(0); }} aria-label="Rows per page">
+              {pageSizeOptions.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </label>
+          <div className="pager-nav">
+            <button type="button" className="pager-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">←</button>
+            {pageList.map((pn, i) => pn === "…"
+              ? <span key={`e${i}`} className="pager-gap" aria-hidden="true">…</span>
+              : <button key={pn} type="button" className={cx("pager-num", pn === page && "on")} aria-current={pn === page ? "page" : undefined} onClick={() => setPage(pn)}>{pn + 1}</button>
+            )}
+            <button type="button" className="pager-btn" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} aria-label="Next page">→</button>
+          </div>
+          <span className="pager-info">{page * size + 1}–{Math.min((page + 1) * size, sortedRows.length)} of {sortedRows.length}</span>
         </nav>
       )}
     </div>

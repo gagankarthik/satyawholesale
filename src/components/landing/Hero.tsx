@@ -35,7 +35,7 @@ export default function Hero() {
             Satya Wholesale is a licensed wholesale distributor and cash-and-carry warehouse on Reading
             Road in Cincinnati, Ohio. Independent convenience stores across the Tri-State stock tobacco,
             vape, grocery, candy, health and beauty, and automotive supplies here on one customer account.
-            Shop the floor yourself or get next-day delivery to your store.
+            Shop the floor yourself or get delivery to your store.
           </p>
           <div className="hero-actions reveal">
             <Link className="btn btn-primary" href="/signup">Open a customer account <Arrow /></Link>

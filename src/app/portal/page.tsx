@@ -3,34 +3,34 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
-import { fmt, statusSlug } from "@/lib/store";
-import { usePromotions } from "@/lib/wms";
-import { Package, Sparkles } from "@/components/Icons";
+import { fmt } from "@/lib/store";
+import { Package, GridView } from "@/components/Icons";
 import { Button, EmptyState, KpiCard, Skeleton } from "@/components/ui";
+import { AreaTrend } from "@/components/ui/AreaTrend";
 import { usePortal } from "./PortalShell";
-import ProductCard from "./ProductCard";
-import PosterCarousel from "./PosterCarousel";
-import { ago } from "./meta";
+import PosterCards from "./PosterCards";
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export default function PortalDashboard() {
-  const { products, myOrders, ready, error, reload, setDept, depts, matchDept } = usePortal();
-  const { promos } = usePromotions();
-  const ads = promos.filter((p) => p.active);
+  const { products, myOrders, ready, error, reload, setDept, depts, counts } = usePortal();
 
-  const newArrivals = useMemo(
-    () => [...products].sort((a, b) => (b.created ?? 0) - (a.created ?? 0)).slice(0, 12),
-    [products]
-  );
   const freshCount = useMemo(
     () => products.filter((p) => Date.now() - (p.created ?? 0) < WEEK).length,
     [products]
   );
-  const deptRows = useMemo(
-    () => depts.map((d) => ({ d, items: products.filter((p) => matchDept(p.dep, d.key)) })).filter((r) => r.items.length).slice(0, 4),
-    [products, depts, matchDept]
-  );
+
+  /* customer spend over the last 6 months for the area chart */
+  const spendData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }).map((_, idx) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - idx), 1);
+      const spend = myOrders
+        .filter((o) => { const od = new Date(o.placed); return od.getFullYear() === d.getFullYear() && od.getMonth() === d.getMonth(); })
+        .reduce((s, o) => s + o.total, 0);
+      return { label: d.toLocaleDateString("en-US", { month: "short" }), spend };
+    });
+  }, [myOrders]);
 
   const openOrders = myOrders.filter((o) => o.status !== "Completed" && o.status !== "Cancelled").length;
   const lifetime = myOrders.reduce((s, o) => s + o.total, 0);
@@ -38,11 +38,11 @@ export default function PortalDashboard() {
 
   if (!ready) {
     return (
-      <>
-        <Skeleton height={220} radius={16} />
+      <div className="pdash">
+        <div style={{ marginBottom: 26 }}><Skeleton height={360} radius={18} /></div>
         <div className="kpis rise-in">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={104} radius={16} />)}</div>
-        <div className="catrow"><div className="catrow-scroll">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} width={200} height={220} />)}</div></div>
-      </>
+        <div className="catgrid">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={150} radius={14} />)}</div>
+      </div>
     );
   }
 
@@ -57,60 +57,50 @@ export default function PortalDashboard() {
   }
 
   return (
-    <>
-      {/* hero — promotions & new-arrival posters */}
-      <PosterCarousel />
+    <div className="pdash rise-in">
+      {/* full-image promotional posters */}
+      <PosterCards />
 
       {/* customer stats */}
-      <div className="kpis rise-in">
+      <div className="kpis">
         <KpiCard tone="accent" label="Open orders" value={openOrders} foot={openOrders ? "in fulfillment" : "all caught up"} />
         <KpiCard label="Lifetime spend" value={`$${fmt(lifetime)}`} foot={`${myOrders.length} order${myOrders.length !== 1 ? "s" : ""} placed`} />
         <KpiCard label="Cases ordered" value={casesOrdered} foot="all time" />
         <KpiCard label="New this week" value={freshCount} foot="fresh arrivals" />
       </div>
 
-      {/* new arrivals — front and centre */}
-      <section className="catrow">
-        <div className="catrow-head"><h3><Sparkles /> New arrivals <span className="cnt">just landed</span></h3><Link className="viewall" href="/portal/products">Browse all →</Link></div>
-        <div className="catrow-scroll">{newArrivals.map((p) => <ProductCard key={p.id} p={p} />)}</div>
-      </section>
+      {/* spending trend — shadcn area chart */}
+      {myOrders.length > 0 && (
+        <section className="dash-sec">
+          <div className="dash-sec-h"><h3>Your spending</h3><span className="dash-sec-note">Last 6 months</span></div>
+          <div className="panel">
+            <AreaTrend
+              data={spendData}
+              xKey="label"
+              series={[{ key: "spend", label: "Spend", color: "var(--chart-1)" }]}
+              height={220}
+              yFormatter={(v) => `$${fmt(v)}`}
+            />
+          </div>
+        </section>
+      )}
 
-      {/* promotions / offers */}
-      {ads.length > 0 && (
-        <section className="catrow">
-          <div className="catrow-head"><h3>Offers &amp; promotions</h3></div>
-          <div className="promorow">
-            {ads.map((o) => (
-              <Link key={o.id} href="/portal/products" className="promotile">
-                <Image src={o.image} alt="" fill sizes="(max-width: 880px) 100vw, 33vw" style={{ objectFit: "cover" }} />
-                <div className="promotile-t"><span className="ptag">{o.tag}</span><h4>{o.title}</h4></div>
+      {/* shop by category — clean grid, no horizontal scrolling */}
+      {depts.length > 0 && (
+        <section className="dash-sec">
+          <div className="dash-sec-h"><h3><GridView /> Shop by category</h3><Link className="viewall" href="/portal/products" onClick={() => setDept("all")}>Browse all products →</Link></div>
+          <div className="catgrid">
+            {depts.map((d) => (
+              <Link key={d.key} href="/portal/products" onClick={() => setDept(d.key)} className="cattile">
+                {d.image
+                  ? <Image src={d.image} alt="" fill sizes="(max-width: 620px) 50vw, 240px" style={{ objectFit: "cover" }} />
+                  : <span className="cattile-ph" aria-hidden="true"><Package /></span>}
+                <span className="cattile-t">{d.name}<em>{counts[d.key] ?? 0} SKUs</em></span>
               </Link>
             ))}
           </div>
         </section>
       )}
-
-      {/* shop by department */}
-      {deptRows.map(({ d, items }) => (
-        <section className="catrow" key={d.key}>
-          <div className="catrow-head"><h3>{d.name} <span className="cnt">{items.length} SKUs</span></h3><Link className="viewall" href="/portal/products" onClick={() => setDept(d.key)}>View all →</Link></div>
-          <div className="catrow-scroll">{items.slice(0, 10).map((p) => <ProductCard key={p.id} p={p} />)}</div>
-        </section>
-      ))}
-
-      {/* recent orders */}
-      <section className="catrow">
-        <div className="catrow-head"><h3>Recent orders</h3><Link className="viewall" href="/portal/orders">View all →</Link></div>
-        <div className="panel" style={{ padding: 4 }}>
-          {myOrders.length ? myOrders.slice(0, 5).map((o) => (
-            <Link key={o.ref} className="orow" href={`/portal/orders/${o.ref}`}>
-              <div><div className="oref mono">{o.ref}</div><div className="osub">{o.cases} cases · {ago(o.placed)}</div></div>
-              <span className={`pobadge s-${statusSlug(o.status)}`}>{o.status}</span>
-              <span className="oamt mono">${fmt(o.total)}</span>
-            </Link>
-          )) : <EmptyState icon={<Package />} title="No orders yet" description="Build your first order from Products." />}
-        </div>
-      </section>
-    </>
+    </div>
   );
 }

@@ -1,7 +1,11 @@
 ﻿import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 
-export const metadata: Metadata = { title: "Privacy Policy · Satya Wholesale" };
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "How Satya Wholesale collects and handles business account information for its licensed retail customers.",
+  alternates: { canonical: "/privacy" },
+};
 
 export default function Privacy() {
   return (

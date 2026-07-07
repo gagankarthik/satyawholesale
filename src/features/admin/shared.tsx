@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { fmt, LOW_STOCK } from "@/lib/store";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, Dropdown, EmptyState } from "@/components/ui";
 
 /* =========================================================
    Admin shared kernel — cross-cutting types, formatters and
@@ -85,27 +85,51 @@ export const CUSTOMER_FLOW: FlowStep[] = [
   { key: "order", label: "Orders & invoices", desc: "They buy in the portal", href: "/admin/orders" },
 ];
 
-export function FlowGuide({ steps, active, title = "How this works" }: { steps: FlowStep[]; active: string; title?: string }) {
+/**
+ * FlowHelp — the workflow guide behind a right-aligned help button. Click it to
+ * reveal the numbered steps in a popover. Replaces the always-open stepper so
+ * the page stays uncluttered; used consistently across admin pages.
+ */
+export function FlowHelp({ steps, active, title = "How this works" }: { steps: FlowStep[]; active: string; title?: string }) {
   const activeIdx = steps.findIndex((s) => s.key === active);
   return (
-    <section className="flowguide" aria-label={title}>
-      <span className="fg-title">{title}</span>
-      <ol className="fg-steps">
-        {steps.map((s, i) => {
-          const state = i < activeIdx ? "done" : i === activeIdx ? "on" : "next";
-          const body = (
-            <>
-              <span className="fg-num">{i + 1}</span>
-              <span className="fg-text"><span className="fg-label">{s.label}</span><span className="fg-desc">{s.desc}</span></span>
-            </>
-          );
-          return (
-            <li key={s.key} className={`fg-step ${state}`} aria-current={state === "on" ? "step" : undefined}>
-              {s.href ? <Link href={s.href} className="fg-inner">{body}</Link> : <span className="fg-inner">{body}</span>}
-            </li>
-          );
-        })}
-      </ol>
-    </section>
+    <div className="flowhelp-row">
+      <Dropdown
+        align="end"
+        ariaLabel={title}
+        triggerClassName="flowhelp-btn"
+        className="flowhelp-pop"
+        trigger={() => (
+          <>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9.2" stroke="currentColor" strokeWidth="1.7" />
+              <path d="M9.6 9.3a2.4 2.4 0 1 1 3.1 2.3c-.7.26-1.2.85-1.2 1.6v.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+              <circle cx="12" cy="16.7" r="1" fill="currentColor" />
+            </svg>
+            <span>Guide</span>
+          </>
+        )}
+      >
+        <div className="fh-panel">
+          <span className="fg-title">{title}</span>
+          <ol className="fg-steps fh-steps">
+            {steps.map((s, i) => {
+              const state = i < activeIdx ? "done" : i === activeIdx ? "on" : "next";
+              const body = (
+                <>
+                  <span className="fg-num">{i + 1}</span>
+                  <span className="fg-text"><span className="fg-label">{s.label}</span><span className="fg-desc">{s.desc}</span></span>
+                </>
+              );
+              return (
+                <li key={s.key} className={`fg-step ${state}`} aria-current={state === "on" ? "step" : undefined}>
+                  {s.href ? <Link href={s.href} className="fg-inner">{body}</Link> : <span className="fg-inner">{body}</span>}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </Dropdown>
+    </div>
   );
 }

@@ -20,6 +20,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
+export const apiGet = <T>(path: string) => call<T>(path);
 export const apiList = <T>(entity: string) =>
   call<{ items: T[] }>(`/api/data/${entity}`).then((r) => r.items);
 export const apiCreate = <T>(entity: string, item: T) =>

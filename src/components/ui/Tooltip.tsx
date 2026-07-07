@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
-import { cx } from "./cx";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { cn } from "@/lib/utils";
 
 export type TooltipSide = "top" | "bottom" | "right" | "left";
 
@@ -11,14 +14,24 @@ export interface TooltipProps {
 }
 
 /**
- * Lightweight CSS tooltip for content-area controls (icon buttons, status
- * chips, etc.). Shows on hover/focus. Don't use it inside `overflow:hidden`
- * scroll containers (e.g. the collapsed sidebar) — use a native `title` there.
+ * Tooltip — shadcn/ui architecture on Radix. Content is portalled, so it works
+ * anywhere (including inside `overflow:hidden` scroll containers, unlike the
+ * old CSS tooltip). Shows on hover/focus. Themed to the brand ink surface.
  */
 export function Tooltip({ label, children, side = "top", className }: TooltipProps) {
   return (
-    <span className={cx("tip", `tip-${side}`, className)} data-tip={label}>
-      {children}
-    </span>
+    <TooltipPrimitive.Provider delayDuration={200}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>
+          <span className={cn("tip-trigger", className)}>{children}</span>
+        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content side={side} sideOffset={6} className="uitip-content">
+            {label}
+            <TooltipPrimitive.Arrow className="uitip-arrow" width={11} height={6} />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   );
 }

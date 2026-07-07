@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 
 interface ConfirmOpts {
   title: string;
@@ -25,21 +26,30 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   return (
     <ConfirmCtx.Provider value={confirm}>
       {children}
-      {state && (
-        <div className="modal-overlay" onClick={() => close(false)}>
-          <div className="modal confirm" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <div className={`confirm-ic ${state.danger ? "danger" : ""}`}>{state.danger ? "!" : "?"}</div>
-            <h3>{state.title}</h3>
-            <p>{state.message}</p>
-            <div className="modalactions">
-              <button className="btn btn-ghost" onClick={() => close(false)} autoFocus>Cancel</button>
-              <button className={`btn ${state.danger ? "btn-danger" : "btn-primary"}`} onClick={() => close(true)}>
-                {state.confirmLabel ?? "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog.Root open={!!state} onOpenChange={(o) => { if (!o) close(false); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="uidialog-overlay" />
+          <Dialog.Content
+            role="alertdialog"
+            className="uidialog-viewport"
+            onClick={(e) => { if (e.target === e.currentTarget) close(false); }}
+          >
+            {state && (
+              <div className="modal confirm">
+                <div className={`confirm-ic ${state.danger ? "danger" : ""}`}>{state.danger ? "!" : "?"}</div>
+                <Dialog.Title asChild><h3>{state.title}</h3></Dialog.Title>
+                <Dialog.Description asChild><p>{state.message}</p></Dialog.Description>
+                <div className="modalactions">
+                  <button className="btn btn-ghost" onClick={() => close(false)}>Cancel</button>
+                  <button className={`btn ${state.danger ? "btn-danger" : "btn-primary"}`} onClick={() => close(true)}>
+                    {state.confirmLabel ?? "Confirm"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </ConfirmCtx.Provider>
   );
 }

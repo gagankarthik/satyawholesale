@@ -7,16 +7,18 @@
  */
 export { cx } from "./cx";
 export { Spinner, type SpinnerProps } from "./Spinner";
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
-export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
+export { Button, buttonVariants, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
+export { Badge, badgeVariants, type BadgeProps, type BadgeTone } from "./Badge";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { InputField, SelectField, type InputFieldProps, type SelectFieldProps } from "./Field";
 export { Modal, type ModalProps } from "./Modal";
+export { DialogFrame } from "./DialogFrame";
 export { KpiCard, type KpiCardProps, type KpiTone } from "./KpiCard";
 export { DataTable, type Column, type DataTableProps } from "./DataTable";
 export { ListToolbar, type ListToolbarProps, type ToolbarSelect, type ToolbarOption } from "./ListToolbar";
 export { Tooltip, type TooltipProps, type TooltipSide } from "./Tooltip";
+export { FieldHelp } from "./FieldHelp";
 export { Menu, type MenuProps, type MenuAction } from "./Menu";
 export { Dropdown, type DropdownProps } from "./Dropdown";
 export { ViewToggle, type ViewToggleProps, type ViewMode } from "./ViewToggle";
@@ -32,3 +34,6 @@ export { Progress, type ProgressProps } from "./Progress";
 export { Alert, type AlertProps, type AlertTone } from "./Alert";
 export { Kbd } from "./Kbd";
 export { Separator } from "./Separator";
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./Card";
+export { PieBreakdown, type PieDatum } from "./PieBreakdown";
+export { BarBreakdown, type BarDatum } from "./BarBreakdown";

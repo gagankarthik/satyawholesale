@@ -5,7 +5,7 @@ const STEPS = [
   { n: "01", h: "Apply for customer access", p: "Submit your business and tobacco licenses online. It costs nothing and takes about five minutes." },
   { n: "02", h: "Get verified, same day", p: "We review your details the same business day and activate your customer account." },
   { n: "03", h: "Order in the portal", p: "Browse the live catalog with case pricing and build an order in minutes." },
-  { n: "04", h: "Pick up or get it delivered", p: "Collect at the Reading Road warehouse, or take next-day delivery across the Tri-State." },
+  { n: "04", h: "Pick up or get it delivered", p: "Collect at the Reading Road warehouse, or take delivery across the Tri-State." },
 ];
 
 export default function Process() {
