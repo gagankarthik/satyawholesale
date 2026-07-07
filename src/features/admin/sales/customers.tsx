@@ -7,7 +7,7 @@ import { useCustomers, setAccountStatus } from "@/lib/wms";
 import { Plus, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, type Flash } from "../shared";
-import { KpiCard, DataTable, Badge, Button, DialogFrame, ListToolbar, Menu, type Column, type ToolbarOption } from "@/components/ui";
+import { KpiCard, DataTable, Badge, Button, DialogFrame, ListToolbar, Menu, type Column, type ToolbarOption, type MenuAction } from "@/components/ui";
 import { acctTone, statusTone } from "./_shared";
 
 /* =======================================================================
@@ -77,17 +77,37 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   ];
   const cur = stats.find((s) => s.id === openId) || null;
 
-  const startEdit = () => { if (cur) { setDraft({ store: cur.store, contact: cur.contact, email: cur.email, phone: cur.phone || "", address: cur.address || "", terms: cur.terms || "Net 15" }); setEdit(true); } };
+  const startEditFor = (c: (typeof stats)[number]) => {
+    setDraft({ store: c.store, contact: c.contact, email: c.email, phone: c.phone || "", address: c.address || "", terms: c.terms || "Net 15" });
+    setOpenId(c.id); setEdit(true);
+  };
   const saveEdit = () => { if (cur) { update(cur.id, draft); setEdit(false); flash("Account updated"); } };
+
+  /* One source of truth for account actions, used by both the list row menu
+     and the open-account header, so every surface offers the same options in
+     the same order and wording. `includeOpen` adds the list's "Open account". */
+  const accountActions = (c: (typeof stats)[number], opts?: { includeOpen?: boolean }): MenuAction[] => {
+    const items: MenuAction[] = [];
+    if (opts?.includeOpen) items.push({ label: "Open account", onSelect: () => setOpenId(c.id) });
+    if (c.status !== "Active") items.push({ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } });
+    if (c.status !== "Pending") items.push({ label: "Mark pending", onSelect: () => { setStatus(c.id, "Pending"); flash("Marked pending"); } });
+    // Freeze / Unfreeze — a blocked account can't be frozen, only unblocked.
+    if (c.status === "Frozen")
+      items.push({ label: "Unfreeze account", onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } });
+    else if (c.status !== "Blocked")
+      items.push({ label: "Freeze account", onSelect: async () => { if (await confirm({ title: "Freeze account?", message: `${c.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } } });
+    // Block / Unblock
+    if (c.status === "Blocked")
+      items.push({ label: "Unblock account", onSelect: async () => { await setAccountStatus(c.id, "unblock"); refresh(); flash("Account reactivated"); } });
+    else
+      items.push({ label: "Block account", danger: true, onSelect: async () => { if (await confirm({ title: "Block account?", message: `${c.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) { await setAccountStatus(c.id, "block"); refresh(); flash("Account blocked"); } } });
+    items.push({ label: "Edit details", onSelect: () => startEditFor(c) });
+    items.push({ label: "Delete account", danger: true, onSelect: async () => { if (await confirm({ title: "Delete account?", message: `${c.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(c.id); setOpenId(null); flash("Account deleted"); } } });
+    return items;
+  };
 
   /* ---------- full-page account detail ---------- */
   if (cur) {
-    const st: string = cur.status;
-    const confirmBlock = async () => {
-      if (await confirm({ title: "Block account?", message: `${cur.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) {
-        await setAccountStatus(cur.id, "block"); refresh(); flash("Account blocked");
-      }
-    };
     return (
       <>
         <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}>← All accounts</button>
@@ -95,23 +115,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
           <div><h1>{cur.store}</h1><p>Member #{cur.memberNo ?? "—"} · {cur.contact} · account since {cur.since}</p></div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Badge tone={acctTone(cur.status)}>{cur.status}</Badge>
-            {(st === "Active" || st === "Pending") && (
-              <>
-                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Freeze account?", message: `${cur.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(cur.id, "freeze"); refresh(); flash("Account frozen"); } }}>Freeze</Button>
-                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={confirmBlock}>Block</Button>
-              </>
-            )}
-            {st === "Frozen" && (
-              <>
-                <Button variant="primary" size="sm" onClick={async () => { await setAccountStatus(cur.id, "unfreeze"); refresh(); flash("Account reactivated"); }}>Unfreeze</Button>
-                <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={confirmBlock}>Block</Button>
-              </>
-            )}
-            {st === "Blocked" && (
-              <Button variant="primary" size="sm" onClick={async () => { await setAccountStatus(cur.id, "unblock"); refresh(); flash("Account reactivated"); }}>Unblock</Button>
-            )}
-            {!edit && <Button variant="ghost" size="sm" onClick={startEdit}>Edit</Button>}
-            <Button variant="ghost" size="sm" style={{ color: "var(--red)" }} onClick={async () => { if (await confirm({ title: "Delete account?", message: `${cur.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(cur.id); setOpenId(null); flash("Account deleted"); } }}>Delete</Button>
+            <Menu label={`Actions for ${cur.store}`} items={accountActions(cur)} />
           </div>
         </header>
 
@@ -163,7 +167,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <div className="modalactions" style={{ flexDirection: "column" }}>
                 {cur.status !== "Active" && <Button fullWidth onClick={() => { setStatus(cur.id, "Active"); flash("Account approved"); }}>Approve account</Button>}
                 {cur.status !== "Pending" && <Button variant="ghost" fullWidth onClick={() => { setStatus(cur.id, "Pending"); flash("Marked pending"); }}>Mark pending</Button>}
-                <p className="hint" style={{ margin: "6px 2px 0" }}>Use Freeze or Block above to suspend ordering or sign-in.</p>
+                <p className="hint" style={{ margin: "6px 2px 0" }}>Freeze, block, edit or delete from the actions menu (⋯) up top.</p>
               </div>
             </div>
             <div className="panel">
@@ -213,25 +217,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     { key: "spend", header: "Spend", align: "right", render: (c) => <span className="mono">{m(c.spend)}</span> },
     { key: "status", header: "Status", align: "right", render: (c) => <Badge tone={acctTone(c.status)}>{c.status}</Badge> },
     { key: "action", header: "", align: "right", render: (c) => (
-      <Menu
-        label={`Actions for ${c.store}`}
-        items={[
-          { label: "Open account", onSelect: () => setOpenId(c.id) },
-          ...(c.status !== "Active" ? [{ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } }] : []),
-          // Freeze / Unfreeze — a blocked account can't be frozen, only unblocked.
-          ...(c.status === "Frozen"
-            ? [{ label: "Unfreeze account", onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } }]
-            : c.status !== "Blocked"
-              ? [{ label: "Freeze account", onSelect: async () => { if (await confirm({ title: "Freeze account?", message: `${c.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } } }]
-              : []),
-          // Block / Unblock
-          ...(c.status === "Blocked"
-            ? [{ label: "Unblock account", onSelect: async () => { await setAccountStatus(c.id, "unblock"); refresh(); flash("Account reactivated"); } }]
-            : [{ label: "Block account", danger: true, onSelect: async () => { if (await confirm({ title: "Block account?", message: `${c.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) { await setAccountStatus(c.id, "block"); refresh(); flash("Account blocked"); } } }]),
-          { label: "Edit details", onSelect: () => { setDraft({ store: c.store, contact: c.contact, email: c.email, phone: c.phone || "", address: c.address || "", terms: c.terms || "Net 15" }); setOpenId(c.id); setEdit(true); } },
-          { label: "Delete account", danger: true, onSelect: async () => { if (await confirm({ title: "Delete account?", message: `${c.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(c.id); flash("Account deleted"); } } },
-        ]}
-      />
+      <Menu label={`Actions for ${c.store}`} items={accountActions(c, { includeOpen: true })} />
     ) },
   ];
 
