@@ -21,21 +21,20 @@ export function UsersTab({ flash }: { flash: Flash }) {
   const [role, setRole] = useState("all");
   const [sort, setSort] = useState("name");
 
-  // New Cognito login (separate from the DynamoDB staff roster above).
+  // New Cognito admin login for company staff (separate from the DynamoDB staff
+  // roster above). Customers never get logins here — they self-sign-up on the
+  // site or are invited from Customer accounts.
   const [luEmail, setLuEmail] = useState("");
-  const [luRole, setLuRole] = useState<"admin" | "buyer">("admin");
-  const [luStore, setLuStore] = useState("");
   const [luBusy, setLuBusy] = useState(false);
 
   const createLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!luEmail.trim()) { flash("Email is required"); return; }
-    if (luRole === "buyer" && !luStore.trim()) { flash("Store name is required for a customer login"); return; }
     setLuBusy(true);
     try {
-      await createUser(luEmail.trim(), luRole, luRole === "buyer" ? luStore.trim() : undefined);
-      flash("Login created. Cognito emailed a temporary password.");
-      setLuEmail(""); setLuStore(""); setLuRole("admin");
+      await createUser(luEmail.trim(), "admin");
+      flash("Admin login created. Cognito emailed a temporary password.");
+      setLuEmail("");
     } catch (err) {
       flash(err instanceof Error ? err.message : "Could not create login");
     } finally {
@@ -59,22 +58,14 @@ export function UsersTab({ flash }: { flash: Flash }) {
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
       </Head>
       <div className="panel" style={{ marginBottom: 18 }}>
-        <div className="panel-h"><h3>Create login</h3><span className="hint">Cognito emails a temporary password</span></div>
+        <div className="panel-h"><h3>Create admin login</h3><span className="hint">For your company staff — Cognito emails a temporary password</span></div>
         <form className="formgrid" onSubmit={createLogin}>
-          <label className="field"><span>Email *</span><input type="email" value={luEmail} onChange={(e) => setLuEmail(e.target.value)} placeholder="person@store.com" required /></label>
-          <label className="field"><span>Role</span>
-            <select value={luRole === "admin" ? "Admin" : "Customer"} onChange={(e) => setLuRole(e.target.value === "Admin" ? "admin" : "buyer")}>
-              <option>Admin</option>
-              <option>Customer</option>
-            </select>
-          </label>
-          {luRole === "buyer" && (
-            <label className="field"><span>Store name *</span><input value={luStore} onChange={(e) => setLuStore(e.target.value)} placeholder="Jay's Stop &amp; Shop" required /></label>
-          )}
+          <label className="field full"><span>Work email *</span><input type="email" value={luEmail} onChange={(e) => setLuEmail(e.target.value)} placeholder="employee@satyawholesalers.com" required /></label>
           <div className="modalbtns full" style={{ marginTop: 4 }}>
-            <Button variant="primary" size="sm" type="submit" loading={luBusy}>Create login</Button>
+            <Button variant="primary" size="sm" type="submit" loading={luBusy}>Create admin login</Button>
           </div>
         </form>
+        <p className="hint" style={{ margin: "10px 2px 0" }}>Customers don&apos;t get logins here. They sign up on the site or are invited from Customer accounts.</p>
       </div>
       <ListToolbar
         search={{ value: query, onChange: setQuery, placeholder: "Search name or email…" }}
