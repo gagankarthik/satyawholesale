@@ -21,24 +21,25 @@ export function UsersTab({ flash }: { flash: Flash }) {
   const [role, setRole] = useState("all");
   const [sort, setSort] = useState("name");
 
-  // New Cognito admin login for company staff (separate from the DynamoDB staff
-  // roster above). Customers never get logins here — they self-sign-up on the
-  // site or are invited from Customer accounts.
-  const [luEmail, setLuEmail] = useState("");
-  const [luBusy, setLuBusy] = useState(false);
+  // Adding a user creates their company admin login (Cognito emails a temporary
+  // password) and the staff-roster row together. Customers never get logins
+  // here — they self-sign-up on the site or are invited from Customer accounts.
+  const [addBusy, setAddBusy] = useState(false);
 
-  const createLogin = async (e: React.FormEvent) => {
+  const addUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!luEmail.trim()) { flash("Email is required"); return; }
-    setLuBusy(true);
+    if (!d.name.trim()) { flash("Full name is required"); return; }
+    if (!d.email.trim()) { flash("Email is required to create a login"); return; }
+    setAddBusy(true);
     try {
-      await createUser(luEmail.trim(), "admin");
-      flash("Admin login created. Cognito emailed a temporary password.");
-      setLuEmail("");
+      await createUser(d.email.trim(), "admin");
+      add({ id: "U-" + Math.floor(10 + Math.random() * 89), name: d.name.trim(), email: d.email.trim(), role: d.role, device: d.device || null, status: "Active" });
+      flash("User added. Cognito emailed a temporary password.");
+      setD(EMPTY_STAFF); setAdding(false);
     } catch (err) {
-      flash(err instanceof Error ? err.message : "Could not create login");
+      flash(err instanceof Error ? err.message : "Could not create the login");
     } finally {
-      setLuBusy(false);
+      setAddBusy(false);
     }
   };
 
@@ -57,16 +58,6 @@ export function UsersTab({ flash }: { flash: Flash }) {
       <Head title="Users & roles" sub="Staff access and scanner-device assignment">
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
       </Head>
-      <div className="panel" style={{ marginBottom: 18 }}>
-        <div className="panel-h"><h3>Create admin login</h3><span className="hint">For your company staff — Cognito emails a temporary password</span></div>
-        <form className="formgrid" onSubmit={createLogin}>
-          <label className="field full"><span>Work email *</span><input type="email" value={luEmail} onChange={(e) => setLuEmail(e.target.value)} placeholder="employee@satyawholesalers.com" required /></label>
-          <div className="modalbtns full" style={{ marginTop: 4 }}>
-            <Button variant="primary" size="sm" type="submit" loading={luBusy}>Create admin login</Button>
-          </div>
-        </form>
-        <p className="hint" style={{ margin: "10px 2px 0" }}>Customers don&apos;t get logins here. They sign up on the site or are invited from Customer accounts.</p>
-      </div>
       <ListToolbar
         search={{ value: query, onChange: setQuery, placeholder: "Search name or email…" }}
         filters={[{ label: "Role", value: role, onChange: setRole, options: roleOpts }]}
@@ -113,15 +104,16 @@ export function UsersTab({ flash }: { flash: Flash }) {
       </div>
       {adding && (
         <DialogFrame onClose={() => setAdding(false)} label="Add a user">
-          <form className="modal" onSubmit={(e) => { e.preventDefault(); if (!d.name.trim()) return; add({ id: "U-" + Math.floor(10 + Math.random() * 89), name: d.name.trim(), email: d.email, role: d.role, device: d.device || null, status: "Active" }); setD(EMPTY_STAFF); setAdding(false); flash("User added"); }}>
+          <form className="modal" onSubmit={addUser}>
             <h3>Add a user</h3>
+            <p className="auth-sub" style={{ marginTop: 0 }}>Creates a company admin login (Cognito emails a temporary password) and adds them to the staff roster.</p>
             <div className="formgrid">
-              <label className="field full"><span>Full name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
-              <label className="field"><span>Email</span><input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} /></label>
+              <label className="field full"><span>Full name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required autoFocus /></label>
+              <label className="field"><span>Work email *</span><input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="employee@satyawholesalers.com" required /></label>
               <label className="field"><span>Role</span><select value={d.role} onChange={(e) => setD({ ...d, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
               <label className="field"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
             </div>
-            <div className="modalbtns"><button type="button" className="btn btn-ghost" onClick={() => setAdding(false)}>Cancel</button><button className="btn btn-primary" type="submit">Add user</button></div>
+            <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setAdding(false)} disabled={addBusy}>Cancel</Button><Button variant="primary" type="submit" loading={addBusy}>Add user</Button></div>
           </form>
         </DialogFrame>
       )}
