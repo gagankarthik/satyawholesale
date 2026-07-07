@@ -147,7 +147,7 @@ export default function PortalProfile() {
 
         {/* documents & compliance submitted at sign-up / onboarding */}
         <div className="panel" style={{ marginTop: 18 }}>
-          <div className="panel-h"><h3>Documents &amp; compliance</h3><span className="hint">On file with the warehouse</span></div>
+          <div className="panel-h"><h3>Documents &amp; compliance</h3></div>
           {loadingAcct ? (
             <p className="muted" style={{ fontSize: 13 }}>Loading your documents…</p>
           ) : (

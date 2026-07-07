@@ -128,7 +128,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
 
   const form = (
     <form className="panel anim-in" onSubmit={save}>
-      <div className="panel-h"><h3>{editing ? "Edit supplier" : "Supplier details"}</h3><span className="hint">Mirrors the header block on the supplier&apos;s invoices</span></div>
+      <div className="panel-h"><h3>{editing ? "Edit supplier" : "Supplier details"}</h3></div>
       <div className="formgrid">
         <label className="field full"><span>Name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required /></label>
         <label className="field"><span>Contact</span><input value={d.contact} onChange={(e) => setD({ ...d, contact: e.target.value })} /></label>
@@ -136,9 +136,11 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
         <label className="field"><span>Phone</span><input type="tel" value={d.phone} onChange={(e) => setD({ ...d, phone: e.target.value })} /></label>
         <label className="field"><span>Website</span><input value={d.website} onChange={(e) => setD({ ...d, website: e.target.value })} placeholder="www.example.com" /></label>
         <label className="field full"><span>Street address</span><input value={d.address} onChange={(e) => setD({ ...d, address: e.target.value })} placeholder="2121 Section Road" /></label>
-        <label className="field"><span>City</span><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} /></label>
-        <label className="field"><span>State</span><input value={d.state} onChange={(e) => setD({ ...d, state: e.target.value })} /></label>
-        <label className="field"><span>ZIP</span><input inputMode="numeric" value={d.zip} onChange={(e) => setD({ ...d, zip: e.target.value })} /></label>
+        <div className="field-row">
+          <label className="field"><span>City</span><input value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} /></label>
+          <label className="field"><span>State</span><input value={d.state} onChange={(e) => setD({ ...d, state: e.target.value })} /></label>
+          <label className="field"><span>ZIP</span><input inputMode="numeric" value={d.zip} onChange={(e) => setD({ ...d, zip: e.target.value })} /></label>
+        </div>
         <label className="field full"><span>What they distribute <FieldHelp text="Product categories this vendor supplies — helps match products to their POs." /></span><input value={d.categories} onChange={(e) => setD({ ...d, categories: e.target.value })} placeholder="Cigarettes, tobacco, cigars, candy, groceries" /></label>
       </div>
       <div className="panel-h" style={{ marginTop: 18 }}><h3>Account &amp; delivery</h3><span className="hint">Our account with them + their route</span></div>

@@ -194,7 +194,6 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <div className="modalactions" style={{ flexDirection: "column" }}>
                 {cur.status !== "Active" && <Button fullWidth onClick={() => { setStatus(cur.id, "Active"); flash("Account approved"); }}>Approve account</Button>}
                 {cur.status !== "Pending" && <Button variant="ghost" fullWidth onClick={() => { setStatus(cur.id, "Pending"); flash("Marked pending"); }}>Mark pending</Button>}
-                <p className="hint" style={{ margin: "6px 2px 0" }}>Freeze, block, edit or delete from the actions menu (⋯) up top.</p>
               </div>
             </div>
             <div className="panel">

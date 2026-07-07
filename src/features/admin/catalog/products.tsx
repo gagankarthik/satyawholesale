@@ -116,7 +116,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
       </header>
       <div className="setpane">
         <form className="panel anim-in" onSubmit={submit}>
-          <div className="panel-h"><h3>{editing ? "Edit master data" : "Product details"}</h3><span className="hint">Validates against schema, integrity and business rules before it goes live.</span></div>
+          <div className="panel-h"><h3>{editing ? "Edit master data" : "Product details"}</h3></div>
           {errs.length > 0 && <div className="valbox">{errs.map((er, i) => <div key={i}>• {er}</div>)}</div>}
           {/* Identity — chunked into labeled sections so the 13 fields don't
               read as one flat wall (Miller's Law); matches the SupplierForm pattern */}

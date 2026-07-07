@@ -757,6 +757,14 @@ a.help-row:hover { background: var(--paper); }
 .modal-lines .ml span:last-child { color: var(--slate); }
 .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
 .formgrid .field.full { grid-column: 1 / -1; }
+/* A full-width row that lays its own fields out evenly — use for groups that
+   don't divide into the 2-column grid cleanly (e.g. City / State / ZIP). */
+.formgrid .field-row { grid-column: 1 / -1; display: grid; grid-template-columns: 2fr 0.7fr 1fr; gap: 14px; }
+.formgrid .field-row.two { grid-template-columns: 1fr 1fr; }
+
+/* stock ledger */
+.ledger-focus { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.ledger-opening td { background: var(--paper-2); }
 /* modals on phones: reclaim the heavy desktop padding, go full width & height */
 @media (max-width: 560px) {
   .modal-overlay { padding: 10px; align-items: flex-start; }
@@ -1288,6 +1296,7 @@ a.fg-inner:hover { background: var(--paper); }
   .auth-form { padding: 34px 24px; }
   .kpis { grid-template-columns: 1fr 1fr; }
   .formgrid { grid-template-columns: 1fr; }
+  .formgrid .field-row { grid-template-columns: 1fr; }
   .tablewrap { overflow-x: auto; }
   .invtable { min-width: 560px; }
   .contact-grid, .dash { grid-template-columns: 1fr; }

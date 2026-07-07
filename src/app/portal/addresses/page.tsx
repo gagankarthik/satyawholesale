@@ -74,9 +74,11 @@ export default function PortalAddresses() {
               <label className="field full"><span>Label</span><input value={draft.label} onChange={set("label")} placeholder="e.g. Back dock" required autoFocus /></label>
               <label className="field full"><span>Street address</span><input value={draft.line} onChange={set("line")} placeholder="123 Reading Rd" autoComplete="address-line1" required /></label>
               <label className="field full"><span>Apt / suite / building no. <em className="opt">optional</em></span><input value={draft.apt} onChange={set("apt")} placeholder="Suite 200" autoComplete="address-line2" /></label>
-              <label className="field"><span>City</span><input value={draft.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" required /></label>
-              <label className="field"><span>State</span><input value={draft.state} onChange={set("state")} placeholder="OH" autoComplete="address-level1" maxLength={2} required /></label>
-              <label className="field"><span>ZIP code</span><input value={draft.zip} onChange={set("zip")} placeholder="45202" autoComplete="postal-code" inputMode="numeric" required /></label>
+              <div className="field-row">
+                <label className="field"><span>City</span><input value={draft.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" required /></label>
+                <label className="field"><span>State</span><input value={draft.state} onChange={set("state")} placeholder="OH" autoComplete="address-level1" maxLength={2} required /></label>
+                <label className="field"><span>ZIP code</span><input value={draft.zip} onChange={set("zip")} placeholder="45202" autoComplete="postal-code" inputMode="numeric" required /></label>
+              </div>
             </div>
             <div className="modalbtns">
               <Button variant="ghost" type="button" onClick={() => { setAdding(false); setDraft(EMPTY); }}>Cancel</Button>

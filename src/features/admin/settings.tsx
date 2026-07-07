@@ -111,7 +111,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
               <label className="field full"><span>Full name *</span><input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} required autoFocus /></label>
               <label className="field"><span>Work email *</span><input type="email" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} placeholder="employee@satyawholesalers.com" required /></label>
               <label className="field"><span>Role</span><select value={d.role} onChange={(e) => setD({ ...d, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
-              <label className="field"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
+              <label className="field full"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
             </div>
             <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setAdding(false)} disabled={addBusy}>Cancel</Button><Button variant="primary" type="submit" loading={addBusy}>Add user</Button></div>
           </form>
