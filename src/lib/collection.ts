@@ -97,7 +97,16 @@ export function useCollection<T>(entity: string, idOf: (item: T) => string) {
     const c = entry(entity);
     c.items = [item, ...(c.items as T[])];
     publish(c);
-    apiCreate(entity, item).catch(() => load(entity, true));
+    apiCreate(entity, item)
+      .then((saved) => {
+        // Adopt the server's canonical record over the optimistic one: it may
+        // re-price a buyer order, assign a sequential memberNo, or hand back a
+        // fresh order ref. Match by object identity so a changed id still swaps.
+        const cc = entry(entity);
+        cc.items = (cc.items as T[]).map((it) => (it === item ? saved : it));
+        publish(cc);
+      })
+      .catch(() => load(entity, true));
   }, [entity]);
 
   const update = useCallback((id: string, patch: Partial<T>) => {

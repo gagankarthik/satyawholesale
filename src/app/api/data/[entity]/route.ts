@@ -1,8 +1,8 @@
 import { getAuth, isAdmin, unauthorized, forbidden, type AuthUser } from "@/server/auth";
-import { listByType, putItem, getItem, decrementField, nextMemberNo, type Row } from "@/server/db";
+import { listByType, putItem, createItem, getItem, decrementField, nextMemberNo, type Row } from "@/server/db";
 import { ENTITIES, canRead, canWrite, scopeRows } from "@/server/entities";
-import { readJson, isValidId, guardResponse, rateLimit } from "@/server/guard";
-import { sanitizeBuyerOrder } from "@/server/orders";
+import { readJson, isValidId, guardResponse, rateLimit, GuardError } from "@/server/guard";
+import { sanitizeBuyerOrder, freshOrderRef } from "@/server/orders";
 
 /** A buyer whose account has been frozen or blocked may not place orders. */
 async function orderingBlocked(user: AuthUser): Promise<boolean> {
@@ -60,7 +60,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ entity: string
     // Accounts get a strictly-sequential 12-digit membership number on creation.
     if (entity === "accounts" && !body.memberNo) body.memberNo = await nextMemberNo();
 
-    if (entity === "orders") await commitStock(body);
+    if (entity === "orders") {
+      // Create-only: an order id must never overwrite an existing order, which
+      // would reset its status to Pending and re-run commitStock (double-
+      // decrementing stock). On the rare id collision, mint a fresh server ref
+      // and retry, so a legitimate order is never dropped or duplicated.
+      let ref = String(id);
+      let created = await createItem(entity, ref, { ...body, ref });
+      for (let attempt = 0; !created && attempt < 5; attempt++) {
+        ref = freshOrderRef();
+        created = await createItem(entity, ref, { ...body, ref });
+      }
+      if (!created) throw new GuardError("Couldn't place the order just now. Please try again.");
+      body.ref = ref;
+      await commitStock(body);
+      return Response.json({ item: body }, { status: 201 });
+    }
+
     await putItem(entity, String(id), body);
     return Response.json({ item: body }, { status: 201 });
   } catch (e) {

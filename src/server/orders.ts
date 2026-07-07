@@ -12,6 +12,14 @@ interface RawLine { id: number | string; qty: number | string }
 
 const clampStr = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
+/** A fresh, collision-resistant order ref: 4-digit year + 10-digit Unix
+    seconds + 3 random digits. Used server-side when the client ref is missing
+    or already taken, so two orders in the same second never share an id. */
+export function freshOrderRef(): string {
+  const rnd = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  return `${new Date().getUTCFullYear()}${Math.floor(Date.now() / 1000)}${rnd}`;
+}
+
 /** Combined sales + county/local rate. The order stores one tax figure; the
     UI splits it back into its two lines from the same settings. */
 async function taxRate(): Promise<number> {
@@ -64,8 +72,10 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser): Promise<Row
   const fulfilment = clampStr(body.fulfilment, 60);
   const isPickup = /pickup/i.test(fulfilment);
   const owner = user.store ?? user.email;
-  // Order ref: 4-digit year + 10-digit Unix seconds = 14 digits (mirrors the client).
-  const ref = isValidId(body.ref) ? String(body.ref) : `${new Date().getUTCFullYear()}${Math.floor(Date.now() / 1000)}`;
+  // The client proposes a ref; the create path (create-only write) guarantees
+  // it can never overwrite an existing order, and hands out a fresh ref if it
+  // collides. Fall back to a server-generated ref when none is provided.
+  const ref = isValidId(body.ref) ? String(body.ref) : freshOrderRef();
 
   return {
     ref,

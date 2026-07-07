@@ -46,6 +46,24 @@ export async function putItem(type: string, id: string, item: Row): Promise<void
   }));
 }
 
+/** Create-only write: succeeds only if no item with this id exists yet, so a
+    "create" can never silently overwrite an existing record (which, for orders,
+    would reset its status and re-run the stock decrement). Returns false on a
+    collision so the caller can retry with a fresh id. */
+export async function createItem(type: string, id: string, item: Row): Promise<boolean> {
+  try {
+    await doc().send(new PutCommand({
+      TableName: env.table,
+      Item: { ...strip(item), PK: `T#${type}`, SK: id },
+      ConditionExpression: "attribute_not_exists(SK)",
+    }));
+    return true;
+  } catch (e) {
+    if ((e as { name?: string }).name === "ConditionalCheckFailedException") return false;
+    throw e;
+  }
+}
+
 /** Read-merge-write patch. Last write wins; acceptable for a
     single-warehouse admin team, revisit if concurrent editing grows. */
 export async function patchItem(type: string, id: string, patch: Row): Promise<Row | null> {
