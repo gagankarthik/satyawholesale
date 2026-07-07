@@ -9,7 +9,6 @@ export default function AuthAside() {
     <aside className="auth-aside">
       <div className="auth-aside-top">
         <Brand dark height={46} />
-        <p className="auth-aside-tag">Licensed wholesale for Greater Cincinnati c-stores. Order by the case, 21+.</p>
       </div>
       <nav className="auth-aside-links" aria-label="Legal">
         <Link href="/terms">Terms &amp; Conditions</Link>

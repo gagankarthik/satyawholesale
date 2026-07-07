@@ -21,6 +21,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
 
   /* already signed in -> straight to the right surface */
   useEffect(() => {
@@ -56,7 +57,6 @@ export default function Login() {
               <div className="auth-head">
                 <span className="auth-tag mono">Returning buyer</span>
                 <h1 className="auth-h">Sign in</h1>
-                <p className="auth-sub">Use the login from your account approval email.</p>
               </div>
               <label className="field">
                 <span>Customer account email</span>
@@ -84,9 +84,9 @@ export default function Login() {
               </div>
               <label className="field">
                 <span>New password</span>
-                <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" minLength={10} required autoFocus />
+                <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required autoFocus />
               </label>
-              <PasswordChecklist value={newPw} />
+              {(pwFocus || newPw) && <PasswordChecklist value={newPw} />}
             </>
           )}
 

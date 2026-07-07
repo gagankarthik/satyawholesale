@@ -20,6 +20,7 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pwFocus, setPwFocus] = useState(false);
 
   /* Already signed in: route to where they belong. */
   useEffect(() => {
@@ -76,9 +77,9 @@ export default function SignUp() {
             </label>
             <label className="field">
               <span>Password</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={10} required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required />
             </label>
-            <PasswordChecklist value={password} />
+            {(pwFocus || password) && <PasswordChecklist value={password} />}
             {error && <Alert tone="danger">{error}</Alert>}
             <Button variant="primary" type="submit" fullWidth loading={busy} disabled={!passwordValid(password)} iconRight={<Arrow />}>
               {busy ? "Creating account..." : "Create account"}
