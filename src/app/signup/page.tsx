@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useSession, signUp, confirmSignUp, resendCode, signIn } from "@/lib/auth";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
+import AuthAside from "@/components/AuthAside";
 
 export default function SignUp() {
   const router = useRouter();
@@ -58,23 +59,7 @@ export default function SignUp() {
       <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
 
       <div className="auth-grid rise-in">
-        <aside className="auth-manifest">
-          <div className="mf-top">
-            <Brand dark height={32} />
-            <span className="mf-ref mono">NEW</span>
-          </div>
-          <div className="mf-lead">
-            <span className="auth-eyebrow mono">Customer accounts</span>
-            <h2>Create your<br />customer account.</h2>
-            <p>Set up a login for your store, complete a short onboarding, and start ordering wholesale by the case. Licensed retailers, 21 and older.</p>
-          </div>
-          <dl className="mf-specs mono">
-            <div><dt>Setup</dt><dd>A few minutes</dd></div>
-            <div><dt>Access</dt><dd className="mf-hi">21+ wholesale</dd></div>
-            <div><dt>Origin</dt><dd>Cincinnati, OH</dd></div>
-          </dl>
-          <span className="mf-stamp" aria-hidden="true"><b>21+</b><i>Wholesale</i></span>
-        </aside>
+        <AuthAside />
 
         {step === "form" ? (
           <form className="auth-form" onSubmit={createAccount}>

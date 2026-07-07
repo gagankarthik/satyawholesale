@@ -360,43 +360,26 @@
 .auth-back:hover { color: #fff; }
 
 .auth-grid {
-  display: grid; grid-template-columns: 1.05fr 1fr; width: min(960px, 100%);
+  display: grid; grid-template-columns: 1fr 1fr; width: min(960px, 100%);
   background: var(--card); border-radius: 18px; overflow: hidden;
   box-shadow: 0 30px 80px -30px rgba(4,8,22,.75), 0 0 0 1px rgba(255,255,255,.05);
 }
 
-/* left panel: warehouse manifest */
-.auth-manifest {
-  position: relative; overflow: hidden; color: #fff; padding: 42px 40px 40px;
-  display: flex; flex-direction: column; gap: 26px;
+/* left panel: logo + legal links */
+.auth-aside {
+  position: relative; overflow: hidden; color: #fff; padding: 44px 40px;
+  display: flex; align-items: center; justify-content: center; text-align: center;
   background:
-    linear-gradient(0deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 100% 34px,
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 34px 100%,
-    radial-gradient(520px 320px at 108% -6%, rgba(242,106,27,.28), transparent 60%),
+    radial-gradient(520px 320px at 108% -6%, rgba(242,106,27,.26), transparent 60%),
     linear-gradient(160deg, #1a2140 0%, #121732 60%, #0f1430 100%);
   border-right: 1.5px dashed rgba(255,255,255,.16);
 }
-.mf-top { display: flex; align-items: center; justify-content: space-between; }
-.mf-ref { font-size: 11px; letter-spacing: 1.5px; color: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.2); border-radius: 999px; padding: 4px 10px; }
-.mf-lead .auth-eyebrow { display: block; margin-bottom: 14px; }
-.auth-eyebrow { font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase; color: #f7a668; }
-.mf-lead h2 { font-family: var(--font-disp); font-weight: 900; font-size: clamp(28px, 3.4vw, 36px); line-height: 1.0; letter-spacing: -1.4px; }
-.mf-lead p { margin-top: 15px; font-size: 14.5px; line-height: 1.62; color: rgba(255,255,255,.72); max-width: 34ch; }
-.mf-specs { display: flex; flex-direction: column; margin-top: auto; }
-.mf-specs > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px dashed rgba(255,255,255,.14); }
-.mf-specs dt { font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,.5); }
-.mf-specs dd { font-size: 12.5px; letter-spacing: .3px; color: #fff; }
-.mf-specs dd.mf-hi { color: #f7a668; }
-.mf-depts { font-size: 10.5px; letter-spacing: 1.4px; color: rgba(255,255,255,.5); padding-top: 16px; border-top: 1px dashed rgba(255,255,255,.14); line-height: 1.7; }
-.auth-manifest > *:not(.mf-stamp) { position: relative; z-index: 1; }
-.mf-stamp {
-  position: absolute; right: 22px; top: 47%; transform: translateY(-50%) rotate(-9deg); z-index: 0;
-  display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%;
-  border: 2.5px solid rgba(247,166,104,.42); color: rgba(247,166,104,.68);
-  text-align: center; pointer-events: none; box-shadow: inset 0 0 0 3px rgba(247,166,104,.11);
-}
-.mf-stamp b { font-family: var(--font-disp); font-weight: 900; font-size: 26px; line-height: 1; }
-.mf-stamp i { font-family: var(--font-mono-f); font-style: normal; font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+.auth-aside-body { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.auth-aside-tag { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,.72); max-width: 32ch; }
+.auth-aside-links { display: flex; align-items: center; gap: 12px; font-size: 13px; margin-top: 4px; }
+.auth-aside-links a { color: rgba(255,255,255,.82); font-weight: 500; }
+.auth-aside-links a:hover { color: #fff; text-decoration: underline; }
+.auth-aside-links span { color: rgba(255,255,255,.3); }
 
 /* right panel: form */
 .auth-form { padding: 46px 44px; display: flex; flex-direction: column; gap: 16px; background: var(--card); }
@@ -1300,7 +1283,7 @@ a.fg-inner:hover { background: var(--paper); }
   .sgroup { display: block; }
   .acct { margin-top: 14px; }
   .auth-grid { grid-template-columns: 1fr; width: min(440px, 100%); }
-  .auth-manifest { display: none; }
+  .auth-aside { display: none; }
   .auth-mini-brand { display: inline-flex; margin-bottom: 8px; }
   .auth-form { padding: 34px 24px; }
   .kpis { grid-template-columns: 1fr 1fr; }

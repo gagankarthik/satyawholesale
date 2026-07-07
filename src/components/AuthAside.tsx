@@ -1,0 +1,21 @@
+import Link from "next/link";
+import Brand from "@/components/Brand";
+
+/* The branding half of the split auth layout: the logo centered, with Terms
+   and Privacy links directly below. Shared by every auth page so sign-in and
+   sign-up look identical. */
+export default function AuthAside() {
+  return (
+    <aside className="auth-aside">
+      <div className="auth-aside-body">
+        <Brand dark height={46} />
+        <p className="auth-aside-tag">Licensed wholesale for Greater Cincinnati c-stores. Order by the case, 21+.</p>
+        <nav className="auth-aside-links" aria-label="Legal">
+          <Link href="/terms">Terms</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/privacy">Privacy</Link>
+        </nav>
+      </div>
+    </aside>
+  );
+}

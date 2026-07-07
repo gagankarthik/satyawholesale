@@ -7,8 +7,7 @@ import { CONTACT } from "@/lib/store";
 import { useSession } from "@/lib/auth";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
-
-const DEPARTMENTS = "Tobacco · Vape · Smoke · HBA · Grocery · Auto · Accessories";
+import AuthAside from "@/components/AuthAside";
 
 export default function Login() {
   const router = useRouter();
@@ -44,30 +43,7 @@ export default function Login() {
       <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
 
       <div className="auth-grid rise-in">
-        {/* Order-desk manifest */}
-        <aside className="auth-manifest">
-          <div className="mf-top">
-            <Brand dark height={32} />
-            <span className="mf-ref mono">ACCOUNT</span>
-          </div>
-
-          <div className="mf-lead">
-            <span className="auth-eyebrow mono">Customer order portal</span>
-            <h2>Sign in to your<br />customer portal.</h2>
-            <p>Licensed wholesale for Greater Cincinnati c-stores. Browse the full catalog, build orders by the case, and reorder in seconds.</p>
-          </div>
-
-          <dl className="mf-specs mono">
-            <div><dt>Departments</dt><dd>7</dd></div>
-            <div><dt>Origin</dt><dd>Cincinnati, OH</dd></div>
-            <div><dt>Access</dt><dd className="mf-hi">21+ wholesale</dd></div>
-            <div><dt>Pricing</dt><dd>Live case pack</dd></div>
-          </dl>
-
-          <div className="mf-depts mono">{DEPARTMENTS}</div>
-
-          <span className="mf-stamp" aria-hidden="true"><b>21+</b><i>Wholesale</i></span>
-        </aside>
+        <AuthAside />
 
         {/* Form */}
         <form className="auth-form" onSubmit={submit}>
