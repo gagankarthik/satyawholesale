@@ -215,7 +215,7 @@ export default function CartPage() {
                     <tr key={p.id}>
                       <td data-label="Product">
                         <div className="ct-prod">
-                          <span className="th"><Image src={productImg(p)} alt="" fill sizes="48px" style={{ objectFit: "contain" }} /></span>
+                          <span className="th"><Image src={productImg(p)} alt="" fill sizes="76px" style={{ objectFit: "contain" }} /></span>
                           <div className="ct-info">
                             <div className="nm">{p.name}</div>
                             <div className="id mono">#{p.id} · {p.pack}</div>

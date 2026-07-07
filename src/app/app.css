@@ -1110,15 +1110,21 @@ a.fg-inner:hover { background: var(--paper); }
 .carttbl thead th { text-align: left; font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: .8px; text-transform: uppercase; color: var(--slate-2); font-weight: 500; padding: 0 12px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .carttbl thead th.r { text-align: right; }
 .carttbl thead th.qty { text-align: center; }
-.carttbl tbody td { padding: 14px 12px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+.carttbl tbody td { padding: 20px 18px; border-bottom: 1px solid var(--line); font-size: 14.5px; vertical-align: middle; }
 .carttbl tbody tr:last-child td { border-bottom: none; }
 .carttbl td.r { text-align: right; }
 .carttbl td.qty { text-align: center; }
-.ct-prod { display: flex; align-items: center; gap: 13px; }
-.ct-prod .th { position: relative; width: 48px; height: 48px; border-radius: 10px; overflow: hidden; flex: none; background: #e8ecf1; }
+/* the product column absorbs the free width; numeric columns stay only as wide
+   as their content so long product names get the full remaining room.
+   Scoped above the phone breakpoint so the stacked-card layout is untouched. */
+@media (min-width: 621px) {
+  .carttbl thead th.r, .carttbl thead th.qty, .carttbl td.r, .carttbl td.qty, .carttbl td.ct-del-cell { width: 1%; white-space: nowrap; }
+}
+.ct-prod { display: flex; align-items: center; gap: 18px; }
+.ct-prod .th { position: relative; width: 76px; height: 76px; border-radius: 13px; overflow: hidden; flex: none; background: #e8ecf1; }
 .ct-info { min-width: 0; }
-.ct-prod .nm { font-weight: 600; font-size: 14px; line-height: 1.3; }
-.ct-prod .id { font-size: 11px; color: var(--slate-2); margin-top: 3px; }
+.ct-prod .nm { font-weight: 600; font-size: 15.5px; line-height: 1.35; }
+.ct-prod .id { font-size: 12px; color: var(--slate-2); margin-top: 4px; }
 .ct-unit { color: var(--slate-2); font-size: 11px; margin-left: 1px; }
 .ct-was { display: block; color: var(--slate-2); text-decoration: line-through; font-size: 11px; margin-top: 2px; }
 .ct-qty { display: inline-flex; align-items: center; gap: 8px; }
