@@ -10,8 +10,9 @@ import { readJson, guardResponse, rateLimit } from "@/server/guard";
 /* POST /api/onboarding
    Called by a freshly signed-up, email-confirmed customer to finish setting
    up their account. Tags the Cognito user with their store, puts them in the
-   `buyer` group (so they can browse + order), and writes an Active account
-   record. The client then refreshes its token to pick up the buyer claim.
+   `buyer` group (so they can browse the catalog), and writes a PENDING account
+   record — the warehouse approves it before the buyer can place orders. The
+   client then refreshes its token to pick up the buyer claim.
 
    Self-service, but strictly a ONE-WAY link: an identity may claim a store
    only if it has none yet, and only a store no one else owns. A client can
@@ -80,7 +81,9 @@ export async function POST(req: Request) {
     since: existing?.since ?? String(new Date().getFullYear()),
     // Strictly-sequential 12-digit membership number, assigned once and kept stable across re-onboards.
     memberNo: existing?.memberNo ?? (await nextMemberNo()),
-    status: "Active" as const,
+    // New accounts start Pending; the warehouse approves before they can order.
+    // Re-onboarding keeps whatever status the account already has.
+    status: existing?.status ?? "Pending",
     applied: existing?.applied ?? Date.now(),
     onboarded: Date.now(),
     selfSignup: true,

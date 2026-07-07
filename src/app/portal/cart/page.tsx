@@ -40,6 +40,7 @@ export default function CartPage() {
   const [billSame, setBillSame] = useState(true);
   const [billId, setBillId] = useState("");
   const [terms, setTerms] = useState<string | null>(null); // account's approved payment terms (server-authoritative)
+  const [approved, setApproved] = useState(true); // false while an account is Pending approval
   const [fulfilment, setFulfilment] = useState(FULFILMENTS[0].value);
   const [schedDate, setSchedDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -53,8 +54,13 @@ export default function CartPage() {
      server binds them regardless, so this is display-only. */
   useEffect(() => {
     let live = true;
-    apiGet<{ account: { terms: string | null } | null }>("/api/me/account")
-      .then((r) => { if (live) setTerms(r.account?.terms ?? null); })
+    apiGet<{ account: { terms: string | null; status: string | null } | null }>("/api/me/account")
+      .then((r) => {
+        if (!live) return;
+        setTerms(r.account?.terms ?? null);
+        // Only an approved (Active) account may order. No account row (e.g. admin) isn't blocked here.
+        setApproved(!r.account || r.account.status === "Active");
+      })
       .catch(() => { /* fall back to the default label */ });
     return () => { live = false; };
   }, []);
@@ -112,7 +118,7 @@ export default function CartPage() {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const submit = () => {
-    if (!cartLines.length || placing || !shipAddr || !billAddr || belowMin) return;
+    if (!cartLines.length || placing || !shipAddr || !billAddr || belowMin || !approved) return;
     setPlacing(true);
     const lines: OrderLine[] = cartLines.map((l) => ({ id: l.p.id, name: l.p.name, qty: l.qty, price: effPrice(l.p) }));
     const order: Order = {
@@ -379,6 +385,11 @@ export default function CartPage() {
         <aside className="od-side">
           <div className="panel">
             <Totals />
+            {!approved && (
+              <div className="auth-note" style={{ marginBottom: 12 }}>
+                Your account is pending approval. You can build your cart and browse the catalog now; the warehouse will approve you to place orders shortly.
+              </div>
+            )}
             <div className="co-nav">
               {step > 0 && <Button variant="ghost" fullWidth onClick={back} iconLeft={<ArrowLeft />}>Back</Button>}
               {step < STEPS.length - 1 ? (
@@ -386,8 +397,8 @@ export default function CartPage() {
                   {step === 0 ? "Continue to delivery" : step === 1 ? "Continue to payment" : "Review order"}
                 </Button>
               ) : (
-                <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing || !shipAddr || !billAddr} iconRight={<Arrow />}>
-                  {placing ? "Placing order…" : "Place order"}
+                <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing || !shipAddr || !billAddr || !approved} iconRight={<Arrow />}>
+                  {placing ? "Placing order…" : !approved ? "Pending approval" : "Place order"}
                 </Button>
               )}
             </div>

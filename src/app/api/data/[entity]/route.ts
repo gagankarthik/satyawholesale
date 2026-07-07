@@ -54,6 +54,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ entity: string
       if (account?.status === "Frozen" || account?.status === "Blocked") {
         return Response.json({ error: "Your account is on hold. Please contact the warehouse to place orders." }, { status: 403 });
       }
+      // New accounts can browse the catalog but can't order until the warehouse approves them.
+      if (account?.status !== "Active") {
+        return Response.json({ error: "Your account is pending approval. You can browse the catalog now; we'll approve you to place orders shortly." }, { status: 403 });
+      }
       body = await sanitizeBuyerOrder(body, user, account);
     } else if (rule.buyerScope && !isAdmin(user)) {
       // stamp buyer-scoped rows with the caller's own store, never a chosen one
