@@ -5,7 +5,7 @@ import Link from "next/link";
 import { use } from "react";
 import { deptName, fmt, sku, productImg, useInventory, LOW_STOCK, type Product } from "@/lib/store";
 import { Badge, Skeleton } from "@/components/ui";
-import { Search } from "@/components/Icons";
+import { Search, Arrow, ArrowLeft } from "@/components/Icons";
 
 export default function AdminProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -16,7 +16,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
     if (!ready) {
       return (
         <>
-          <Link className="detail-back" href="/admin/products">← All products</Link>
+          <Link className="detail-back" href="/admin/products"><ArrowLeft /> All products</Link>
           <header className="adminbar">
             <div><Skeleton width={220} height={26} /><Skeleton width={140} height={14} /></div>
           </header>
@@ -33,7 +33,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
     }
     return (
       <>
-        <button className="detail-back" onClick={() => history.back()}>← Products</button>
+        <button className="detail-back" onClick={() => history.back()}><ArrowLeft /> Products</button>
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Product not found</h3><p>It may have been removed from the catalog.</p></div>
       </>
     );
@@ -43,7 +43,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <Link className="detail-back" href="/admin/products">← All products</Link>
+      <Link className="detail-back" href="/admin/products"><ArrowLeft /> All products</Link>
       <header className="adminbar">
         <div><h1>{p.name}</h1><p>{deptName(p.dep)}{p.sku?.trim() ? ` · ${p.sku.trim()}` : ""}</p></div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -96,7 +96,7 @@ export default function AdminProductPage({ params }: { params: Promise<{ id: str
               <div className="kv2"><span>Status</span><Badge tone={tone}>{p.stock <= 0 ? "Out of stock" : p.stock <= LOW_STOCK ? "Low" : "In stock"}</Badge></div>
               <div className="kv2"><span>Max stock</span><b>{p.maxStock ?? "—"}</b></div>
             </div>
-            <Link href={`/admin/products/${p.id}/edit`} className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit product →</Link>
+            <Link href={`/admin/products/${p.id}/edit`} className="btn btn-ghost btn-sm" style={{ marginTop: 14 }}>Edit product <Arrow /></Link>
           </div>
           <div className="panel">
             <div className="panel-h"><h3>Storefront placement</h3></div>

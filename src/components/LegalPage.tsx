@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CONTACT } from "@/lib/store";
+import { ArrowLeft } from "@/components/Icons";
 
 export interface LegalSection {
   h: string;
@@ -17,7 +18,7 @@ export default function LegalPage({
           <Link href="/" className="brand" aria-label="Satya Wholesale home">
             <Image src="/logo.webp" alt="Satya Wholesale" width={200} height={50} />
           </Link>
-          <Link href="/" className="legal-back">← Back to the site</Link>
+          <Link href="/" className="legal-back"><ArrowLeft /> Back to the site</Link>
         </div>
       </header>
       <main className="wrap legal-body" id="main">

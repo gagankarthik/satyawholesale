@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePromotions } from "@/lib/wms";
+import { Arrow } from "@/components/Icons";
 
 /**
  * Rotating poster carousel built from the admin's published promotions.
@@ -13,7 +14,7 @@ import { usePromotions } from "@/lib/wms";
  */
 export default function PosterCarousel({
   cta = "/portal/products",
-  ctaLabel = "Shop now →",
+  ctaLabel = "Shop now",
   ariaLabel = "Offers and new arrivals",
   big = false,
   poster = false,
@@ -87,7 +88,7 @@ export default function PosterCarousel({
             <div className="pctag">{o.tag}</div>
             <h3>{o.title}</h3>
             <p>{o.subtitle}</p>
-            <Link href={cta} className="pc-cta">{ctaLabel}</Link>
+            <Link href={cta} className="pc-cta">{ctaLabel} <Arrow /></Link>
           </div>
         </div>
       ))}

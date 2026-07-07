@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
 import { fmt, sku, productImg, offerActive, effPrice, type Product } from "@/lib/store";
-import { Search, Plus, Minus } from "@/components/Icons";
+import { Search, Plus, Minus, Arrow, ArrowLeft } from "@/components/Icons";
 import { EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../../PortalShell";
 import ProductCard from "../../ProductCard";
@@ -18,7 +18,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     if (!ready) {
       return (
         <div className="odetail">
-          <Link className="detail-back" href="/portal/products">← Back to products</Link>
+          <Link className="detail-back" href="/portal/products"><ArrowLeft /> Back to products</Link>
           <div className="od-cols">
             <div className="panel pd-hero"><Skeleton height={360} radius={12} /></div>
             <aside className="od-side"><div className="panel"><Skeleton height={280} radius={12} /></div></aside>
@@ -28,7 +28,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     }
     return (
       <div className="odetail">
-        <Link className="detail-back" href="/portal/products">← Back to products</Link>
+        <Link className="detail-back" href="/portal/products"><ArrowLeft /> Back to products</Link>
         <EmptyState icon={<Search />} title="Product not found" description="It may have been removed from the catalog." />
       </div>
     );
@@ -40,7 +40,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   return (
     <div className="odetail rise-in">
-      <Link className="detail-back" href="/portal/products">← Back to products</Link>
+      <Link className="detail-back" href="/portal/products"><ArrowLeft /> Back to products</Link>
       <div className="od-cols">
         <div className="panel pd-hero">
           <Image src={productImg(p)} alt={p.name} fill sizes="(max-width:1000px) 100vw, 480px" style={{ objectFit: "contain" }} priority />
@@ -83,7 +83,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
       {related.length > 0 && (
         <section className="catrow">
-          <div className="catrow-head"><h3>More in {catName(p.dep)}</h3><Link className="viewall" href="/portal/products">Browse all →</Link></div>
+          <div className="catrow-head"><h3>More in {catName(p.dep)}</h3><Link className="viewall" href="/portal/products">Browse all <Arrow /></Link></div>
           <div className="catrow-scroll">{related.map((r) => <ProductCard key={r.id} p={r} />)}</div>
         </section>
       )}

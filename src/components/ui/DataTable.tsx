@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { cx } from "./cx";
+import { Arrow, ArrowLeft } from "@/components/Icons";
 
 export interface Column<T> {
   key: string;
@@ -167,12 +168,12 @@ export function DataTable<T>({
             </select>
           </label>
           <div className="pager-nav">
-            <button type="button" className="pager-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="Previous page">←</button>
+            <button type="button" className="pager-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)} aria-label="Previous page"><ArrowLeft /></button>
             {pageList.map((pn, i) => pn === "…"
               ? <span key={`e${i}`} className="pager-gap" aria-hidden="true">…</span>
               : <button key={pn} type="button" className={cx("pager-num", pn === page && "on")} aria-current={pn === page ? "page" : undefined} onClick={() => setPage(pn)}>{pn + 1}</button>
             )}
-            <button type="button" className="pager-btn" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} aria-label="Next page">→</button>
+            <button type="button" className="pager-btn" disabled={page >= pages - 1} onClick={() => setPage((p) => p + 1)} aria-label="Next page"><Arrow /></button>
           </div>
           <span className="pager-info">{page * size + 1}–{Math.min((page + 1) * size, sortedRows.length)} of {sortedRows.length}</span>
         </nav>

@@ -55,7 +55,7 @@ export default function Header() {
             <Link className="btn btn-primary" href={dest} onClick={close}>{destLabel} <Arrow /></Link>
           ) : (
             <>
-              <Link href="/auth/login" onClick={close}>Login →</Link>
+              <Link href="/auth/login" onClick={close}>Login <Arrow /></Link>
               <Link className="btn btn-primary" href="/signup" onClick={close}>Open an account <Arrow /></Link>
             </>
           )}

@@ -8,6 +8,7 @@ import { onboardAccount } from "@/lib/wms";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
+import { Arrow } from "@/components/Icons";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -81,11 +82,11 @@ export default function Onboarding() {
           </label>
           <p className="auth-hint mono">Buying is limited to licensed retailers, 21 and older.</p>
           {error && <Alert tone="danger">{error}</Alert>}
-          <Button variant="primary" type="submit" fullWidth loading={busy}>
-            {busy ? "Setting up..." : "Enter the portal →"}
+          <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+            {busy ? "Setting up..." : "Enter the portal"}
           </Button>
           <div className="auth-alt">
-            Need help? <Link href="/">Back to the site &rarr;</Link>
+            Need help? <Link href="/">Back to the site <Arrow /></Link>
           </div>
         </form>
       </div>

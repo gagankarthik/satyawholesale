@@ -11,7 +11,7 @@ import {
 import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
 import { toast } from "sonner";
-import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag, Coin } from "@/components/Icons";
+import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag, Coin, Arrow } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
@@ -266,7 +266,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
                       </button>
                     ))}
                     <button type="button" className="ss-all" onMouseDown={(e) => { e.preventDefault(); goSearch(); }}>
-                      See all results for &ldquo;{query.trim()}&rdquo; →
+                      See all results for &ldquo;{query.trim()}&rdquo; <Arrow />
                     </button>
                   </>
                 ) : (

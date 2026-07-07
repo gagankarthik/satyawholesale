@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "@/components/Icons";
 
 type S = "loading" | "ask" | "ok" | "deny";
 
@@ -52,7 +53,7 @@ export default function AgeGate() {
               you&apos;re eligible.
             </p>
             <div className="agegate-btns">
-              <button className="btn btn-ghost" onClick={() => setState("ask")}>← Go back</button>
+              <button className="btn btn-ghost" onClick={() => setState("ask")}><ArrowLeft /> Go back</button>
             </div>
           </>
         )}

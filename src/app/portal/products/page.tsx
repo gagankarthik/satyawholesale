@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "@/components/Icons";
+import { Search, Arrow } from "@/components/Icons";
 import { Button, EmptyState, ListToolbar, Skeleton, type ToolbarOption } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
@@ -94,7 +94,7 @@ export default function PortalProducts() {
             if (!items.length) return null;
             return (
               <section className="catrow" key={d.key}>
-                <div className="catrow-head"><h3>{d.name} <span className="cnt">{items.length} SKUs</span></h3><button className="viewall" onClick={() => setDept(d.key)}>View all →</button></div>
+                <div className="catrow-head"><h3>{d.name} <span className="cnt">{items.length} SKUs</span></h3><button className="viewall" onClick={() => setDept(d.key)}>View all <Arrow /></button></div>
                 <div className="catrow-scroll">{items.slice(0, 10).map((p) => <ProductCard key={p.id} p={p} />)}</div>
               </section>
             );

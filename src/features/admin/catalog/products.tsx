@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DEPTS, deptName, productImg, useInventory, LOW_STOCK, type DeptKey, type Product, type Tag } from "@/lib/store";
 import { useSuppliers, useCategories } from "@/lib/wms";
-import { Search, Inbox, Plus } from "@/components/Icons";
+import { Search, Inbox, Plus, ArrowLeft } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, fmtDate, type Tab, type Flash } from "../shared";
@@ -46,7 +46,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
   if (productId && !existing) {
     return (
       <>
-        <button className="detail-back" onClick={() => router.push("/admin/products")}>← All products</button>
+        <button className="detail-back" onClick={() => router.push("/admin/products")}><ArrowLeft /> All products</button>
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Product not found</h3></div>
       </>
     );

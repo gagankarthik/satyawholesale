@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { fmt } from "@/lib/store";
-import { Package, GridView } from "@/components/Icons";
+import { Package, GridView, Arrow } from "@/components/Icons";
 import { Button, EmptyState, KpiCard, Skeleton } from "@/components/ui";
 import { AreaTrend } from "@/components/ui/AreaTrend";
 import { usePortal } from "./PortalShell";
@@ -88,7 +88,7 @@ export default function PortalDashboard() {
       {/* shop by category — clean grid, no horizontal scrolling */}
       {depts.length > 0 && (
         <section className="dash-sec">
-          <div className="dash-sec-h"><h3><GridView /> Shop by category</h3><Link className="viewall" href="/portal/products" onClick={() => setDept("all")}>Browse all products →</Link></div>
+          <div className="dash-sec-h"><h3><GridView /> Shop by category</h3><Link className="viewall" href="/portal/products" onClick={() => setDept("all")}>Browse all products <Arrow /></Link></div>
           <div className="catgrid">
             {depts.map((d) => (
               <Link key={d.key} href="/portal/products" onClick={() => setDept(d.key)} className="cattile">

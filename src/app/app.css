@@ -1665,6 +1665,9 @@ a.fg-inner:hover { background: var(--paper); }
 .catrow-head h3 .cnt { font-family: var(--font-mono-f); font-size: 12px; font-weight: 500; color: var(--slate-2); }
 .viewall { font-size: 13px; font-weight: 600; color: var(--signal-text); background: none; border: none; cursor: pointer; }
 .viewall:hover { text-decoration: underline; }
+
+/* Text links that pair an arrow icon with a label — keep icon and text aligned. */
+.detail-back, .viewall, .legal-back, .auth-back, .auth-alt a { display: inline-flex; align-items: center; gap: 6px; }
 .catrow-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
 .catrow-scroll .pcard { min-width: 226px; width: 226px; flex: none; scroll-snap-align: start; }
 /* category image tiles — used in the dashboard "Shop by category" grid */

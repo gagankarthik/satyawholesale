@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useOrders } from "@/lib/store";
 import { useCustomers, setAccountStatus } from "@/lib/wms";
 import { resolveFileUrl } from "@/lib/api";
-import { Plus, Check, Paperclip } from "@/components/Icons";
+import { Plus, Check, Paperclip, ArrowLeft } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, type Flash } from "../shared";
 import { KpiCard, DataTable, Badge, Button, DialogFrame, ListToolbar, Menu, type Column, type ToolbarOption, type MenuAction } from "@/components/ui";
@@ -131,7 +131,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   if (cur) {
     return (
       <>
-        <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}>← All accounts</button>
+        <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}><ArrowLeft /> All accounts</button>
         <header className="adminbar">
           <div><h1>{cur.store}</h1><p>Member #{cur.memberNo ?? "—"} · {cur.contact} · account since {cur.since}</p></div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>

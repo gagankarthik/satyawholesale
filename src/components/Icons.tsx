@@ -16,6 +16,9 @@ const base = {
 export const Arrow = ({ className }: P) => (
   <svg {...base} className={className}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 );
+export const ArrowLeft = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
+);
 export const Check = ({ className }: P) => (
   <svg {...base} className={className} strokeWidth={2.2}><path d="M20 6 9 17l-5-5" /></svg>
 );

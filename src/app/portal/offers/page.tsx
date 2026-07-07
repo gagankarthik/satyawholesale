@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { Tag } from "@/components/Icons";
+import { Tag, Arrow } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
@@ -26,7 +26,7 @@ export default function PortalOffers() {
       <section className="catrow" style={{ marginTop: 24 }}>
         <div className="catrow-head">
           <h3><Tag /> Featured deals <span className="cnt">by the case</span></h3>
-          <Link className="viewall" href="/portal/products">Browse all →</Link>
+          <Link className="viewall" href="/portal/products">Browse all <Arrow /></Link>
         </div>
         {deals.length ? (
           <div className="pgrid">{deals.map((p) => <ProductCard key={p.id} p={p} />)}</div>

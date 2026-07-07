@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { Sparkles } from "@/components/Icons";
+import { Sparkles, Arrow } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
@@ -26,7 +26,7 @@ export default function PortalArrivals() {
       <section className="catrow" style={{ marginTop: 24 }}>
         <div className="catrow-head">
           <h3><Sparkles /> Just landed <span className="cnt">{list.length} item{list.length !== 1 ? "s" : ""}</span></h3>
-          <Link className="viewall" href="/portal/products">Browse all →</Link>
+          <Link className="viewall" href="/portal/products">Browse all <Arrow /></Link>
         </div>
         {list.length ? (
           <div className="pgrid">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>

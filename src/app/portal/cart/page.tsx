@@ -5,7 +5,7 @@ import {
   fmt, productImg, offerActive, effPrice, useOrders, useSettings, taxBreakdown, orderRef, deliveryFeeFor,
   type Product, type OrderLine, type Order,
 } from "@/lib/store";
-import { Package, Check, Trash, Truck, Store, Calendar, Plus, Minus } from "@/components/Icons";
+import { Package, Check, Trash, Truck, Store, Calendar, Plus, Minus, Arrow, ArrowLeft } from "@/components/Icons";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
 import Image from "next/image";
 import Link from "next/link";
@@ -181,7 +181,7 @@ export default function CartPage() {
           </div>
 
           <div className="co-done-actions">
-            <Button href={`/portal/orders/${placed.ref}`} variant="primary">View order →</Button>
+            <Button href={`/portal/orders/${placed.ref}`} variant="primary" iconRight={<Arrow />}>View order</Button>
             <Button variant="ghost" onClick={() => window.print()}>Print</Button>
             <Button href="/portal/products" variant="ghost">Continue shopping</Button>
           </div>
@@ -380,14 +380,14 @@ export default function CartPage() {
           <div className="panel">
             <Totals />
             <div className="co-nav">
-              {step > 0 && <Button variant="ghost" fullWidth onClick={back}>← Back</Button>}
+              {step > 0 && <Button variant="ghost" fullWidth onClick={back} iconLeft={<ArrowLeft />}>Back</Button>}
               {step < STEPS.length - 1 ? (
-                <Button variant="primary" fullWidth onClick={next} disabled={!canLeave}>
-                  {step === 0 ? "Continue to delivery →" : step === 1 ? "Continue to payment →" : "Review order →"}
+                <Button variant="primary" fullWidth onClick={next} disabled={!canLeave} iconRight={<Arrow />}>
+                  {step === 0 ? "Continue to delivery" : step === 1 ? "Continue to payment" : "Review order"}
                 </Button>
               ) : (
-                <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing || !shipAddr || !billAddr}>
-                  {placing ? "Placing order…" : "Place order →"}
+                <Button variant="primary" fullWidth onClick={submit} loading={placing} disabled={placing || !shipAddr || !billAddr} iconRight={<Arrow />}>
+                  {placing ? "Placing order…" : "Place order"}
                 </Button>
               )}
             </div>

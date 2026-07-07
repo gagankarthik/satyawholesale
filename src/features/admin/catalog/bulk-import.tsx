@@ -4,6 +4,7 @@ import { useState } from "react";
 import { sku, useInventory } from "@/lib/store";
 import { useCategories, useSuppliers, useMovements, csvTemplate, parseCsv, validateRows, rowToProduct, type ImportRow } from "@/lib/wms";
 import { Head, type Flash } from "../shared";
+import { Arrow } from "@/components/Icons";
 
 /* =======================================================================
    BULK IMPORT  (staging → validate → commit)
@@ -53,7 +54,7 @@ export function ImportTab({ flash }: { flash: Flash }) {
           <div className="panel-h"><h3>Paste catalog CSV</h3><span className="hint">columns: name, category, gtin, cost, price, caseQty, uom, reorderPoint, maxStock, supplierId, stock</span></div>
           <textarea className="csvbox" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste rows here, or load the sample…" spellCheck={false} />
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-            <button className="btn btn-primary btn-sm" disabled={!text.trim()} onClick={validate}>Validate {parseCsv(text).length || ""} rows →</button>
+            <button className="btn btn-primary btn-sm" disabled={!text.trim()} onClick={validate}>Validate {parseCsv(text).length || ""} rows <Arrow /></button>
           </div>
         </div>
       ) : (

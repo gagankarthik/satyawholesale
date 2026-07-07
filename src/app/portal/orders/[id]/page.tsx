@@ -10,7 +10,7 @@ import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
 import { EmptyState, Skeleton } from "@/components/ui";
-import { Search, Chat, Close, Plus, Minus } from "@/components/Icons";
+import { Search, Chat, Close, Plus, Minus, ArrowLeft } from "@/components/Icons";
 import { usePortal } from "../../PortalShell";
 
 const FULFILMENTS = ["Delivery", "Pickup", "Scheduled delivery"];
@@ -34,7 +34,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
     if (!ready) {
       return (
         <div className="odetail">
-          <Link className="detail-back" href="/portal/orders">← Back to orders</Link>
+          <Link className="detail-back" href="/portal/orders"><ArrowLeft /> Back to orders</Link>
           <Skeleton height={72} radius={14} />
           <div className="panel od-trackwrap" style={{ marginTop: 16 }}><Skeleton height={64} radius={12} /></div>
           <div className="od-cols">
@@ -46,7 +46,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
     }
     return (
       <div className="odetail">
-        <Link className="detail-back" href="/portal/orders">← Back to orders</Link>
+        <Link className="detail-back" href="/portal/orders"><ArrowLeft /> Back to orders</Link>
         <EmptyState variant="light" icon={<Search />} title="Order not found" description="This order may belong to another account." />
       </div>
     );
@@ -106,7 +106,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
 
   return (
     <div className="odetail rise-in">
-      <Link className="detail-back" href="/portal/orders">← Back to orders</Link>
+      <Link className="detail-back" href="/portal/orders"><ArrowLeft /> Back to orders</Link>
       <div className="od-head">
         <div>
           <div className="od-ref mono">{o.ref}</div>

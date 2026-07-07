@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
+import { Arrow, ArrowLeft } from "@/components/Icons";
 
 export default function Login() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function Login() {
 
   return (
     <div id="main" role="main" className="auth">
-      <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
+      <Link href="/" className="auth-back mono"><ArrowLeft /> Back to the site</Link>
 
       <div className="auth-grid rise-in">
         <AuthAside />
@@ -90,12 +91,12 @@ export default function Login() {
 
           {error && <Alert tone="danger">{error}</Alert>}
 
-          <Button variant="primary" type="submit" fullWidth loading={busy}>
-            {busy ? "Signing in..." : step === "signin" ? "Enter order portal →" : "Save password & sign in →"}
+          <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+            {busy ? "Signing in..." : step === "signin" ? "Enter order portal" : "Save password & sign in"}
           </Button>
 
           <div className="auth-alt">
-            No account yet? <Link href="/signup">Create your account &rarr;</Link>
+            No account yet? <Link href="/signup">Create your account <Arrow /></Link>
           </div>
         </form>
       </div>

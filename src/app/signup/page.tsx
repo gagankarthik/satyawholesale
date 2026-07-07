@@ -7,6 +7,7 @@ import { useSession, signUp, confirmSignUp, resendCode, signIn } from "@/lib/aut
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
+import { Arrow, ArrowLeft } from "@/components/Icons";
 
 export default function SignUp() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function SignUp() {
 
   return (
     <div id="main" role="main" className="auth">
-      <Link href="/" className="auth-back mono">&larr; Back to the site</Link>
+      <Link href="/" className="auth-back mono"><ArrowLeft /> Back to the site</Link>
 
       <div className="auth-grid rise-in">
         <AuthAside />
@@ -79,11 +80,11 @@ export default function SignUp() {
             </label>
             <p className="auth-hint mono">10+ characters &middot; upper and lower case &middot; a number</p>
             {error && <Alert tone="danger">{error}</Alert>}
-            <Button variant="primary" type="submit" fullWidth loading={busy}>
-              {busy ? "Creating account..." : "Create account →"}
+            <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+              {busy ? "Creating account..." : "Create account"}
             </Button>
             <div className="auth-alt">
-              Already have an account? <Link href="/auth/login">Sign in &rarr;</Link>
+              Already have an account? <Link href="/auth/login">Sign in <Arrow /></Link>
             </div>
           </form>
         ) : (
@@ -99,8 +100,8 @@ export default function SignUp() {
               <input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" required autoFocus />
             </label>
             {error && <Alert tone="danger">{error}</Alert>}
-            <Button variant="primary" type="submit" fullWidth loading={busy}>
-              {busy ? "Verifying..." : "Verify & continue →"}
+            <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+              {busy ? "Verifying..." : "Verify & continue"}
             </Button>
             <div className="auth-alt">
               Didn&apos;t get it? <button type="button" className="linklike" onClick={resend}>Resend code</button>
