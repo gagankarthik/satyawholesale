@@ -446,7 +446,7 @@ export interface ImportRow {
   level: "ok" | "schema" | "integrity" | "business";
 }
 
-const IMPORT_COLUMNS = ["name", "category", "gtin", "cost", "price", "caseQty", "uom", "reorderPoint", "maxStock", "supplierId", "stock"];
+const IMPORT_COLUMNS = ["name", "category", "upc", "cost", "price", "caseQty", "uom", "reorderPoint", "maxStock", "supplierId", "stock"];
 
 export function csvTemplate(): string {
   return IMPORT_COLUMNS.join(",") +
@@ -476,19 +476,22 @@ export function validateRows(
     const errors: string[] = [];
     let level: ImportRow["level"] = "ok";
     const name = r.name || "";
+    // UPC is the retail barcode. Accept the `upc` column; fall back to the
+    // legacy `gtin` header so older CSVs still import.
+    const upc = (r.upc ?? r.gtin ?? "").trim();
     const num = (v: string) => (v === "" || isNaN(Number(v)) ? NaN : Number(v));
 
     if (!name) errors.push("name is required");
     if (!r.category) errors.push("category is required");
     if (isNaN(num(r.price))) errors.push("price must be numeric");
-    if (r.gtin && !validBarcode(r.gtin)) errors.push("invalid barcode check digit");
+    if (upc && !validBarcode(upc)) errors.push("invalid UPC check digit");
     if (r.caseQty && (isNaN(num(r.caseQty)) || num(r.caseQty) <= 0)) errors.push("caseQty must be > 0");
     if (errors.length) level = "schema";
 
     if (level === "ok") {
       if (r.category && !ctx.categories.includes(r.category)) errors.push(`unknown category "${r.category}"`);
       if (r.supplierId && !ctx.suppliers.includes(r.supplierId)) errors.push(`unknown supplier "${r.supplierId}"`);
-      if (r.gtin && (ctx.existingGtins.has(r.gtin) || seenGtin.has(r.gtin))) errors.push("duplicate barcode");
+      if (upc && (ctx.existingGtins.has(upc) || seenGtin.has(upc))) errors.push("duplicate UPC");
       if (name && seenName.has(name.toLowerCase())) errors.push("duplicate product in file");
       if (errors.length) level = "integrity";
     }
@@ -500,10 +503,10 @@ export function validateRows(
       if (errors.length) level = "business";
     }
 
-    if (r.gtin) seenGtin.add(r.gtin);
+    if (upc) seenGtin.add(upc);
     if (name) seenName.add(name.toLowerCase());
     return {
-      line: idx + 1, name, category: r.category || "", gtin: r.gtin || "", cost: r.cost || "",
+      line: idx + 1, name, category: r.category || "", gtin: upc, cost: r.cost || "",
       price: r.price || "", caseQty: r.caseQty || "", uom: r.uom || "case", reorderPoint: r.reorderPoint || "",
       maxStock: r.maxStock || "", supplierId: r.supplierId || "", stock: r.stock || "0",
       errors, level,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import { AdminSearchResults } from "./AdminSearchResults";
 import Brand from "@/components/Brand";
@@ -159,6 +159,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 )}
               </div>
               <div className="atb-actions">
+                <Link href="/admin/help" className="atb-help" title="Help & guides">
+                  <Help /> <span>Help</span>
+                </Link>
                 <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
                   <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">{email || "Satya Wholesale"}</div></div>
                   <Link href="/admin/settings" className="menu-item" role="menuitem"><Gear /> Settings</Link>

@@ -115,6 +115,12 @@ export const Close = ({ className }: P) => (
 export const Plus = ({ className }: P) => (
   <svg {...base} className={className} strokeWidth={2.1}><path d="M12 5v14M5 12h14" /></svg>
 );
+export const Filter = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M4 5h16l-6.5 8v5l-3 1.5V13z" /></svg>
+);
+export const Help = ({ className }: P) => (
+  <svg {...base} className={className}><circle cx="12" cy="12" r="9.2" /><path d="M9.6 9.3a2.4 2.4 0 1 1 3.1 2.3c-.7.26-1.2.85-1.2 1.6v.3" strokeLinecap="round" /><circle cx="12" cy="16.7" r="1" fill="currentColor" stroke="none" /></svg>
+);
 export const Minus = ({ className }: P) => (
   <svg {...base} className={className} strokeWidth={2.1}><path d="M5 12h14" /></svg>
 );

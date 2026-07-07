@@ -51,7 +51,7 @@ export function ImportTab({ flash }: { flash: Flash }) {
 
       {!staging ? (
         <div className="panel">
-          <div className="panel-h"><h3>Paste catalog CSV</h3><span className="hint">columns: name, category, gtin, cost, price, caseQty, uom, reorderPoint, maxStock, supplierId, stock</span></div>
+          <div className="panel-h"><h3>Paste catalog CSV</h3><span className="hint">columns: name, category, upc, cost, price, caseQty, uom, reorderPoint, maxStock, supplierId, stock</span></div>
           <textarea className="csvbox" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste rows here, or load the sample…" spellCheck={false} />
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
             <button className="btn btn-primary btn-sm" disabled={!text.trim()} onClick={validate}>Validate {parseCsv(text).length || ""} rows <Arrow /></button>
@@ -70,7 +70,7 @@ export function ImportTab({ flash }: { flash: Flash }) {
           </div>
           <div className="tablewrap">
             <table className="invtable">
-              <thead><tr><th>#</th><th>Product</th><th>Category</th><th>Barcode</th><th className="r">Price</th><th>Status</th></tr></thead>
+              <thead><tr><th>#</th><th>Product</th><th>Category</th><th>UPC</th><th className="r">Price</th><th>Status</th></tr></thead>
               <tbody>
                 {staging.map((r) => (
                   <tr key={r.line} className={r.level !== "ok" ? "rowbad" : ""}>

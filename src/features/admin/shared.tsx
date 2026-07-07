@@ -73,7 +73,7 @@ export const PRODUCT_FLOW: FlowStep[] = [
   { key: "po", label: "Purchase order", desc: "Order stock in", href: "/admin/purchaseorder" },
   { key: "receive", label: "Receive", desc: "Log cases that arrive", href: "/admin/purchaseorder" },
   { key: "ledger", label: "Stock ledger", desc: "Every change recorded", href: "/admin/inventory" },
-  { key: "product", label: "Products", desc: "Price, barcode, publish", href: "/admin/products" },
+  { key: "product", label: "Products", desc: "Price, UPC, publish", href: "/admin/products" },
   { key: "live", label: "Live to customers", desc: "Sold in the portal", href: "/portal" },
 ];
 

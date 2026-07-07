@@ -220,12 +220,15 @@ export interface AppSettings {
   countyTaxRate?: number;
   countyTaxLabel?: string;
   lowStock: number;
+  /** Warehouse policy (admin-editable). */
+  poApproval?: number;      // PO value above which manager approval is required ($)
+  receiveTolerance?: number; // over-receipt allowance as a fraction, e.g. 0.05 = ±5%
   /** Customer ordering policy (buyer checkout). All in dollars; 0 disables. */
   orderMinimum?: number;         // minimum order subtotal required to check out
   deliveryFee?: number;          // flat delivery fee charged on delivery orders
   freeFreightThreshold?: number; // subtotal at/above which delivery is free
 }
-export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", countyTaxRate: 0, countyTaxLabel: "County tax", lowStock: LOW_STOCK, orderMinimum: 0, deliveryFee: 0, freeFreightThreshold: 0 };
+export const DEFAULT_SETTINGS: AppSettings = { taxRate: 6.5, taxLabel: "OH sales tax", countyTaxRate: 0, countyTaxLabel: "County tax", lowStock: LOW_STOCK, poApproval: 2000, receiveTolerance: 0.05, orderMinimum: 0, deliveryFee: 0, freeFreightThreshold: 0 };
 
 /** Delivery fee for a buyer order: flat fee on delivery orders, waived for
     pickup or once the subtotal clears the free-freight threshold. Shared by the

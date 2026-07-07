@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { DEPTS, deptName, productImg, useInventory, LOW_STOCK, type DeptKey, type Product, type Tag } from "@/lib/store";
+import { DEPTS, deptName, productImg, sku, useInventory, LOW_STOCK, type DeptKey, type Product, type Tag } from "@/lib/store";
 import { useSuppliers, useCategories } from "@/lib/wms";
 import { Search, Inbox, Plus, ArrowLeft } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
@@ -58,13 +58,13 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
     const num = (v: string) => (v === "" ? NaN : Number(v));
     if (!draft.name.trim()) errors.push("Product name is required.");
     if (isNaN(num(draft.price))) errors.push("A numeric price is required.");
-    if (draft.gtin && !/^\d{12,13}$/.test(draft.gtin)) errors.push("Barcode must be 12–13 digits.");
+    if (draft.gtin && !/^\d{12,13}$/.test(draft.gtin)) errors.push("UPC must be 12–13 digits.");
     if (draft.gtin && /^\d{12,13}$/.test(draft.gtin)) {
       const digits = draft.gtin.split("").map(Number); const check = digits.pop()!;
       let sum = 0; digits.reverse().forEach((d, i) => { sum += i % 2 === 0 ? d * 3 : d; });
-      if ((10 - (sum % 10)) % 10 !== check) errors.push("Barcode check digit is invalid.");
+      if ((10 - (sum % 10)) % 10 !== check) errors.push("UPC check digit is invalid.");
     }
-    if (draft.gtin && products.some((p) => p.gtin === draft.gtin && p.id !== existing?.id)) errors.push("That barcode already exists.");
+    if (draft.gtin && products.some((p) => p.gtin === draft.gtin && p.id !== existing?.id)) errors.push("That UPC already exists.");
     const rp = num(draft.reorderPoint), ms = num(draft.maxStock);
     if (!isNaN(rp) && !isNaN(ms) && rp > ms) errors.push("Reorder point can't exceed max stock.");
     const cost = num(draft.cost), price = num(draft.price);
@@ -106,7 +106,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
         ? [{ label: "Products", href: "/admin/products" }, { label: existing!.name, href: backHref }, { label: "Edit" }]
         : [{ label: "Products", href: "/admin/products" }, { label: "Onboard" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? existing!.name : "Onboard a product"}</h1>{editing && <p>{existing!.sku?.trim() || "No item code"}</p>}</div>
+        <div><h1>{editing ? existing!.name : "Onboard a product"}</h1>{editing && <p>{existing!.sku?.trim() ? `SKU ${existing!.sku.trim()}` : "No SKU"}</p>}</div>
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
@@ -127,10 +127,10 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
               <ImageUpload value={draft.image} onChange={(v) => setDraft({ ...draft, image: v })} label="Product image" aspect="square" folder="products" onError={flash} hint="Optional. Shown in the portal and admin; a placeholder is used until you add one." />
             </div>
             <label className="field"><span>Category * <FieldHelp text="The department this product lives under in the portal catalog." /></span><select value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as DeptKey })}>{categories.filter((c) => c.active).map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}</select></label>
-            <label className="field"><span>Item number <FieldHelp text="Your internal SKU / item code. Optional. Shown as entered; left blank, no code is shown." /></span><input className="mono" value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} placeholder="e.g. 100-2345" /></label>
-            <div className="field"><span>Barcode (UPC/EAN) <FieldHelp text="The scannable UPC-A (12) or EAN-13 (13) on the pack. Used at receiving and checkout." /></span>
+            <label className="field"><span>SKU <FieldHelp text="Your internal item code for local inventory management. Optional. Shown as entered; left blank, none is shown." /></span><input className="mono" value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} placeholder="e.g. 100-2345" /></label>
+            <div className="field"><span>UPC <FieldHelp text="The retailer UPC-A (12) or EAN-13 (13) barcode printed on the pack. Used at receiving and checkout." /></span>
               <div className="scanrow">
-                <input value={draft.gtin} onChange={(e) => setDraft({ ...draft, gtin: e.target.value })} placeholder="Scan or type 12–13 digits" inputMode="numeric" aria-label="Barcode (UPC/EAN)" />
+                <input value={draft.gtin} onChange={(e) => setDraft({ ...draft, gtin: e.target.value })} placeholder="Scan or type 12–13 digits" inputMode="numeric" aria-label="UPC" />
                 <BarcodeScanner onDetect={(code) => setDraft((d) => ({ ...d, gtin: code }))} />
               </div>
             </div>
@@ -215,7 +215,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
     const q = query.trim().toLowerCase();
     const list = products.filter((p) =>
       (filter === "all" || p.dep === filter) &&
-      (q === "" || p.name.toLowerCase().includes(q) || String(p.id).includes(q) || (p.gtin || "").includes(q))
+      (q === "" || p.name.toLowerCase().includes(q) || sku(p).toLowerCase().includes(q) || (p.gtin || "").includes(q))
     );
     return [...list].sort((a, b) => {
       switch (sort) {
@@ -238,7 +238,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
   const exportProducts = () => {
     downloadCsv(
       `products-${new Date().toISOString().slice(0, 10)}.csv`,
-      ["Name", "SKU", "Barcode", "Category", "Cost", "Price", "MRP", "Stock"],
+      ["Name", "SKU", "UPC", "Category", "Cost", "Price", "MRP", "Stock"],
       rows.map((p) => [p.name, p.sku ?? "", p.gtin ?? "", deptName(p.dep), p.cost ?? "", p.price, p.mrp ?? "", p.stock]),
     );
   };
@@ -255,7 +255,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
       <FlowHelp steps={PRODUCT_FLOW} active="product" title="Stock-in flow" />
 
       <ListToolbar
-        search={{ value: query, onChange: setQuery, placeholder: "Search name, SKU or barcode…" }}
+        search={{ value: query, onChange: setQuery, placeholder: "Search name, SKU or UPC…" }}
         filters={[{ label: "Category", value: filter, onChange: (v) => setFilter(v as DeptKey | "all"), options: CAT_OPTS }]}
         sort={{ value: sort, onChange: setSort, options: SORT_OPTS }}
       />
@@ -284,8 +284,8 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
       <DataTable
         columns={[
-          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th"><Image src={productImg(p)} alt="" fill sizes="36px" style={{ objectFit: "contain" }} /></span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin || "no barcode"}</div></div></div> },
-          { key: "code", header: "Code", render: (p) => <span className="mono muted">{p.sku?.trim() || "—"}</span> },
+          { key: "name", header: "Item name", render: (p) => <div className="prodcell"><span className="th"><Image src={productImg(p)} alt="" fill sizes="36px" style={{ objectFit: "contain" }} /></span><div><div className="pn">{p.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{p.gtin ? `UPC ${p.gtin}` : "no UPC"}</div></div></div> },
+          { key: "code", header: "SKU", render: (p) => <span className="mono muted">{p.sku?.trim() || "—"}</span> },
           { key: "desc", header: "Description", hideOnMobile: true, render: (p) => <span className="muted" style={{ fontSize: 12.5 }}>{p.description || "—"}</span> },
           { key: "cat", header: "Category", render: (p) => <span className="deptpill">{deptName(p.dep)}</span> },
           { key: "mrp", header: "MRP", align: "right", hideOnMobile: true, render: (p) => <span className="mono">{p.mrp ? m(p.mrp) : "—"}</span> },

@@ -58,7 +58,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     const list = stats.filter(
       (c) =>
         (filter === "all" || c.status === filter) &&
-        (q === "" || c.store.toLowerCase().includes(q) || c.contact.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+        (q === "" || c.store.toLowerCase().includes(q) || c.contact.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.memberNo ?? "").includes(q))
     );
     return [...list].sort((a, b) => {
       switch (sort) {
@@ -135,7 +135,13 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       <>
         <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}><ArrowLeft /> All accounts</button>
         <header className="adminbar">
-          <div><h1>{cur.store}</h1><p>Member #{cur.memberNo ?? "—"} · {cur.contact} · account since {cur.since}</p></div>
+          <div>
+            <h1>{cur.store}</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+              <span className="memberno"><span className="lbl">Member</span><span className="val">{cur.memberNo ?? "—"}</span></span>
+              <span className="muted" style={{ fontSize: 14 }}>{cur.contact} · account since {cur.since}</span>
+            </div>
+          </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <Badge tone={acctTone(cur.status)}>{cur.status}</Badge>
             <Menu label={`Actions for ${cur.store}`} items={accountActions(cur)} />
@@ -166,6 +172,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                 </div>
               ) : (
                 <div className="kvs two">
+                  <div className="kv2"><span>Membership no.</span><b><span className="memberno-val">{cur.memberNo ?? "—"}</span></b></div>
                   <div className="kv2"><span>Primary contact</span><b>{cur.contact}</b></div>
                   <div className="kv2"><span>Email</span><b>{cur.email}</b></div>
                   <div className="kv2"><span>Phone</span><b>{cur.phone || "—"}</b></div>
@@ -252,7 +259,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     { key: "store", header: "Store", render: (c) => (
       <div className="prodcell">
         <span className="avatar">{c.store.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
-        <div><div className="pn">{c.store}</div><div className="mono muted" style={{ fontSize: 11 }}>{c.id} · {c.email}</div></div>
+        <div><div className="pn">{c.store}</div><div className="mono muted" style={{ fontSize: 11 }}><span className="memberno-val">#{c.memberNo ?? "—"}</span> · {c.email}</div></div>
       </div>
     ) },
     { key: "contact", header: "Contact", render: (c) => <span style={{ fontSize: 13 }}>{c.contact}</span> },
@@ -279,7 +286,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         <KpiCard label="Lifetime sales" value={k(stats.reduce((s, c) => s + c.spend, 0))} foot="across accounts" />
       </div>
       <ListToolbar
-        search={{ value: query, onChange: setQuery, placeholder: "Search store, contact or email…" }}
+        search={{ value: query, onChange: setQuery, placeholder: "Search store, member #, contact or email…" }}
         filters={[{ label: "Status", value: filter, onChange: (v) => setFilter(v as "all" | "Pending" | "Active" | "Frozen" | "Blocked"), options: ACCT_STATUS_OPTS }]}
         sort={{ value: sort, onChange: setSort, options: ACCT_SORT_OPTS }}
       />

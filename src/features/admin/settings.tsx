@@ -5,11 +5,11 @@ import {
   useSettings, LOW_STOCK, CONTACT,
 } from "@/lib/store";
 import {
-  useStaff, createUser, PO_APPROVAL_THRESHOLD, ROLES, type Role,
+  useStaff, createUser, PO_APPROVAL_THRESHOLD, RECEIVE_TOLERANCE, ROLES, type Role,
 } from "@/lib/wms";
 import { Button, DialogFrame, EmptyState, FieldHelp, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
 import { useConfirm } from "@/components/Confirm";
-import { Head, m, type Flash } from "./shared";
+import { Head, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
 export function UsersTab({ flash }: { flash: Flash }) {
@@ -133,12 +133,16 @@ export function SettingsTab({ flash }: { flash: Flash }) {
   const [orderMin, setOrderMin] = useState(String(settings.orderMinimum ?? 0));
   const [delivFee, setDelivFee] = useState(String(settings.deliveryFee ?? 0));
   const [freeAt, setFreeAt] = useState(String(settings.freeFreightThreshold ?? 0));
+  const [lowStock, setLowStock] = useState(String(settings.lowStock ?? LOW_STOCK));
+  const [poApproval, setPoApproval] = useState(String(settings.poApproval ?? PO_APPROVAL_THRESHOLD));
+  const [recvTol, setRecvTol] = useState(String((settings.receiveTolerance ?? RECEIVE_TOLERANCE) * 100));
 
   useEffect(() => {
     setRate(String(settings.taxRate)); setLabel(settings.taxLabel);
     setCountyRate(String(settings.countyTaxRate ?? 0)); setCountyLabel(settings.countyTaxLabel ?? "County tax");
     setOrderMin(String(settings.orderMinimum ?? 0)); setDelivFee(String(settings.deliveryFee ?? 0)); setFreeAt(String(settings.freeFreightThreshold ?? 0));
-  }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel, settings.orderMinimum, settings.deliveryFee, settings.freeFreightThreshold]);
+    setLowStock(String(settings.lowStock ?? LOW_STOCK)); setPoApproval(String(settings.poApproval ?? PO_APPROVAL_THRESHOLD)); setRecvTol(String((settings.receiveTolerance ?? RECEIVE_TOLERANCE) * 100));
+  }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel, settings.orderMinimum, settings.deliveryFee, settings.freeFreightThreshold, settings.lowStock, settings.poApproval, settings.receiveTolerance]);
 
   const [tab, setTab] = useState<"company" | "tax" | "policies">("company");
 
@@ -158,6 +162,14 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     if ([om, df, fa].some((n) => Number.isNaN(n) || n < 0)) { flash("Enter valid, non-negative dollar amounts"); return; }
     update({ orderMinimum: om, deliveryFee: df, freeFreightThreshold: fa });
     flash("Ordering policy saved");
+  };
+
+  const saveWarehouse = (e: React.FormEvent) => {
+    e.preventDefault();
+    const ls = Number(lowStock), pa = Number(poApproval), rt = Number(recvTol);
+    if ([ls, pa, rt].some((n) => Number.isNaN(n) || n < 0)) { flash("Enter valid, non-negative values"); return; }
+    update({ lowStock: ls, poApproval: pa, receiveTolerance: rt / 100 });
+    flash("Warehouse policy saved");
   };
 
   return (
@@ -227,19 +239,30 @@ export function SettingsTab({ flash }: { flash: Flash }) {
                 <label className="field"><span>Free delivery over ($) <FieldHelp text="Waive the delivery fee once the subtotal reaches this amount. Set 0 to always charge the fee." /></span>
                   <input type="number" step="0.01" min={0} value={freeAt} onChange={(e) => setFreeAt(e.target.value)} placeholder="0" />
                 </label>
-                <div className="modalbtns full" style={{ marginTop: 4 }}>
+                <div className="modalbtns" style={{ gridColumn: "1 / -1", marginTop: 4 }}>
                   <button className="btn btn-primary btn-sm" type="submit">Save ordering policy</button>
                 </div>
               </form>
             </div>
             <div className="panel anim-in">
               <div className="panel-h"><h3>Warehouse policies</h3></div>
-              <div className="setrows">
-                <div className="setrow"><span>Default low-stock threshold</span><b>{LOW_STOCK} cases</b></div>
-                <div className="setrow"><span>PO approval threshold</span><b>{m(PO_APPROVAL_THRESHOLD)}</b></div>
-                <div className="setrow"><span>Receiving tolerance</span><b>±5% of PO</b></div>
-                <div className="setrow"><span>Barcode standard</span><b>UPC-A / EAN-13</b></div>
-              </div>
+              <form className="formgrid" onSubmit={saveWarehouse}>
+                <label className="field"><span>Low-stock threshold (cases) <FieldHelp text="Products at or below this on-hand quantity are flagged as low / needing reorder when they have no reorder point of their own." /></span>
+                  <input type="number" min={0} value={lowStock} onChange={(e) => setLowStock(e.target.value)} placeholder={String(LOW_STOCK)} />
+                </label>
+                <label className="field"><span>PO approval threshold ($) <FieldHelp text="Purchase orders above this value require manager approval before they can be sent." /></span>
+                  <input type="number" step="0.01" min={0} value={poApproval} onChange={(e) => setPoApproval(e.target.value)} placeholder={String(PO_APPROVAL_THRESHOLD)} />
+                </label>
+                <label className="field"><span>Receiving tolerance (%) <FieldHelp text="How far over the ordered quantity receivers may accept before it is flagged as a variance." /></span>
+                  <input type="number" step="0.1" min={0} value={recvTol} onChange={(e) => setRecvTol(e.target.value)} placeholder="5" />
+                </label>
+                <div className="setrow full" style={{ borderBottom: "none" }}>
+                  <span>Barcode standard</span><b>UPC-A / EAN-13</b>
+                </div>
+                <div className="modalbtns" style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                  <button className="btn btn-primary btn-sm" type="submit">Save warehouse policy</button>
+                </div>
+              </form>
             </div>
           </div>
         )}

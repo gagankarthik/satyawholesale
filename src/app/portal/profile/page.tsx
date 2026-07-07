@@ -119,7 +119,7 @@ export default function PortalProfile() {
           ) : (
             <>
               <div className="kvs">
-                {account?.memberNo && <div className="kv2"><span>Membership no.</span><b className="mono">{account.memberNo}</b></div>}
+                {account?.memberNo && <div className="kv2"><span>Membership no.</span><b><span className="memberno-val">{account.memberNo}</span></b></div>}
                 <div className="kv2"><span>Store</span><b>{account?.store ?? store ?? "—"}</b></div>
                 {account?.contact && <div className="kv2"><span>Contact</span><b>{account.contact}</b></div>}
                 <div className="kv2"><span>Sign-in email</span><b>{account?.email ?? email}</b></div>
@@ -194,6 +194,13 @@ export default function PortalProfile() {
       </div>
 
       <aside className="od-side">
+        {account?.memberNo && (
+          <div className="panel membercard">
+            <div className="mc-label">Membership number</div>
+            <div className="mc-no">{account.memberNo}</div>
+            <div className="mc-store">{account?.store ?? store ?? "Customer account"}</div>
+          </div>
+        )}
         <div className="panel">
           <div className="panel-h"><h3>Saved addresses</h3><Link href="/portal/addresses" className="linklike">Manage</Link></div>
           {addresses.length > 0 ? (
