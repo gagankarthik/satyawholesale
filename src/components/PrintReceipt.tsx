@@ -52,7 +52,7 @@ export default function PrintReceipt({ order }: { order: Order }) {
           <div><span className="pr-l">Billed to</span><p>{order.store}<br />{billing}</p></div>
           <div><span className="pr-l">Ship to</span><p>{order.store}<br />{shipping}</p></div>
           <div><span className="pr-l">Order date</span><p>{new Date(order.placed).toLocaleString()}</p></div>
-          <div><span className="pr-l">Payment</span><p>{order.payment || "Net 15 terms"} · {paid}{order.tracking && order.tracking !== "PICKUP" ? <><br />Tracking {order.tracking}</> : null}</p></div>
+          <div><span className="pr-l">Payment</span><p>{order.payment || "Net 15"} · {paid}{order.tracking && order.tracking !== "PICKUP" ? <><br />Tracking {order.tracking}</> : null}</p></div>
         </div>
 
         <table className="pr-table">

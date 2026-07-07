@@ -239,7 +239,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
           <div className="panel">
             <div className="panel-h"><h3>Payment</h3></div>
             <div className="kvs">
-              <div className="kv2"><span>Terms</span><b>{o.payment || "Net 15 terms"}</b></div>
+              <div className="kv2"><span>Terms</span><b>{o.payment || "Net 15"}</b></div>
               <div className="kv2"><span>Status</span><b>{o.paymentStatus || "Unpaid"}</b></div>
             </div>
           </div>

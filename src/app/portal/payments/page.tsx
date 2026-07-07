@@ -99,7 +99,7 @@ export default function PortalPayments() {
               <Link key={o.ref} className="orow" href={`/portal/orders/${o.ref}`}>
                 <div>
                   <div className="oref mono">{o.ref}</div>
-                  <div className="osub">{o.payment || "Net 15 terms"} · {ago(o.placed)}</div>
+                  <div className="osub">{o.payment || "Net 15"} · {ago(o.placed)}</div>
                 </div>
                 <Badge tone={payTone(ps)}>{ps}</Badge>
                 <span className="oamt mono">${fmt(orderGrand(o))}</span>

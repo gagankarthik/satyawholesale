@@ -8,12 +8,14 @@ import { Plus, Check, Paperclip } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, type Flash } from "../shared";
 import { KpiCard, DataTable, Badge, Button, DialogFrame, ListToolbar, Menu, type Column, type ToolbarOption, type MenuAction } from "@/components/ui";
+import { PaymentTermsSelect, PaymentTermHint, PaymentTermsGuide } from "@/components/PaymentTerms";
+import { paymentTermInfo, DEFAULT_PAYMENT_TERM } from "@/lib/paymentTerms";
 import { acctTone, statusTone } from "./_shared";
 
 /* =======================================================================
    CUSTOMERS / ACCOUNTS  (approval)
    ======================================================================= */
-const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: "Net 15" };
+const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: DEFAULT_PAYMENT_TERM };
 export function CustomersTab({ flash }: { flash: Flash }) {
   const { customers, setStatus, update, add, remove, ready, error, refresh } = useCustomers();
   const { orders } = useOrders();
@@ -129,7 +131,10 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   <label className="field"><span>Contact</span><input value={draft.contact} onChange={(e) => setDraft({ ...draft, contact: e.target.value })} /></label>
                   <label className="field"><span>Email</span><input type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></label>
                   <label className="field"><span>Phone</span><input type="tel" value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></label>
-                  <label className="field"><span>Payment terms</span><input value={draft.terms} onChange={(e) => setDraft({ ...draft, terms: e.target.value })} /></label>
+                  <label className="field"><span>Payment terms</span>
+                    <PaymentTermsSelect ariaLabel="Payment terms" value={draft.terms} onChange={(v) => setDraft({ ...draft, terms: v })} />
+                    <PaymentTermHint term={draft.terms} />
+                  </label>
                   <label className="field full"><span>Address</span><input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} /></label>
                   <div className="full modalactions"><Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button><Button variant="primary" onClick={saveEdit}>Save changes</Button></div>
                 </div>
@@ -138,7 +143,10 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   <div className="kv2"><span>Primary contact</span><b>{cur.contact}</b></div>
                   <div className="kv2"><span>Email</span><b>{cur.email}</b></div>
                   <div className="kv2"><span>Phone</span><b>{cur.phone || "—"}</b></div>
-                  <div className="kv2"><span>Payment terms</span><b>{cur.terms || "Net 15"}</b></div>
+                  <div className="kv2"><span>Payment terms</span><b>{cur.terms || DEFAULT_PAYMENT_TERM}</b></div>
+                  {paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM) && (
+                    <div className="kv2 full"><span>What it means</span><b style={{ fontWeight: 400, color: "var(--slate)" }}>{paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM)}</b></div>
+                  )}
                   <div className="kv2 full"><span>Address</span><b>{cur.address || cur.city}</b></div>
                 </div>
               )}
@@ -224,6 +232,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Customer accounts" sub="Review applications, approve stores, then they order in the portal">
+        <PaymentTermsGuide />
         <Button variant="primary" size="sm" onClick={() => setInviting(true)}><Plus /> Invite account</Button>
       </Head>
       <FlowHelp steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />
@@ -260,7 +269,10 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <label className="field"><span>Email *</span><input type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} required placeholder="buyer@store.com" /></label>
               <label className="field"><span>Phone</span><input type="tel" value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="(513) 555-0000" /></label>
               <label className="field"><span>City</span><input value={inv.city} onChange={(e) => setInv({ ...inv, city: e.target.value })} /></label>
-              <label className="field"><span>Payment terms</span><select value={inv.terms} onChange={(e) => setInv({ ...inv, terms: e.target.value })}><option>Net 15</option><option>Net 30</option><option>COD</option></select></label>
+              <label className="field"><span>Payment terms</span>
+                <PaymentTermsSelect ariaLabel="Payment terms" value={inv.terms} onChange={(v) => setInv({ ...inv, terms: v })} />
+                <PaymentTermHint term={inv.terms} />
+              </label>
             </div>
             <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setInviting(false)}>Cancel</Button><Button variant="primary" type="submit">Send invite</Button></div>
           </form>

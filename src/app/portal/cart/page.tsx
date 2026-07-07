@@ -85,7 +85,7 @@ export default function CartPage() {
   const deliveryFee = deliveryFeeFor(subtotal, isPickup, settings);
   const grand = subtotal + tax + deliveryFee;
 
-  const termsLabel = terms ?? "Net 15 terms";
+  const termsLabel = terms ?? "Net 15";
   const orderMinimum = settings.orderMinimum ?? 0;
   const belowMin = orderMinimum > 0 && subtotal < orderMinimum;
   const shortBy = Math.max(0, orderMinimum - subtotal);

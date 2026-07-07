@@ -94,7 +94,7 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser, account: Row
 
   // Payment terms are the account's approved terms — a buyer can't upgrade
   // themselves to longer credit at checkout. Falls back to Net 15.
-  const payment = clampStr(account?.terms, 60) || "Net 15 terms";
+  const payment = clampStr(account?.terms, 60) || "Net 15";
 
   const owner = user.store ?? user.email;
   // The client proposes a ref; the create path (create-only write) guarantees

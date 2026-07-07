@@ -8,6 +8,8 @@ import { useCustomers } from "@/lib/wms";
 import { Plus, Minus, Close } from "@/components/Icons";
 import { m, type Flash } from "../shared";
 import { Breadcrumb, Button, Combobox } from "@/components/ui";
+import { PaymentTermsSelect, PaymentTermHint } from "@/components/PaymentTerms";
+import { DEFAULT_PAYMENT_TERM } from "@/lib/paymentTerms";
 
 /* =======================================================================
    CREATE ORDER (admin, on behalf of a customer)
@@ -22,7 +24,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const [custId, setCustId] = useState(customers[0]?.id ?? "");
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [fulfilment, setFulfilment] = useState("Delivery");
-  const [payment, setPayment] = useState("Net 15 terms");
+  const [payment, setPayment] = useState(DEFAULT_PAYMENT_TERM);
   const [taxExempt, setTaxExempt] = useState(false);
   const [deliv, setDeliv] = useState("");
   const [discKind, setDiscKind] = useState<"amount" | "percent">("amount");
@@ -129,7 +131,8 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
                 <select value={fulfilment} onChange={(e) => setFulfilment(e.target.value)}><option>Delivery</option><option>Pickup</option><option>Scheduled delivery</option></select>
               </div>
               <div className="kv2 col"><span>Payment</span>
-                <select value={payment} onChange={(e) => setPayment(e.target.value)}><option>Net 15 terms</option><option>Net 30 terms</option><option>Card on delivery</option><option>Cash on delivery</option></select>
+                <PaymentTermsSelect ariaLabel="Payment terms" value={payment} onChange={setPayment} />
+                <PaymentTermHint term={payment} />
               </div>
               <label className="taxtoggle">
                 <input type="checkbox" checked={taxExempt} onChange={(e) => setTaxExempt(e.target.checked)} />

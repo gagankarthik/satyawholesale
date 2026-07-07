@@ -275,7 +275,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
           <div className="panel anim-in">
             <div className="panel-h"><h3>Payment</h3><Badge tone={payTone(v.paymentStatus)}>{v.paymentStatus}</Badge></div>
             <div className="kvs">
-              <div className="kv2"><span>Terms</span><b>{cur.payment || "Net 15 terms"}</b></div>
+              <div className="kv2"><span>Terms</span><b>{cur.payment || "Net 15"}</b></div>
               <div className="kv2"><span>Update payment</span>
                 <select aria-label="Payment status" className={`paysel p-${v.paymentStatus.toLowerCase()}`} value={v.paymentStatus} onChange={(e) => { patchOrder(cur.ref, { paymentStatus: e.target.value as PayStatus }); flash("Payment updated"); }}>
                   {PAY_STATUSES.map((s) => <option key={s}>{s}</option>)}
