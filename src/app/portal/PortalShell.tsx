@@ -47,6 +47,7 @@ interface PortalCtx {
   changeQty: (id: number, d: number) => void;
   removeLine: (id: number) => void;
   clearCart: () => void;
+  reorder: (lines: { id: number; qty: number }[]) => void;
   cases: number;
   flash: (m: string) => void;
 }
@@ -159,6 +160,22 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       return next;
     });
   const clearCart = () => setCart({});
+  /* Re-add a past order's lines to the cart. Skips products that left the
+     catalog or are out of stock, and caps each line at what's on hand. */
+  const reorder = (lines: { id: number; qty: number }[]) => {
+    const avail = lines
+      .map((l) => ({ l, p: products.find((x) => x.id === l.id) }))
+      .filter((x): x is { l: { id: number; qty: number }; p: NonNullable<typeof x.p> } => !!x.p && x.p.stock > 0);
+    const missing = lines.length - avail.length;
+    if (!avail.length) { flash("Those items are no longer available"); return; }
+    setCart((c) => {
+      const next = { ...c };
+      for (const { l, p } of avail) next[l.id] = Math.min((next[l.id] || 0) + l.qty, p.stock);
+      return next;
+    });
+    flash(`${avail.length} item${avail.length !== 1 ? "s" : ""} added to cart${missing ? `, ${missing} unavailable` : ""}`);
+    router.push("/portal/cart");
+  };
 
   /* ---- route-derived chrome ---- */
   const seg = pathname.split("/")[2] || "dashboard";
@@ -197,7 +214,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     products, ready, error, reload, orders, myOrders, STORE, counts,
     depts, subsFor, catName, matchDept,
     dept, setDept, sub, setSub, query, setQuery,
-    cart, add, changeQty, removeLine, clearCart, cases, flash,
+    cart, add, changeQty, removeLine, clearCart, reorder, cases, flash,
   };
 
   const goDept = (d: string, sk = "") => { setDept(d); setSub(sk); router.push("/portal/products"); setMobileNav(false); };

@@ -18,7 +18,7 @@ const FULFILMENTS = ["Delivery", "Pickup", "Scheduled delivery"];
 export default function PortalOrderDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { orders, ready, patchOrder, setStatus } = useOrders();
-  const { flash, products } = usePortal();
+  const { flash, products, reorder } = usePortal();
   const { settings } = useSettings();
   const o = orders.find((x) => x.ref === id);
 
@@ -120,6 +120,7 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
             </>
           ) : (
             <>
+              <button className="btn btn-ghost btn-sm" onClick={() => reorder(o.lines)}>Reorder</button>
               {editable && <button className="btn btn-ghost btn-sm" onClick={startEdit}>Edit order</button>}
               {!closed && (
                 <button
