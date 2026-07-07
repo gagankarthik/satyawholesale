@@ -35,6 +35,8 @@ export const apiDelete = (entity: string, id: string) =>
   call<{ ok: true }>(`/api/data/${entity}/${encodeURIComponent(id)}`, { method: "DELETE" }).then(() => undefined);
 export const apiPost = <T, B = unknown>(path: string, body: B) =>
   call<T>(path, { method: "POST", body: JSON.stringify(body) });
+export const apiPatchPath = <T, B = unknown>(path: string, body: B) =>
+  call<T>(path, { method: "PATCH", body: JSON.stringify(body) });
 
 /** Browser → S3 upload via a presigned URL; returns the servable URL.
     `folder` is one of the allowed folders in src/server/s3.ts. */
