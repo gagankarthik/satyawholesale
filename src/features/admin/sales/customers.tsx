@@ -16,7 +16,7 @@ import { acctTone, statusTone } from "./_shared";
 /* =======================================================================
    CUSTOMERS / ACCOUNTS  (approval)
    ======================================================================= */
-const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", city: "Cincinnati, OH", terms: DEFAULT_PAYMENT_TERM };
+const EMPTY_INVITE = { store: "", contact: "", email: "", phone: "", address: "", city: "Cincinnati", state: "OH", zip: "", terms: DEFAULT_PAYMENT_TERM };
 export function CustomersTab({ flash }: { flash: Flash }) {
   const { customers, setStatus, update, add, remove, ready, error, refresh } = useCustomers();
   const { orders } = useOrders();
@@ -39,7 +39,9 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     add({
       id: "C-" + Math.floor(1300 + Math.random() * 700),
       store: inv.store.trim(), contact: inv.contact.trim(), email: inv.email.trim(),
-      phone: inv.phone.trim(), city: inv.city, since: String(new Date().getFullYear()),
+      phone: inv.phone.trim(), address: inv.address.trim() || undefined,
+      city: inv.city.trim(), state: inv.state.trim() || undefined, zip: inv.zip.trim() || undefined,
+      since: String(new Date().getFullYear()),
       status: "Pending", terms: inv.terms, applied: Date.now(),
     });
     setInv(EMPTY_INVITE); setInviting(false);
@@ -81,7 +83,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   const cur = stats.find((s) => s.id === openId) || null;
 
   const startEditFor = (c: (typeof stats)[number]) => {
-    setDraft({ store: c.store, contact: c.contact, email: c.email, phone: c.phone || "", address: c.address || "", terms: c.terms || "Net 15" });
+    setDraft({ store: c.store, contact: c.contact, email: c.email, phone: c.phone || "", address: c.address || "", city: c.city || "", state: c.state || "", zip: c.zip || "", terms: c.terms || "Net 15" });
     setOpenId(c.id); setEdit(true);
   };
   const saveEdit = () => { if (cur) { update(cur.id, draft); setEdit(false); flash("Account updated"); } };
@@ -154,7 +156,12 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                     <PaymentTermsSelect ariaLabel="Payment terms" value={draft.terms} onChange={(v) => setDraft({ ...draft, terms: v })} />
                     <PaymentTermHint term={draft.terms} />
                   </label>
-                  <label className="field full"><span>Address</span><input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} /></label>
+                  <label className="field full"><span>Street address</span><input value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} placeholder="123 Reading Rd" /></label>
+                  <div className="field-row">
+                    <label className="field"><span>City</span><input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} /></label>
+                    <label className="field"><span>State</span><input value={draft.state} onChange={(e) => setDraft({ ...draft, state: e.target.value })} maxLength={2} /></label>
+                    <label className="field"><span>ZIP</span><input value={draft.zip} onChange={(e) => setDraft({ ...draft, zip: e.target.value })} inputMode="numeric" /></label>
+                  </div>
                   <div className="full modalactions"><Button variant="ghost" onClick={() => setEdit(false)}>Cancel</Button><Button variant="primary" onClick={saveEdit}>Save changes</Button></div>
                 </div>
               ) : (
@@ -166,7 +173,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   {paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM) && (
                     <div className="kv2 full"><span>What it means</span><b style={{ fontWeight: 400, color: "var(--slate)" }}>{paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM)}</b></div>
                   )}
-                  <div className="kv2 full"><span>Address</span><b>{cur.address || cur.city}</b></div>
+                  <div className="kv2 full"><span>Address</span><b>{[cur.address, cur.city, [cur.state, cur.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "—"}</b></div>
                 </div>
               )}
             </div>
@@ -297,7 +304,12 @@ export function CustomersTab({ flash }: { flash: Flash }) {
               <label className="field"><span>Contact</span><input value={inv.contact} onChange={(e) => setInv({ ...inv, contact: e.target.value })} placeholder="Full name" /></label>
               <label className="field"><span>Email *</span><input type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} required placeholder="buyer@store.com" /></label>
               <label className="field"><span>Phone</span><input type="tel" value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="(513) 555-0000" /></label>
-              <label className="field"><span>City</span><input value={inv.city} onChange={(e) => setInv({ ...inv, city: e.target.value })} /></label>
+              <label className="field full"><span>Street address</span><input value={inv.address} onChange={(e) => setInv({ ...inv, address: e.target.value })} placeholder="123 Reading Rd" /></label>
+              <div className="field-row">
+                <label className="field"><span>City</span><input value={inv.city} onChange={(e) => setInv({ ...inv, city: e.target.value })} /></label>
+                <label className="field"><span>State</span><input value={inv.state} onChange={(e) => setInv({ ...inv, state: e.target.value })} maxLength={2} /></label>
+                <label className="field"><span>ZIP</span><input value={inv.zip} onChange={(e) => setInv({ ...inv, zip: e.target.value })} inputMode="numeric" /></label>
+              </div>
               <label className="field"><span>Payment terms</span>
                 <PaymentTermsSelect ariaLabel="Payment terms" value={inv.terms} onChange={(v) => setInv({ ...inv, terms: v })} />
                 <PaymentTermHint term={inv.terms} />

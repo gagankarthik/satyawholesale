@@ -16,7 +16,10 @@ interface MyAccount {
   contact: string | null;
   email: string | null;
   phone: string | null;
+  address: string | null;
   city: string | null;
+  state: string | null;
+  zip: string | null;
   status: string | null;
   since: string | null;
   terms: string | null;
@@ -121,7 +124,9 @@ export default function PortalProfile() {
                 {account?.contact && <div className="kv2"><span>Contact</span><b>{account.contact}</b></div>}
                 <div className="kv2"><span>Sign-in email</span><b>{account?.email ?? email}</b></div>
                 {account?.phone && <div className="kv2"><span>Phone</span><b>{account.phone}</b></div>}
-                {account?.city && <div className="kv2"><span>City</span><b>{account.city}</b></div>}
+                {(account?.address || account?.city) && (
+                  <div className="kv2 full"><span>Address</span><b>{[account?.address, account?.city, [account?.state, account?.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")}</b></div>
+                )}
                 {account?.terms && <div className="kv2"><span>Payment terms</span><b>{account.terms}</b></div>}
                 {account?.terms && paymentTermInfo(account.terms) && (
                   <div className="kv2 full"><span>What it means</span><b style={{ fontWeight: 400, color: "var(--slate)" }}>{paymentTermInfo(account.terms)}</b></div>

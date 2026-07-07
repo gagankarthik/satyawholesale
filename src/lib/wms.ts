@@ -148,6 +148,8 @@ export interface TradeAccount extends Customer {
   tobaccoLicense?: string;
   applied?: number;
   invited?: number;
+  state?: string;
+  zip?: string;
   docs?: { label: string; name: string; uploaded: number; url?: string; approved?: boolean }[];
 }
 

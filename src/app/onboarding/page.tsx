@@ -13,7 +13,7 @@ import { Arrow } from "@/components/Icons";
 export default function Onboarding() {
   const router = useRouter();
   const { ready, signedIn, isAdmin, isBuyer } = useSession();
-  const [form, setForm] = useState({ store: "", contact: "", phone: "", city: "", businessLicense: "", tobaccoLicense: "" });
+  const [form, setForm] = useState({ store: "", contact: "", phone: "", address: "", city: "", state: "", zip: "", businessLicense: "", tobaccoLicense: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -69,9 +69,14 @@ export default function Onboarding() {
             <input type="tel" value={form.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" />
           </label>
           <label className="field">
-            <span>City</span>
-            <input value={form.city} onChange={set("city")} placeholder="Cincinnati" />
+            <span>Street address</span>
+            <input value={form.address} onChange={set("address")} placeholder="123 Reading Rd" autoComplete="address-line1" />
           </label>
+          <div className="field-row">
+            <label className="field"><span>City</span><input value={form.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" /></label>
+            <label className="field"><span>State</span><input value={form.state} onChange={set("state")} placeholder="OH" maxLength={2} autoComplete="address-level1" /></label>
+            <label className="field"><span>ZIP</span><input value={form.zip} onChange={set("zip")} placeholder="45202" inputMode="numeric" autoComplete="postal-code" /></label>
+          </div>
           <label className="field">
             <span>Business license #</span>
             <input value={form.businessLicense} onChange={set("businessLicense")} placeholder="Speeds up verification" />
