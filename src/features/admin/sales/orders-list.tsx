@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrders, type Order, type OrderStatus } from "@/lib/store";
+import { downloadCsv } from "@/lib/csv";
 import { Plus, Search } from "@/components/Icons";
 import { Head, tableEmpty, m, k, timeAgo } from "../shared";
 import { KpiCard, DataTable, Badge, Button, EmptyState, ListToolbar, Skeleton, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
@@ -37,6 +38,14 @@ export function OrdersTab() {
   }, [orders, filter, query, sort]);
   const rev = orders.reduce((s, o) => s + o.total, 0);
 
+  const exportOrders = () => {
+    downloadCsv(
+      `orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Order", "Store", "Placed", "Cases", "Subtotal", "Total", "Payment", "Status", "Ship to"],
+      rows.map((o) => [o.ref, o.store, new Date(o.placed).toLocaleDateString(), o.cases, o.total, ov(o).grand, ov(o).paymentStatus, o.status, o.shipping || o.store]),
+    );
+  };
+
   const STATUS_OPTS: ToolbarOption[] = [
     { value: "all", label: "All statuses" },
     ...O_STATUSES.map((s) => ({ value: s, label: s })),
@@ -64,7 +73,10 @@ export function OrdersTab() {
   return (
     <>
       <Head title="Orders" sub="Orders from the customer portal. Open any order for the full receipt">
-        <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}><Plus /> New order</Button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Button variant="ghost" size="sm" onClick={exportOrders} disabled={!rows.length}>Export CSV</Button>
+          <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}><Plus /> New order</Button>
+        </div>
       </Head>
       <div className="kpis">
         <KpiCard tone="accent" label="All-time sales" value={k(rev)} foot={`${orders.length} orders`} />

@@ -10,6 +10,7 @@ import { Search, Inbox, Plus } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, fmtDate, type Tab, type Flash } from "../shared";
+import { downloadCsv } from "@/lib/csv";
 import { Button, Badge, Breadcrumb, DataTable, Fab, FieldHelp, ListToolbar, Menu, ImageUpload, Switch, type Column, type BadgeTone, type ToolbarOption } from "@/components/ui";
 
 /** Stock level → Badge tone. */
@@ -234,10 +235,19 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
     { value: "newest", label: "Newest" },
   ];
 
+  const exportProducts = () => {
+    downloadCsv(
+      `products-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Name", "SKU", "Barcode", "Category", "Cost", "Price", "MRP", "Stock"],
+      rows.map((p) => [p.name, p.sku ?? "", p.gtin ?? "", deptName(p.dep), p.cost ?? "", p.price, p.mrp ?? "", p.stock]),
+    );
+  };
+
   return (
     <>
       <Head title="Products" sub="SKU master data, the foundation everything else depends on">
         <div style={{ display: "flex", gap: 10 }}>
+          <Button variant="ghost" size="sm" onClick={exportProducts} disabled={!rows.length}>Export CSV</Button>
           <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>
           <Link className="btn btn-primary btn-sm" href="/admin/products/new"><Plus /> Onboard product</Link>
         </div>
