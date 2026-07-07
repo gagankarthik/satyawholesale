@@ -1101,7 +1101,7 @@ a.fg-inner:hover { background: var(--paper); }
 
 /* ===== multi-step checkout ===== */
 /* NOTE: use .checkoutpage (not .checkout) — .checkout is a 2-col grid used elsewhere. */
-.checkoutpage { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 1080px; margin-inline: auto; }
+.checkoutpage { display: flex; flex-direction: column; gap: 0px; width: 100%; max-width: 1080px; margin-inline: auto; }
 .cartpage { width: 100%; max-width: 1080px; margin-inline: auto; }
 .checkoutpage .cartitems { display: flex; flex-direction: column; gap: 12px; }
 

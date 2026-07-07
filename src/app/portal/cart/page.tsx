@@ -181,7 +181,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="checkoutpage rise-in">
+    <div className="rise-in">
       {/* step indicator */}
       <ol className="steps" aria-label="Checkout steps">
         {STEPS.map((label, i) => (
