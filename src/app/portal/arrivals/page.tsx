@@ -9,7 +9,7 @@ import ProductCard from "../ProductCard";
 import PosterCards from "../PosterCards";
 
 export default function PortalArrivals() {
-  const { products, ready } = usePortal();
+  const { products, ready, error, reload } = usePortal();
 
   const list = useMemo(() => {
     // products the admin flagged for New arrivals; fall back to the most recent SKUs
@@ -30,6 +30,13 @@ export default function PortalArrivals() {
         </div>
         {list.length ? (
           <div className="pgrid">{list.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+        ) : error ? (
+          <EmptyState
+            icon={<Sparkles />}
+            title="Couldn't load new arrivals"
+            description="Something went wrong loading what just landed. Please try again."
+            action={<Button variant="primary" onClick={reload}>Retry</Button>}
+          />
         ) : (
           <EmptyState
             icon={<Sparkles />}

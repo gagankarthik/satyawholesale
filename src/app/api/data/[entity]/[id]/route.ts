@@ -3,6 +3,7 @@ import { getItem, patchItem, deleteItem, type Row } from "@/server/db";
 import { ENTITIES, canRead, canWrite, ownsRow } from "@/server/entities";
 import { readJson, isValidId, guardResponse } from "@/server/guard";
 import { sanitizeBuyerOrderPatch } from "@/server/orders";
+import { logError } from "@/server/log";
 
 /* GET/PATCH/DELETE /api/data/<entity>/<id> */
 
@@ -23,15 +24,20 @@ async function load(req: Request, ctx: Ctx, mode: "read" | "write") {
 }
 
 export async function GET(req: Request, ctx: Ctx) {
-  const r = await load(req, ctx, "read");
-  if ("fail" in r) return r.fail;
-  return Response.json({ item: r.row });
+  try {
+    const r = await load(req, ctx, "read");
+    if ("fail" in r) return r.fail;
+    return Response.json({ item: r.row });
+  } catch (e) {
+    logError("data.GET.id", e);
+    return Response.json({ error: "Couldn't load that record." }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: Request, ctx: Ctx) {
-  const r = await load(req, ctx, "write");
-  if ("fail" in r) return r.fail;
   try {
+    const r = await load(req, ctx, "write");
+    if ("fail" in r) return r.fail;
     let patch = await readJson<Row>(req);
 
     if (!isAdmin(r.user)) {
@@ -47,15 +53,23 @@ export async function PATCH(req: Request, ctx: Ctx) {
     const item = await patchItem(r.entity, r.id, patch);
     return Response.json({ item });
   } catch (e) {
-    return guardResponse(e) ?? Response.json({ error: "Couldn't save those changes." }, { status: 500 });
+    const g = guardResponse(e);
+    if (g) return g;
+    logError("data.PATCH.id", e);
+    return Response.json({ error: "Couldn't save those changes." }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request, ctx: Ctx) {
-  const r = await load(req, ctx, "write");
-  if ("fail" in r) return r.fail;
-  // Deletes are destructive and audit-sensitive — admin only. Buyers cancel.
-  if (!isAdmin(r.user)) return forbidden();
-  await deleteItem(r.entity, r.id);
-  return Response.json({ ok: true });
+  try {
+    const r = await load(req, ctx, "write");
+    if ("fail" in r) return r.fail;
+    // Deletes are destructive and audit-sensitive — admin only. Buyers cancel.
+    if (!isAdmin(r.user)) return forbidden();
+    await deleteItem(r.entity, r.id);
+    return Response.json({ ok: true });
+  } catch (e) {
+    logError("data.DELETE.id", e);
+    return Response.json({ error: "Couldn't delete that record." }, { status: 500 });
+  }
 }

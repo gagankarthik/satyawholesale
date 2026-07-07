@@ -34,8 +34,17 @@ async function load(entity: string, force = false) {
     e.items = await apiList(entity);
     e.error = null;
   } catch (err) {
-    e.error = (err as Error).message;
-    // 401/403 (signed out, or a buyer touching admin data) resolves to empty
+    // 401/403 (signed out, or a buyer touching admin-only data) is expected and
+    // resolves to an empty list with no error banner. Anything else is a real
+    // failure: keep it in `error` so the UI can offer a retry, and log it so it
+    // isn't a silent blank screen.
+    const status = (err as { status?: number }).status;
+    if (status === 401 || status === 403) {
+      e.error = null;
+    } else {
+      e.error = (err as Error).message;
+      console.error(`[data:${entity}] load failed`, err);
+    }
   } finally {
     e.ready = true;
     e.loading = false;

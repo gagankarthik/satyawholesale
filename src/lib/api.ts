@@ -16,7 +16,11 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(body?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(body?.error || `Request failed (${res.status})`) as Error & { status?: number };
+    err.status = res.status; // let callers distinguish expected 401/403 from real failures
+    throw err;
+  }
   return body;
 }
 

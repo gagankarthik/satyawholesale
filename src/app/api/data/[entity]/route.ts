@@ -3,6 +3,7 @@ import { listByType, putItem, createItem, getItem, decrementField, nextMemberNo,
 import { ENTITIES, canRead, canWrite, scopeRows } from "@/server/entities";
 import { readJson, isValidId, guardResponse, rateLimit, GuardError } from "@/server/guard";
 import { sanitizeBuyerOrder, freshOrderRef } from "@/server/orders";
+import { logError } from "@/server/log";
 
 /** A buyer whose account has been frozen or blocked may not place orders. */
 async function orderingBlocked(user: AuthUser): Promise<boolean> {
@@ -23,8 +24,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ entity: string 
   const user = await getAuth(req);
   if (!user) return unauthorized();
   if (!canRead(rule, user)) return forbidden();
-  const rows = await listByType(entity);
-  return Response.json({ items: scopeRows(rule, user, rows) });
+  try {
+    const rows = await listByType(entity);
+    return Response.json({ items: scopeRows(rule, user, rows) });
+  } catch (e) {
+    logError("data.GET", e, { entity });
+    return Response.json({ error: "Couldn't load that data." }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ entity: string }> }) {
@@ -80,7 +86,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ entity: string
     await putItem(entity, String(id), body);
     return Response.json({ item: body }, { status: 201 });
   } catch (e) {
-    return guardResponse(e) ?? Response.json({ error: "Couldn't save that record." }, { status: 500 });
+    const g = guardResponse(e);
+    if (g) return g;
+    logError("data.POST", e, { entity });
+    return Response.json({ error: "Couldn't save that record." }, { status: 500 });
   }
 }
 

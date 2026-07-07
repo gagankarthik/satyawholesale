@@ -9,7 +9,7 @@ import ProductCard from "../ProductCard";
 import PosterCards from "../PosterCards";
 
 export default function PortalOffers() {
-  const { products, ready } = usePortal();
+  const { products, ready, error, reload } = usePortal();
 
   const deals = useMemo(() => {
     // products the admin flagged for Offers; fall back to popular SKUs
@@ -30,6 +30,13 @@ export default function PortalOffers() {
         </div>
         {deals.length ? (
           <div className="pgrid">{deals.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+        ) : error ? (
+          <EmptyState
+            icon={<Tag />}
+            title="Couldn't load offers"
+            description="Something went wrong loading today's deals. Please try again."
+            action={<Button variant="primary" onClick={reload}>Retry</Button>}
+          />
         ) : (
           <EmptyState
             icon={<Tag />}
