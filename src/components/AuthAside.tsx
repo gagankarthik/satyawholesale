@@ -7,15 +7,15 @@ import Brand from "@/components/Brand";
 export default function AuthAside() {
   return (
     <aside className="auth-aside">
-      <div className="auth-aside-body">
+      <div className="auth-aside-top">
         <Brand dark height={46} />
         <p className="auth-aside-tag">Licensed wholesale for Greater Cincinnati c-stores. Order by the case, 21+.</p>
-        <nav className="auth-aside-links" aria-label="Legal">
-          <Link href="/terms">Terms</Link>
-          <span aria-hidden="true">·</span>
-          <Link href="/privacy">Privacy</Link>
-        </nav>
       </div>
+      <nav className="auth-aside-links" aria-label="Legal">
+        <Link href="/terms">Terms &amp; Conditions</Link>
+        <span aria-hidden="true">·</span>
+        <Link href="/privacy">Privacy Policy</Link>
+      </nav>
     </aside>
   );
 }
