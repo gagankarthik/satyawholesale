@@ -133,6 +133,9 @@ export const Package = ({ className }: P) => (
 export const Sparkles = ({ className }: P) => (
   <svg {...base} className={className}><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6L12 4ZM19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" /></svg>
 );
+export const Coin = ({ className }: P) => (
+  <svg {...base} className={className}><circle cx="12" cy="12" r="9" /><path d="M12 7.4v9.2M14.4 9.2c0-1-1.1-1.7-2.4-1.7s-2.4.7-2.4 1.6 1.1 1.5 2.4 1.5 2.4.6 2.4 1.6-1.1 1.7-2.4 1.7-2.4-.7-2.4-1.7" /></svg>
+);
 export const Home = ({ className }: P) => (
   <svg {...base} className={className}><path d="M3 10.4 12 3l9 7.4" /><path d="M5 9v10.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9" /><path d="M9.5 20.5V14h5v6.5" /></svg>
 );

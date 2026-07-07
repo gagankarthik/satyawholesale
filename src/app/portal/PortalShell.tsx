@@ -11,7 +11,7 @@ import {
 import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
 import { toast } from "sonner";
-import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag } from "@/components/Icons";
+import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag, Coin } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
@@ -286,7 +286,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               title="Reward points"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, fontSize: 13, padding: "5px 11px", borderRadius: 999, background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)", whiteSpace: "nowrap" }}
             >
-              <Sparkles /> 0 pts
+              <Coin /> 0 pts
             </span>
             <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">{initials}</span>}>
               <div className="menu-head"><div className="mh-nm">{STORE || "Customer account"}</div><div className="mh-em">{email}</div></div>

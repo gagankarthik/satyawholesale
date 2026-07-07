@@ -7,10 +7,11 @@ import { useSession, refreshSession } from "@/lib/auth";
 import { onboardAccount } from "@/lib/wms";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
+import AuthAside from "@/components/AuthAside";
 
 export default function Onboarding() {
   const router = useRouter();
-  const { ready, signedIn, isAdmin, isBuyer, email } = useSession();
+  const { ready, signedIn, isAdmin, isBuyer } = useSession();
   const [form, setForm] = useState({ store: "", contact: "", phone: "", city: "", businessLicense: "", tobaccoLicense: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,24 +46,10 @@ export default function Onboarding() {
   return (
     <div id="main" role="main" className="auth">
       <div className="auth-grid rise-in">
-        <aside className="auth-manifest">
-          <div className="mf-top">
-            <Brand dark height={32} />
-            <span className="mf-ref mono">STEP 2</span>
-          </div>
-          <div className="mf-lead">
-            <span className="auth-eyebrow mono">Onboarding</span>
-            <h2>Tell us about<br />your store.</h2>
-            <p>A few details about your business so we can set up your customer account. Your login is {email}.</p>
-          </div>
-          <dl className="mf-specs mono">
-            <div><dt>Next</dt><dd>Full catalog</dd></div>
-            <div><dt>Pricing</dt><dd className="mf-hi">Live case pack</dd></div>
-          </dl>
-          <span className="mf-stamp" aria-hidden="true"><b>21+</b><i>Wholesale</i></span>
-        </aside>
+        <AuthAside />
 
         <form className="auth-form" onSubmit={submit}>
+          <Link href="/" className="auth-mini-brand" aria-label="Satya Wholesale home"><Brand height={30} /></Link>
           <div className="auth-head">
             <span className="auth-tag mono">Almost there</span>
             <h1 className="auth-h">Complete your account</h1>
