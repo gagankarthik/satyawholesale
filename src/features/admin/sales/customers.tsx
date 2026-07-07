@@ -218,9 +218,18 @@ export function CustomersTab({ flash }: { flash: Flash }) {
         items={[
           { label: "Open account", onSelect: () => setOpenId(c.id) },
           ...(c.status !== "Active" ? [{ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } }] : []),
+          // Freeze / Unfreeze — a blocked account can't be frozen, only unblocked.
           ...(c.status === "Frozen"
             ? [{ label: "Unfreeze account", onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } }]
-            : [{ label: "Freeze account", onSelect: async () => { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } }]),
+            : c.status !== "Blocked"
+              ? [{ label: "Freeze account", onSelect: async () => { if (await confirm({ title: "Freeze account?", message: `${c.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } } }]
+              : []),
+          // Block / Unblock
+          ...(c.status === "Blocked"
+            ? [{ label: "Unblock account", onSelect: async () => { await setAccountStatus(c.id, "unblock"); refresh(); flash("Account reactivated"); } }]
+            : [{ label: "Block account", danger: true, onSelect: async () => { if (await confirm({ title: "Block account?", message: `${c.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) { await setAccountStatus(c.id, "block"); refresh(); flash("Account blocked"); } } }]),
+          { label: "Edit details", onSelect: () => { setDraft({ store: c.store, contact: c.contact, email: c.email, phone: c.phone || "", address: c.address || "", terms: c.terms || "Net 15" }); setOpenId(c.id); setEdit(true); } },
+          { label: "Delete account", danger: true, onSelect: async () => { if (await confirm({ title: "Delete account?", message: `${c.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(c.id); flash("Account deleted"); } } },
         ]}
       />
     ) },
