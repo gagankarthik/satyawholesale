@@ -72,7 +72,7 @@ export function OrdersTab() {
 
   return (
     <>
-      <Head title="Orders" sub="Orders from the customer portal. Open any order for the full receipt">
+      <Head title="Orders">
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" size="sm" onClick={exportOrders} disabled={!rows.length}>Export CSV</Button>
           <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}><Plus /> New order</Button>

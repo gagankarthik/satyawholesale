@@ -52,7 +52,7 @@ export function AdminPOCreate({ flash }: { flash: Flash }) {
     <>
       <Breadcrumb items={[{ label: "Purchase orders", href: "/admin/purchaseorder" }, { label: "New PO" }]} />
       <header className="adminbar">
-        <div><h1>New purchase order</h1><p>Draft a PO to a supplier, then approve and send</p></div>
+        <div><h1>New purchase order</h1></div>
       </header>
 
       <div className="detail-grid">

@@ -267,7 +267,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Customer accounts" sub="Review applications, approve stores, then they order in the portal">
+      <Head title="Customer accounts">
         <PaymentTermsGuide />
         <Button variant="primary" size="sm" onClick={() => setInviting(true)}><Plus /> Invite account</Button>
       </Head>

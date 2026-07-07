@@ -55,13 +55,13 @@ export function POTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Purchase orders" sub={`Order stock from suppliers, then receive it to update inventory. Receiving tolerance ±${RECEIVE_TOLERANCE * 100}%`}>
+      <Head title="Purchase orders">
         <Button variant="primary" size="sm" iconLeft={<Plus />} onClick={() => router.push("/admin/purchaseorder/new")}>New PO</Button>
       </Head>
       <FlowHelp steps={PRODUCT_FLOW} active="po" title="Stock-in flow" />
       {Object.keys(suggestions).length > 0 && (
         <div className="panel" style={{ marginBottom: 18 }}>
-          <div className="panel-h"><h3>Reorder suggestions</h3><span className="hint">SKUs at/below reorder point, grouped by supplier</span></div>
+          <div className="panel-h"><h3>Reorder suggestions</h3></div>
           <div className="minirows">
             {Object.entries(suggestions).map(([sid, items]) => (
               <div className="minirow" key={sid}>

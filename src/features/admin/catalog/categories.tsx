@@ -23,7 +23,7 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Categories" sub="Department taxonomy & sub-categories used across products, ordering and reporting">
+      <Head title="Categories">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/categories/new")}><Plus /> New category</Button>
       </Head>
       <DataTable
@@ -102,7 +102,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
     <>
       <Breadcrumb items={[{ label: "Categories", href: "/admin/categories" }, { label: editing ? existing!.name : "New category" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? existing!.name : "New category"}</h1><p>{editing ? `${existing!.key} · ${products.filter((p) => p.dep === existing!.key).length} products` : "Create a department or sub-category"}</p></div>
+        <div><h1>{editing ? existing!.name : "New category"}</h1>{editing && <p>{`${existing!.key} · ${products.filter((p) => p.dep === existing!.key).length} products`}</p>}</div>
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}

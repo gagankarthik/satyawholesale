@@ -106,7 +106,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
         ? [{ label: "Products", href: "/admin/products" }, { label: existing!.name, href: backHref }, { label: "Edit" }]
         : [{ label: "Products", href: "/admin/products" }, { label: "Onboard" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? existing!.name : "Onboard a product"}</h1><p>{editing ? (existing!.sku?.trim() || "No item code") : "Add a SKU to the master catalog"}</p></div>
+        <div><h1>{editing ? existing!.name : "Onboard a product"}</h1>{editing && <p>{existing!.sku?.trim() || "No item code"}</p>}</div>
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
@@ -137,14 +137,14 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <label className="field"><span>Supplier <FieldHelp text="The vendor you buy this from. Links the product to purchase orders." /></span><select value={draft.supplierId} onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}><option value="">— none —</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
           </div>
 
-          <div className="panel-h" style={{ marginTop: 18 }}><h3>Pricing</h3><span className="hint">Cost, sell price and MRP</span></div>
+          <div className="panel-h" style={{ marginTop: 18 }}><h3>Pricing</h3></div>
           <div className="formgrid">
             <label className="field"><span>Unit cost ($) <FieldHelp text="Your landed cost per case. Drives margin and inventory value." /></span><input type="number" step="0.01" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} placeholder="0.00" /></label>
             <label className="field"><span>Unit price ($) * <FieldHelp text="The price customers pay per case in the portal." /></span><input type="number" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="0.00" required /></label>
             <label className="field"><span>MRP ($) <FieldHelp text="Manufacturer's suggested retail — shown for reference, not charged." /></span><input type="number" step="0.01" value={draft.mrp} onChange={(e) => setDraft({ ...draft, mrp: e.target.value })} placeholder="0.00" /></label>
           </div>
 
-          <div className="panel-h" style={{ marginTop: 18 }}><h3>Stock &amp; reorder</h3><span className="hint">Packaging and replenishment thresholds</span></div>
+          <div className="panel-h" style={{ marginTop: 18 }}><h3>Stock &amp; reorder</h3></div>
           <div className="formgrid">
             <label className="field"><span>Unit of measure <FieldHelp text="How this item is sold and counted (case, each, box…)." /></span><select value={draft.uom} onChange={(e) => setDraft({ ...draft, uom: e.target.value })}>{["case", "each", "box", "pack", "carton", "tray", "bag", "bottle", "can"].map((u) => <option key={u} value={u}>{u[0].toUpperCase() + u.slice(1)}</option>)}</select></label>
             <label className="field"><span>Eaches / case <FieldHelp text="How many individual units are inside one case." /></span><input type="number" value={draft.caseQty} onChange={(e) => setDraft({ ...draft, caseQty: e.target.value })} placeholder="10" /></label>
@@ -153,7 +153,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <label className="field"><span>On-hand (cases) <FieldHelp text="Current cases physically in the warehouse right now." /></span><input type="number" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} placeholder="0" /></label>
           </div>
 
-          <div className="panel-h" style={{ marginTop: 18 }}><h3>Storefront placement</h3><span className="hint">Where it appears in the portal</span></div>
+          <div className="panel-h" style={{ marginTop: 18 }}><h3>Storefront placement</h3></div>
           <div className="formgrid">
             <div className="field full">
               <div className="placetoggles">
@@ -245,7 +245,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
 
   return (
     <>
-      <Head title="Products" sub="SKU master data, the foundation everything else depends on">
+      <Head title="Products">
         <div style={{ display: "flex", gap: 10 }}>
           <Button variant="ghost" size="sm" onClick={exportProducts} disabled={!rows.length}>Export CSV</Button>
           <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>

@@ -30,7 +30,7 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Suppliers" sub="Vendor master: lead times, terms, accounts and delivery routes">
+      <Head title="Suppliers">
         <Button variant="primary" size="sm" onClick={() => router.push("/admin/suppliers/new")}><Plus /> Add supplier</Button>
       </Head>
       <ListToolbar
@@ -143,7 +143,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
         </div>
         <label className="field full"><span>What they distribute <FieldHelp text="Product categories this vendor supplies — helps match products to their POs." /></span><input value={d.categories} onChange={(e) => setD({ ...d, categories: e.target.value })} placeholder="Cigarettes, tobacco, cigars, candy, groceries" /></label>
       </div>
-      <div className="panel-h" style={{ marginTop: 18 }}><h3>Account &amp; delivery</h3><span className="hint">Our account with them + their route</span></div>
+      <div className="panel-h" style={{ marginTop: 18 }}><h3>Account &amp; delivery</h3></div>
       <div className="formgrid">
         <label className="field"><span>Account # <FieldHelp text="Your account number with this supplier, as printed on their invoices." /></span><input className="mono" value={d.accountNo} onChange={(e) => setD({ ...d, accountNo: e.target.value })} placeholder="904722" /></label>
         <label className="field"><span>Sales rep</span><input value={d.salesRep} onChange={(e) => setD({ ...d, salesRep: e.target.value })} /></label>
@@ -173,7 +173,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
     <>
       <Breadcrumb items={[{ label: "Suppliers", href: "/admin/suppliers" }, { label: editing ? existing!.name : "New supplier" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? existing!.name : "New supplier"}</h1><p>{editing ? `${existing!.id}${existing!.accountNo ? ` · account #${existing!.accountNo}` : ""}` : "Add a vendor to the master list"}</p></div>
+        <div><h1>{editing ? existing!.name : "New supplier"}</h1>{editing && <p>{`${existing!.id}${existing!.accountNo ? ` · account #${existing!.accountNo}` : ""}`}</p>}</div>
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}

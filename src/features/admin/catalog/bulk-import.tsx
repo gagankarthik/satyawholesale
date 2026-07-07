@@ -45,7 +45,7 @@ export function ImportTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Bulk import" sub="Validate-everything-first, then commit only clean rows">
+      <Head title="Bulk import">
         <button className="btn btn-ghost btn-sm" onClick={() => setText(csvTemplate())}>Load sample CSV</button>
       </Head>
 

@@ -51,10 +51,10 @@ export function tableEmpty(error: string | null, refresh: () => void, fallback: 
   );
 }
 
-export function Head({ title, sub, children }: { title: string; sub: string; children?: React.ReactNode }) {
+export function Head({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) {
   return (
     <header className="adminbar">
-      <div><h1>{title}</h1><p>{sub}</p></div>
+      <div><h1>{title}</h1>{sub && <p>{sub}</p>}</div>
       {children}
     </header>
   );

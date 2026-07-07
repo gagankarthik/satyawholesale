@@ -119,7 +119,7 @@ export function InventoryTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Stock ledger" sub="The running history of every stock change: receipts, picks, adjustments and transfers" />
+      <Head title="Stock ledger" />
       <FlowHelp steps={PRODUCT_FLOW} active="ledger" title="Stock-in flow" />
       <div className="panel" style={{ marginBottom: 18 }}>
         <div className="panel-h"><h3>Manual adjustment</h3></div>

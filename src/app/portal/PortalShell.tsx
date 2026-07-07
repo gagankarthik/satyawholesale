@@ -193,15 +193,11 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : seg === "profile" ? "Profile"
     : "Dashboard";
   const subtitle =
-    seg === "products" ? (dept === "all" ? "Browse the full catalog" : `${counts[dept] ?? 0} SKUs in ${catName(dept)}`)
-    : seg === "arrivals" ? "The latest products, freshly landed"
-    : seg === "offers" ? "Current deals and promotions"
+    isDash ? `Welcome back, ${STORE || "customer"}`
+    : seg === "products" ? (dept === "all" ? "" : `${counts[dept] ?? 0} SKUs in ${catName(dept)}`)
     : seg === "cart" ? (cases ? `${cases} case${cases !== 1 ? "s" : ""} ready to order` : "Your cart is empty")
     : seg === "orders" ? `${myOrders.length} order${myOrders.length !== 1 ? "s" : ""} on record`
-    : seg === "payments" ? "Invoices & account balance"
-    : seg === "addresses" ? "Saved delivery addresses"
-    : seg === "profile" ? "Your customer account"
-    : `Welcome back, ${STORE || "customer"}`;
+    : "";
 
   const navItem = (href: string, active: boolean, icon: React.ReactNode, label: string, badge?: number) => (
     <Link href={href} className={`sitem ${active ? "on" : ""}`} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
@@ -354,7 +350,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           </aside>
 
           <main id="main" className="pcontent">
-            {!isDetail && <div className="pagehead"><h1>{title}</h1><p>{subtitle}</p></div>}
+            {!isDetail && <div className="pagehead"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>}
             {children}
           </main>
         </div>

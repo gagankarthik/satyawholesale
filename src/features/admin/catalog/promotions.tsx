@@ -47,7 +47,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
     <>
       <Breadcrumb items={[{ label: "Promotions", href: "/admin/promotions" }, { label: editing ? (existing!.title || "Untitled") : "New promotion" }]} />
       <header className="adminbar">
-        <div><h1>{editing ? (existing!.title || "Untitled promotion") : "New promotion"}</h1><p>{editing ? existing!.id : "Create a banner for the buyer dashboard carousel"}</p></div>
+        <div><h1>{editing ? (existing!.title || "Untitled promotion") : "New promotion"}</h1>{editing && <p>{existing!.id}</p>}</div>
         {editing && (
           <Menu
             label={`More actions for ${existing!.title || "this promotion"}`}
@@ -57,7 +57,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
       </header>
       <div className="setpane">
         <form className="panel anim-in" onSubmit={save}>
-          <div className="panel-h"><h3>{editing ? "Edit promotion" : "Promotion details"}</h3><span className="hint">Appears on the buyer dashboard carousel while published.</span></div>
+          <div className="panel-h"><h3>{editing ? "Edit promotion" : "Promotion details"}</h3></div>
           <div className="formgrid">
             <label className="field"><span>Tag</span><input value={d.tag} onChange={(e) => setD({ ...d, tag: e.target.value })} placeholder="New arrivals" /></label>
             <label className="field"><span>Title <FieldHelp text="Optional. Overlaid on the poster in the carousel. Leave blank to show the poster image only." /></span><input value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} placeholder="Fresh vapor & disposables" /></label>
@@ -85,7 +85,7 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Promotions" sub="Image banners shown on the buyer dashboard in the order portal">
+      <Head title="Promotions">
         <Link className="btn btn-primary btn-sm" href="/admin/promotions/new">+ New promotion</Link>
       </Head>
       {!ready ? (

@@ -35,7 +35,7 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Warehouse" sub="Zones → aisles → racks → bins, with live capacity">
+      <Head title="Warehouse">
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add bin</button>
       </Head>
       <div className="kpis">

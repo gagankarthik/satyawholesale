@@ -122,7 +122,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
 
   return (
     <>
-      <Head title="Dashboard" sub={`Sales analytics · ${CONTACT.city}`}>
+      <Head title="Dashboard">
         <div className="rangebar">
           <Dropdown
             align="end"

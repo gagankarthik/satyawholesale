@@ -76,7 +76,7 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
     <>
       <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: "New order" }]} />
       <header className="adminbar">
-        <div><h1>New order</h1><p>Create an order on behalf of a customer account</p></div>
+        <div><h1>New order</h1></div>
       </header>
 
       <div className="detail-grid">

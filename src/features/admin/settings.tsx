@@ -55,7 +55,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Users & roles" sub="Staff access and scanner-device assignment">
+      <Head title="Users & roles">
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
       </Head>
       <ListToolbar
@@ -162,7 +162,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Settings" sub="Company profile, tax and warehouse policies" />
+      <Head title="Settings" />
       <Tabs
         ariaLabel="Settings sections"
         value={tab}
@@ -186,7 +186,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
 
         {tab === "tax" && (
           <div className="panel anim-in" key="tax">
-            <div className="panel-h"><h3>Tax &amp; invoicing</h3><span className="hint">Applied to orders that aren&apos;t resale-exempt</span></div>
+            <div className="panel-h"><h3>Tax &amp; invoicing</h3></div>
             <form className="formgrid" onSubmit={saveTax}>
               <label className="field"><span>Sales tax rate (%) <FieldHelp text="Applied to taxable subtotals on customer orders. Resale-exempt customers are not charged." /></span>
                 <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
@@ -216,7 +216,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
         {tab === "policies" && (
           <div key="policies">
             <div className="panel anim-in" style={{ marginBottom: 18 }}>
-              <div className="panel-h"><h3>Customer ordering &amp; delivery</h3><span className="hint">Applied at buyer checkout and enforced server-side</span></div>
+              <div className="panel-h"><h3>Customer ordering &amp; delivery</h3></div>
               <form className="formgrid" onSubmit={savePolicies}>
                 <label className="field"><span>Order minimum ($) <FieldHelp text="Smallest order subtotal a customer can check out with. Set 0 for no minimum." /></span>
                   <input type="number" step="0.01" min={0} value={orderMin} onChange={(e) => setOrderMin(e.target.value)} placeholder="0" />
@@ -254,7 +254,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
 export function ComingSoon() {
   return (
     <>
-      <Head title="POS sync" sub="Point-of-sale integration" />
+      <Head title="POS sync" />
       <div className="comingsoon">
         <div className="cs-badge mono">COMING SOON</div>
         <h2>Two-way POS integration</h2>

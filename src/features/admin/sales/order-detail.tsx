@@ -161,7 +161,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
       <div className="detail-grid">
         <div className="detail-main">
           <div className="panel anim-in">
-            <div className="panel-h"><h3>Fulfilment status</h3><span className="hint">Drives what the customer sees</span></div>
+            <div className="panel-h"><h3>Fulfilment status</h3></div>
             <OrderTracker status={cur.status} />
           </div>
           <div className="panel anim-in">

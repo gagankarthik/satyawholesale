@@ -190,7 +190,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
       <div className="detail-grid">
         <div className="detail-main">
           <div className="panel">
-            <div className="panel-h"><h3>Three-way match</h3><span className="hint">PO ↔ receipt ↔ invoice</span></div>
+            <div className="panel-h"><h3>Three-way match</h3></div>
             <div className="match3">
               <div className="m3"><span>Ordered</span><b>{match.ordered} cs · {m(match.poTotal)}</b></div>
               <div className="m3"><span>Received</span><b>{match.received} cs</b></div>
@@ -323,7 +323,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
 
           {!editing && recap.length > 1 && (
             <div className="panel">
-              <div className="panel-h"><h3>Category recap</h3><span className="hint">Lines · units · cost, the way supplier invoices summarize it</span></div>
+              <div className="panel-h"><h3>Category recap</h3></div>
               <div className="tablewrap">
                 <table className="invtable">
                   <thead><tr><th>Category</th><th className="r">Lines</th><th className="r">Units</th><th className="r">Cost</th></tr></thead>
@@ -441,7 +441,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
           )}
           {!editing && sup && (
             <div className="panel">
-              <div className="panel-h"><h3>Supplier</h3><span className="hint">From the vendor master</span></div>
+              <div className="panel-h"><h3>Supplier</h3></div>
               <div className="kvs">
                 {sup.accountNo && <div className="kv2"><span>Our account #</span><b className="mono">{sup.accountNo}</b></div>}
                 <div className="kv2"><span>Terms</span><b>{sup.terms}</b></div>
