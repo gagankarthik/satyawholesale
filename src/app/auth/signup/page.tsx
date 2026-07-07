@@ -8,6 +8,7 @@ import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
 import { Arrow, ArrowLeft } from "@/components/Icons";
+import { PasswordChecklist, passwordValid } from "@/components/PasswordChecklist";
 
 export default function SignUp() {
   const router = useRouter();
@@ -68,7 +69,6 @@ export default function SignUp() {
             <div className="auth-head">
               <span className="auth-tag mono">Get started</span>
               <h1 className="auth-h">Create your account</h1>
-              <p className="auth-sub">Use your store email. You will verify it with a code on the next step.</p>
             </div>
             <label className="field">
               <span>Work email</span>
@@ -78,9 +78,9 @@ export default function SignUp() {
               <span>Password</span>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={10} required />
             </label>
-            <p className="auth-hint mono">10+ characters &middot; upper and lower case &middot; a number</p>
+            <PasswordChecklist value={password} />
             {error && <Alert tone="danger">{error}</Alert>}
-            <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+            <Button variant="primary" type="submit" fullWidth loading={busy} disabled={!passwordValid(password)} iconRight={<Arrow />}>
               {busy ? "Creating account..." : "Create account"}
             </Button>
             <div className="auth-alt">

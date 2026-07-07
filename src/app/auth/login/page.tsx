@@ -9,6 +9,7 @@ import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
 import { Arrow, ArrowLeft } from "@/components/Icons";
+import { PasswordChecklist, passwordValid } from "@/components/PasswordChecklist";
 
 export default function Login() {
   const router = useRouter();
@@ -85,13 +86,13 @@ export default function Login() {
                 <span>New password</span>
                 <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" minLength={10} required autoFocus />
               </label>
-              <p className="auth-hint mono">10+ characters &middot; upper and lower case &middot; a number</p>
+              <PasswordChecklist value={newPw} />
             </>
           )}
 
           {error && <Alert tone="danger">{error}</Alert>}
 
-          <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
+          <Button variant="primary" type="submit" fullWidth loading={busy} disabled={step === "newpassword" && !passwordValid(newPw)} iconRight={<Arrow />}>
             {busy ? "Signing in..." : step === "signin" ? "Enter order portal" : "Save password & sign in"}
           </Button>
 
