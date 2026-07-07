@@ -33,7 +33,7 @@ export default function Header() {
           ) : (
             <>
               <Link className="btn btn-ghost btn-sm" href="/auth/login">Login</Link>
-              <Link className="btn btn-primary btn-sm" href="/signup">Open an account <Arrow /></Link>
+              <Link className="btn btn-primary btn-sm" href="/auth/signup">Open an account <Arrow /></Link>
             </>
           )}
           <button className="burger" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
@@ -56,7 +56,7 @@ export default function Header() {
           ) : (
             <>
               <Link href="/auth/login" onClick={close}>Login <Arrow /></Link>
-              <Link className="btn btn-primary" href="/signup" onClick={close}>Open an account <Arrow /></Link>
+              <Link className="btn btn-primary" href="/auth/signup" onClick={close}>Open an account <Arrow /></Link>
             </>
           )}
         </div>

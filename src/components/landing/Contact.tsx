@@ -57,7 +57,7 @@ export default function Contact() {
           </div>
           <div className="contact-card reveal">
             <h3>Send us a message</h3>
-            <p>We reply the same business day. Looking to open an account instead? <Link href="/signup" style={{ fontWeight: 600, color: "var(--signal-text)" }}>Create your account</Link>.</p>
+            <p>We reply the same business day. Looking to open an account instead? <Link href="/auth/signup" style={{ fontWeight: 600, color: "var(--signal-text)" }}>Create your account</Link>.</p>
             {sent ? (
               <div className="apply-done" role="status">
                 <div className="modal-check success-pop"><Check /></div>

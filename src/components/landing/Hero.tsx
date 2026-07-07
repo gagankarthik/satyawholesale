@@ -38,7 +38,7 @@ export default function Hero() {
             Shop the floor yourself or get delivery to your store.
           </p>
           <div className="hero-actions reveal">
-            <Link className="btn btn-primary" href="/signup">Open a customer account <Arrow /></Link>
+            <Link className="btn btn-primary" href="/auth/signup">Open a customer account <Arrow /></Link>
             <a className="btn btn-light" href="#contact">Contact sales</a>
           </div>
         </div>

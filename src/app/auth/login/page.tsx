@@ -96,7 +96,7 @@ export default function Login() {
           </Button>
 
           <div className="auth-alt">
-            No account yet? <Link href="/signup">Create your account <Arrow /></Link>
+            No account yet? <Link href="/auth/signup">Create your account <Arrow /></Link>
           </div>
         </form>
       </div>

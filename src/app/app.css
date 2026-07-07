@@ -349,20 +349,13 @@
    ORDER PORTAL
    ========================================================= */
 /* ===== Auth: the order desk ===== */
-.auth {
-  min-height: 100vh; display: grid; place-items: center; padding: 40px 20px; position: relative;
-  background:
-    radial-gradient(720px 460px at 82% 6%, rgba(242,106,27,.16), transparent 60%),
-    radial-gradient(640px 440px at 8% 104%, rgba(28,38,74,.6), transparent 60%),
-    #0d1226;
-}
+.auth { min-height: 100dvh; display: grid; padding: 0; position: relative; background: var(--card); }
 .auth-back { position: absolute; top: 24px; left: 26px; font-size: 11.5px; color: rgba(255,255,255,.6); letter-spacing: .5px; z-index: 2; }
 .auth-back:hover { color: #fff; }
 
 .auth-grid {
-  display: grid; grid-template-columns: 1fr 1fr; width: min(960px, 100%);
-  background: var(--card); border-radius: 18px; overflow: hidden;
-  box-shadow: 0 30px 80px -30px rgba(4,8,22,.75), 0 0 0 1px rgba(255,255,255,.05);
+  display: grid; grid-template-columns: 1fr 1fr; width: 100%; min-height: 100dvh;
+  background: var(--card);
 }
 
 /* left panel: logo + legal links */
@@ -381,8 +374,9 @@
 .auth-aside-links a:hover { color: #fff; text-decoration: underline; }
 .auth-aside-links span { color: rgba(255,255,255,.3); }
 
-/* right panel: form */
-.auth-form { padding: 46px 44px; display: flex; flex-direction: column; gap: 16px; background: var(--card); }
+/* right panel: form — vertically centered, content capped for readability */
+.auth-form { padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; gap: 16px; background: var(--card); }
+.auth-form > * { width: 100%; max-width: 430px; margin-left: auto; margin-right: auto; }
 .auth-mini-brand { display: none; }
 .auth-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
 .auth-tag { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--signal-text); }
@@ -1290,10 +1284,13 @@ a.fg-inner:hover { background: var(--paper); }
   .side .snav, .aside-dark .anav, .aside-dark .anav.scroll { flex-direction: column; overflow: visible; flex: 1 1 auto; gap: 3px; }
   .sgroup { display: block; }
   .acct { margin-top: 14px; }
-  .auth-grid { grid-template-columns: 1fr; width: min(440px, 100%); }
+  .auth-grid { grid-template-columns: 1fr; width: 100%; }
   .auth-aside { display: none; }
   .auth-mini-brand { display: inline-flex; margin-bottom: 8px; }
-  .auth-form { padding: 34px 24px; }
+  .auth-form { padding: 40px 22px; }
+  /* no dark aside behind it on mobile — darken so it stays visible on the form */
+  .auth-back { color: var(--slate); }
+  .auth-back:hover { color: var(--ink); }
   .kpis { grid-template-columns: 1fr 1fr; }
   .formgrid { grid-template-columns: 1fr; }
   .formgrid .field-row { grid-template-columns: 1fr; }

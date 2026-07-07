@@ -34,7 +34,7 @@ export default function AccountGate() {
                 </div>
               ))}
             </div>
-            <Link className="btn btn-primary" href="/signup">Open a customer account <Arrow /></Link>
+            <Link className="btn btn-primary" href="/auth/signup">Open a customer account <Arrow /></Link>
           </div>
         </div>
       </div>
