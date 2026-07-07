@@ -275,11 +275,19 @@ export default function PortalShell({ children }: { children: React.ReactNode })
               </div>
             )}
           </form>
-          <div className="topbar-actions">
+          <div className="topbar-actions" style={{ gap: 16 }}>
             <Link href="/portal/cart" className="cart-mini" aria-label={`Cart, ${cases} item${cases !== 1 ? "s" : ""}`}>
               <Bag />
               {cases > 0 && <span className="cart-count" key={cases}>{cases}</span>}
             </Link>
+            <span
+              className="points-mini"
+              aria-label="Reward points: 0"
+              title="Reward points"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, fontSize: 13, padding: "5px 11px", borderRadius: 999, background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)", whiteSpace: "nowrap" }}
+            >
+              <Sparkles /> 0 pts
+            </span>
             <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">{initials}</span>}>
               <div className="menu-head"><div className="mh-nm">{STORE || "Customer account"}</div><div className="mh-em">{email}</div></div>
               <Link href="/portal/profile" className="menu-item" role="menuitem"><User /> Profile</Link>
