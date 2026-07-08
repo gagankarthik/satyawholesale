@@ -67,7 +67,7 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
   const createBin = (e: React.FormEvent) => {
     e.preventDefault();
     const id = `${nb.zone}-${nb.aisle}-${nb.rack}-${nb.bin}`.toUpperCase();
-    if (locations.some((l) => l.id === id)) { flash("That bin already exists"); return; }
+    if (locations.some((l) => l.id === id)) { flash.error("That bin already exists"); return; }
     add({ id, zone: nb.zone.toUpperCase(), aisle: nb.aisle, rack: nb.rack, bin: nb.bin, capacity: Number(nb.capacity) || 0, used: Number(nb.used) || 0 });
     setNb(EMPTY_BIN); setAdding(false); flash("Bin added");
   };
@@ -157,7 +157,7 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
         <DialogFrame onClose={() => setAdding(false)} label="Add a bin">
           <form className="modal" onSubmit={createBin}>
             <h3>Add a bin</h3>
-            <p className="modalp">A bin ID is built from zone, aisle, rack and bin — e.g. A-01-R1-B1.</p>
+            <p className="modalp">A bin ID is built from zone, aisle, rack and bin, e.g. A-01-R1-B1.</p>
             <div className="formgrid">
               <label className="field"><span>Zone</span><input value={nb.zone} onChange={(e) => setNb({ ...nb, zone: e.target.value })} maxLength={2} /></label>
               <label className="field"><span>Aisle</span><input value={nb.aisle} onChange={(e) => setNb({ ...nb, aisle: e.target.value })} /></label>

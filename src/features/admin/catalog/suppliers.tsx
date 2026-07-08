@@ -112,7 +112,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!d.name.trim()) { flash("Name is required"); return; }
+    if (!d.name.trim()) { flash.error("Name is required"); return; }
     const patch = {
       name: d.name.trim(), contact: d.contact, email: d.email, phone: d.phone,
       leadDays: Number(d.leadDays) || 3, terms: d.terms, status: d.status,
@@ -141,13 +141,13 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
           <label className="field"><span>State</span><input value={d.state} onChange={(e) => setD({ ...d, state: e.target.value })} /></label>
           <label className="field"><span>ZIP</span><input inputMode="numeric" value={d.zip} onChange={(e) => setD({ ...d, zip: e.target.value })} /></label>
         </div>
-        <label className="field full"><span>What they distribute <FieldHelp text="Product categories this vendor supplies — helps match products to their POs." /></span><input value={d.categories} onChange={(e) => setD({ ...d, categories: e.target.value })} placeholder="Cigarettes, tobacco, cigars, candy, groceries" /></label>
+        <label className="field full"><span>What they distribute <FieldHelp text="Product categories this vendor supplies, helps match products to their POs." /></span><input value={d.categories} onChange={(e) => setD({ ...d, categories: e.target.value })} placeholder="Cigarettes, tobacco, cigars, candy, groceries" /></label>
       </div>
       <div className="panel-h" style={{ marginTop: 18 }}><h3>Account &amp; delivery</h3></div>
       <div className="formgrid">
         <label className="field"><span>Account # <FieldHelp text="Your account number with this supplier, as printed on their invoices." /></span><input className="mono" value={d.accountNo} onChange={(e) => setD({ ...d, accountNo: e.target.value })} placeholder="904722" /></label>
         <label className="field"><span>Sales rep</span><input value={d.salesRep} onChange={(e) => setD({ ...d, salesRep: e.target.value })} /></label>
-        <label className="field"><span>CSR <FieldHelp text="Customer service rep — your day-to-day contact at the supplier." /></span><input value={d.csr} onChange={(e) => setD({ ...d, csr: e.target.value })} /></label>
+        <label className="field"><span>CSR <FieldHelp text="Customer service rep, your day-to-day contact at the supplier." /></span><input value={d.csr} onChange={(e) => setD({ ...d, csr: e.target.value })} /></label>
         <label className="field"><span>Payment terms <FieldHelp text="How long you have to pay their invoices (Net 15/30, COD)." /></span>
           <select value={d.terms} onChange={(e) => setD({ ...d, terms: e.target.value })}>
             {SUPPLIER_TERMS.map((t) => <option key={t}>{t}</option>)}

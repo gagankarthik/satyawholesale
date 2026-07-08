@@ -79,7 +79,7 @@ export async function sanitizeBuyerOrder(body: Row, user: AuthUser, account: Row
 
   const policy = await orderPolicy();
   if (policy.orderMinimum > 0 && subtotal < policy.orderMinimum) {
-    throw new GuardError(`Orders have a $${policy.orderMinimum.toFixed(2)} minimum. Your cart is $${subtotal.toFixed(2)} — add a little more to check out.`);
+    throw new GuardError(`Orders have a $${policy.orderMinimum.toFixed(2)} minimum. Your cart is $${subtotal.toFixed(2)}. Add a little more to check out.`);
   }
 
   const rate = await taxRate();

@@ -36,7 +36,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!d.image) { flash("A banner image is required"); return; }
+    if (!d.image) { flash.error("A banner image is required"); return; }
     const patch = { tag: d.tag.trim() || "Featured", title: d.title.trim(), subtitle: d.subtitle.trim(), image: d.image, link: d.link.trim(), active: d.active };
     if (editing) { update(existing!.id, patch); flash("Promotion updated"); }
     else { add({ id: "PR-" + Math.floor(10 + Math.random() * 89), ...patch, created: Date.now() }); flash("Promotion published"); }

@@ -134,14 +134,14 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
                 <BarcodeScanner onDetect={(code) => setDraft((d) => ({ ...d, gtin: code }))} />
               </div>
             </div>
-            <label className="field"><span>Supplier <FieldHelp text="The vendor you buy this from. Links the product to purchase orders." /></span><select value={draft.supplierId} onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}><option value="">— none —</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+            <label className="field"><span>Supplier <FieldHelp text="The vendor you buy this from. Links the product to purchase orders." /></span><select value={draft.supplierId} onChange={(e) => setDraft({ ...draft, supplierId: e.target.value })}><option value="">None</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
           </div>
 
           <div className="panel-h" style={{ marginTop: 18 }}><h3>Pricing</h3></div>
           <div className="formgrid">
             <label className="field"><span>Unit cost ($) <FieldHelp text="Your landed cost per case. Drives margin and inventory value." /></span><input type="number" step="0.01" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} placeholder="0.00" /></label>
             <label className="field"><span>Unit price ($) * <FieldHelp text="The price customers pay per case in the portal." /></span><input type="number" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} placeholder="0.00" required /></label>
-            <label className="field"><span>MRP ($) <FieldHelp text="Manufacturer's suggested retail — shown for reference, not charged." /></span><input type="number" step="0.01" value={draft.mrp} onChange={(e) => setDraft({ ...draft, mrp: e.target.value })} placeholder="0.00" /></label>
+            <label className="field"><span>MRP ($) <FieldHelp text="Manufacturer's suggested retail, shown for reference, not charged." /></span><input type="number" step="0.01" value={draft.mrp} onChange={(e) => setDraft({ ...draft, mrp: e.target.value })} placeholder="0.00" /></label>
           </div>
 
           <div className="panel-h" style={{ marginTop: 18 }}><h3>Stock &amp; reorder</h3></div>
@@ -149,7 +149,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
             <label className="field"><span>Unit of measure <FieldHelp text="How this item is sold and counted (case, each, box…)." /></span><select value={draft.uom} onChange={(e) => setDraft({ ...draft, uom: e.target.value })}>{["case", "each", "box", "pack", "carton", "tray", "bag", "bottle", "can"].map((u) => <option key={u} value={u}>{u[0].toUpperCase() + u.slice(1)}</option>)}</select></label>
             <label className="field"><span>Eaches / case <FieldHelp text="How many individual units are inside one case." /></span><input type="number" value={draft.caseQty} onChange={(e) => setDraft({ ...draft, caseQty: e.target.value })} placeholder="10" /></label>
             <label className="field"><span>Reorder point <FieldHelp text="When on-hand cases fall to this number, the item is flagged to reorder." /></span><input type="number" value={draft.reorderPoint} onChange={(e) => setDraft({ ...draft, reorderPoint: e.target.value })} placeholder="15" /></label>
-            <label className="field"><span>Max stock <FieldHelp text="The most you want on hand — caps replenishment suggestions." /></span><input type="number" value={draft.maxStock} onChange={(e) => setDraft({ ...draft, maxStock: e.target.value })} placeholder="120" /></label>
+            <label className="field"><span>Max stock <FieldHelp text="The most you want on hand, caps replenishment suggestions." /></span><input type="number" value={draft.maxStock} onChange={(e) => setDraft({ ...draft, maxStock: e.target.value })} placeholder="120" /></label>
             <label className="field"><span>On-hand (cases) <FieldHelp text="Current cases physically in the warehouse right now." /></span><input type="number" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} placeholder="0" /></label>
           </div>
 

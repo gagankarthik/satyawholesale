@@ -10,7 +10,7 @@ import {
 } from "@/lib/store";
 import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
-import { toast } from "sonner";
+import { flash, type Flash } from "@/lib/flash";
 import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag, Coin, Arrow } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
@@ -49,7 +49,7 @@ interface PortalCtx {
   clearCart: () => void;
   reorder: (lines: { id: number; qty: number }[]) => void;
   cases: number;
-  flash: (m: string) => void;
+  flash: Flash;
 }
 
 const Ctx = createContext<PortalCtx | null>(null);
@@ -139,7 +139,6 @@ export default function PortalShell({ children }: { children: React.ReactNode })
 
   const goSearch = () => { setDept("all"); setSub(""); setSearchFocus(false); router.push("/portal/products"); };
 
-  const flash = (m: string) => toast(m);
   const add = (id: number) => {
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
     const p = products.find((x) => x.id === id);
@@ -167,13 +166,13 @@ export default function PortalShell({ children }: { children: React.ReactNode })
       .map((l) => ({ l, p: products.find((x) => x.id === l.id) }))
       .filter((x): x is { l: { id: number; qty: number }; p: NonNullable<typeof x.p> } => !!x.p && x.p.stock > 0);
     const missing = lines.length - avail.length;
-    if (!avail.length) { flash("Those items are no longer available"); return; }
+    if (!avail.length) { flash.error("Those items are no longer available"); return; }
     setCart((c) => {
       const next = { ...c };
       for (const { l, p } of avail) next[l.id] = Math.min((next[l.id] || 0) + l.qty, p.stock);
       return next;
     });
-    flash(`${avail.length} item${avail.length !== 1 ? "s" : ""} added to cart${missing ? `, ${missing} unavailable` : ""}`);
+    flash.info(`${avail.length} item${avail.length !== 1 ? "s" : ""} added to cart${missing ? `, ${missing} unavailable` : ""}`);
     router.push("/portal/cart");
   };
 

@@ -77,7 +77,7 @@ export function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    if (!f.type.startsWith("image/")) { flash("Choose a photo of the invoice"); return; }
+    if (!f.type.startsWith("image/")) { flash.error("Choose a photo of the invoice"); return; }
     const reader = new FileReader();
     reader.onload = async () => {
       const small = await downscale(String(reader.result));
@@ -88,7 +88,7 @@ export function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose
         const url = await uploadFile(blob, "image/jpeg", "attachments");
         onAttach(url, f.name); // persist the S3 URL on the PO, not the raw image
       } catch {
-        flash("Couldn't save the invoice photo, but you can still read its lines.");
+        flash.info("Couldn't save the invoice photo, but you can still read its lines.");
       }
     };
     reader.readAsDataURL(f);
@@ -97,7 +97,7 @@ export function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose
   const stage = (t: string) => {
     const parsed = parseInvoiceText(t, products);
     setRows(parsed);
-    if (!parsed.length) flash("No item lines found in that text");
+    if (!parsed.length) flash.error("No item lines found in that text");
   };
 
   const runOcr = async () => {
@@ -109,7 +109,7 @@ export function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose
       setText(data.text);
       stage(data.text);
     } catch {
-      flash("Couldn't read the photo. Paste the invoice lines instead");
+      flash.error("Couldn't read the photo. Paste the invoice lines instead");
     }
     setOcring(false);
   };
@@ -128,9 +128,9 @@ export function InvoiceImport({ products, existingSkus, onAdd, onAttach, onClose
       if (existingSkus.has(sku(p)) || lines.some((l) => l.sku === sku(p))) { skipped++; continue; }
       lines.push({ ...lineFromProduct(p, r.qty), cost: r.cost });
     }
-    if (!lines.length) { flash(skipped ? "Those products are already on the PO" : "Nothing matched to add"); return; }
+    if (!lines.length) { flash.info(skipped ? "Those products are already on the PO" : "Nothing matched to add"); return; }
     onAdd(lines);
-    flash(`${lines.length} line${lines.length > 1 ? "s" : ""} added from invoice${skipped ? `, ${skipped} already on the PO` : ""}`);
+    flash.info(`${lines.length} line${lines.length > 1 ? "s" : ""} added from invoice${skipped ? `, ${skipped} already on the PO` : ""}`);
     onClose();
   };
 

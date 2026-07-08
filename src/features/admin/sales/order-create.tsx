@@ -44,15 +44,15 @@ export function AdminOrderCreate({ flash }: { flash: Flash }) {
   const addLine = (id: string) => {
     const p = products.find((x) => String(x.id) === id);
     if (!p) return;
-    if (lines.some((l) => l.id === p.id)) { flash("Already on this order"); return; }
+    if (lines.some((l) => l.id === p.id)) { flash.error("Already on this order"); return; }
     setLines((ls) => [...ls, { id: p.id, name: p.name, qty: 1, price: p.price }]);
   };
   const setQty = (id: number, d: number) => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, qty: Math.max(1, l.qty + d) } : l)));
   const drop = (id: number) => setLines((ls) => ls.filter((l) => l.id !== id));
 
   const create = () => {
-    if (!cust) { flash("Pick a customer"); return; }
-    if (!lines.length) { flash("Add at least one product"); return; }
+    if (!cust) { flash.error("Pick a customer"); return; }
+    if (!lines.length) { flash.error("Add at least one product"); return; }
     const isPickup = fulfilment.includes("pickup");
     const order: Order = {
       ref: orderRef(),

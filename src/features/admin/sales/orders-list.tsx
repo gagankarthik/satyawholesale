@@ -6,7 +6,7 @@ import { useOrders, type Order, type OrderStatus } from "@/lib/store";
 import { downloadCsv } from "@/lib/csv";
 import { Plus, Search } from "@/components/Icons";
 import { Head, tableEmpty, m, k, timeAgo } from "../shared";
-import { KpiCard, DataTable, Badge, Button, EmptyState, ListToolbar, Skeleton, ViewToggle, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
+import { KpiCard, DataTable, Badge, Button, EmptyState, ListToolbar, Skeleton, ViewToggle, rowActivation, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
 import { ov, statusTone, payTone, O_STATUSES } from "./_shared";
 
 export function OrdersTab() {
@@ -135,7 +135,7 @@ export function OrdersTab() {
           {rows.map((o) => {
             const v = ov(o);
             return (
-              <div key={o.ref} className="ocg-card" role="button" tabIndex={0} onClick={() => router.push(`/admin/orders/${o.ref}`)} onKeyDown={(e) => { if (e.key === "Enter") router.push(`/admin/orders/${o.ref}`); }}>
+              <div key={o.ref} className="ocg-card" {...rowActivation(() => router.push(`/admin/orders/${o.ref}`))}>
                 <div className="ocg-top"><span className="ocg-ref">{o.ref}</span><Badge tone={statusTone(o.status)}>{o.status}</Badge></div>
                 <div className="ocg-store">{o.store}</div>
                 <div className="ocg-meta">{o.cases} cases · {timeAgo(o.placed)}</div>

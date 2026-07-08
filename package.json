@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "provision": "node scripts/provision-aws.mjs",
+    "seed": "node scripts/seed-aws.mjs",
+    "iam-policy": "node scripts/print-iam-policy.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1079.0",

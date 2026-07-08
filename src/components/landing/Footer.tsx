@@ -33,9 +33,8 @@ export default function Footer() {
             </div>
             <div className="fcol">
               <h5>Account</h5>
-              <Link href="/portal">Customer login</Link>
-              <Link href="/portal">Order portal</Link>
-              <Link href="/admin">Admin console</Link>
+              <Link href="/auth/login">Customer login</Link>
+              <Link href="/apply">Open an account</Link>
               <a href="#contact">Support</a>
             </div>
           </div>

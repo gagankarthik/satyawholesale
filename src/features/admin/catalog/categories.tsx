@@ -8,7 +8,7 @@ import { useCategories } from "@/lib/wms";
 import { Search, Plus, Tag as TagIcon, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, tableEmpty, type Flash } from "../shared";
-import { Button, Breadcrumb, DataTable, ImageUpload, Menu, type Column } from "@/components/ui";
+import { Button, Breadcrumb, DataTable, ImageUpload, Menu, rowActivation, type Column } from "@/components/ui";
 
 /* =======================================================================
    CATEGORIES
@@ -42,7 +42,7 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
               items={[
                 { label: "Edit category", icon: <Pencil />, onSelect: () => router.push(`/admin/categories/${c.key}`) },
                 { label: c.active ? "Hide category" : "Show category", onSelect: () => { update(c.key, { active: !c.active }); flash(c.active ? `${c.name} hidden from portal` : `${c.name} visible on portal`); } },
-                { label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products. Reassign them first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash(`${c.name} deleted`); } } },
+                { label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (count(c.key) > 0) { flash.error("Category has products. Reassign them first"); return; } if (categories.some((x) => x.parent === c.key)) { flash.error("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash(`${c.name} deleted`); } } },
               ]}
             />
           ) },
@@ -86,12 +86,12 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
   const parents = categories.filter((c) => c.parent === null && c.key !== catKey);
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.name.trim()) { flash("Name is required"); return; }
+    if (!draft.name.trim()) { flash.error("Name is required"); return; }
     const patch = { name: draft.name.trim(), details: draft.details, icon: "", group: draft.group || "Front counter", image: draft.image, parent: draft.parent || null };
     if (editing) { update(existing!.key, patch); flash("Category updated"); }
     else {
       const key = draft.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      if (categories.some((c) => c.key === key)) { flash("A category with that name already exists"); return; }
+      if (categories.some((c) => c.key === key)) { flash.error("A category with that name already exists"); return; }
       add({ id: "CAT-" + Math.floor(110 + Math.random() * 800), key, active: true, created: Date.now(), ...patch });
       flash("Category created");
     }
@@ -106,7 +106,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
-            items={[{ label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash("Category has products. Reassign them first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash(`${existing!.name} deleted`); } } }]}
+            items={[{ label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash.error("Category has products. Reassign them first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash(`${existing!.name} deleted`); } } }]}
           />
         )}
       </header>
@@ -118,7 +118,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             <label className="field full"><span>Name *</span><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} required placeholder="e.g. Cigarettes" /></label>
             <label className="field"><span>Parent category</span>
               <select value={draft.parent} onChange={(e) => setDraft({ ...draft, parent: e.target.value })}>
-                <option value="">— Top-level department</option>
+                <option value="">Top-level department</option>
                 {parents.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
               </select>
             </label>
@@ -139,7 +139,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
             <div className="panel-h"><h3>Sub-categories</h3></div>
             <div className="minirows">
               {categories.filter((c) => c.parent === existing!.key).map((c) => (
-                <div className="minirow" key={c.key} style={{ cursor: "pointer" }} role="button" tabIndex={0} onClick={() => router.push(`/admin/categories/${c.key}`)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/admin/categories/${c.key}`); } }}>
+                <div className="minirow" key={c.key} style={{ cursor: "pointer" }} {...rowActivation(() => router.push(`/admin/categories/${c.key}`))}>
                   <div><div className="ref" style={{ fontWeight: 600 }}>{c.name}</div><div className="st2">{c.key}</div></div>
                   <span className="amt mono">{products.filter((p) => p.dep === c.key).length} products</span>
                 </div>

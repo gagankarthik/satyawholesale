@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { flash } from "./flash";
 import { apiList, apiCreate, apiPatch, apiDelete } from "./api";
 
 /* =========================================================
@@ -102,6 +103,14 @@ export function useCollection<T>(entity: string, idOf: (item: T) => string) {
   const e = entry(entity);
   const items = e.items as T[];
 
+  // A failed write rolls the optimistic change back to the server truth AND
+  // tells the user, so a change never silently reverts. `call()` throws the
+  // server's friendly message, so surface it directly.
+  const rollback = useCallback((err: unknown) => {
+    load(entity, true);
+    flash.error((err as Error)?.message || "Couldn't save that change. Please try again.");
+  }, [entity]);
+
   const add = useCallback((item: T) => {
     const c = entry(entity);
     c.items = [item, ...(c.items as T[])];
@@ -115,22 +124,22 @@ export function useCollection<T>(entity: string, idOf: (item: T) => string) {
         cc.items = (cc.items as T[]).map((it) => (it === item ? saved : it));
         publish(cc);
       })
-      .catch(() => load(entity, true));
-  }, [entity]);
+      .catch(rollback);
+  }, [entity, rollback]);
 
   const update = useCallback((id: string, patch: Partial<T>) => {
     const c = entry(entity);
     c.items = (c.items as T[]).map((it) => (idOf(it) === id ? { ...it, ...patch } : it));
     publish(c);
-    apiPatch(entity, id, patch).catch(() => load(entity, true));
-  }, [entity, idOf]);
+    apiPatch(entity, id, patch).catch(rollback);
+  }, [entity, idOf, rollback]);
 
   const remove = useCallback((id: string) => {
     const c = entry(entity);
     c.items = (c.items as T[]).filter((it) => idOf(it) !== id);
     publish(c);
-    apiDelete(entity, id).catch(() => load(entity, true));
-  }, [entity, idOf]);
+    apiDelete(entity, id).catch(rollback);
+  }, [entity, idOf, rollback]);
 
   const refresh = useCallback(() => load(entity, true), [entity]);
 

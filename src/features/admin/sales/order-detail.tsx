@@ -27,7 +27,7 @@ function OrderAdjust({ order, patchOrder, taxRate, taxLabel, flash }: { order: O
   };
   const applyDisc = () => {
     const val = Number(dval) || 0;
-    if (val <= 0) { flash("Enter a discount amount"); return; }
+    if (val <= 0) { flash.error("Enter a discount amount"); return; }
     const amount = dkind === "percent" ? Math.round(order.total * val) / 100 : val;
     patchOrder(order.ref, { discount: Math.max(0, amount), discountReason: dreason.trim() || (dkind === "percent" ? `${val}% off` : undefined) });
     flash("Discount applied");
@@ -102,11 +102,11 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   const addLine = (id: string) => {
     const p = products.find((x) => String(x.id) === id);
     if (!p) return;
-    if (draft.some((l) => l.id === p.id)) { flash("Already on this order"); return; }
+    if (draft.some((l) => l.id === p.id)) { flash.error("Already on this order"); return; }
     setDraft((ls) => [...ls, { id: p.id, name: p.name, qty: 1, price: p.price }]);
   };
   const saveItems = () => {
-    if (!draft.length) { flash("An order needs at least one item"); return; }
+    if (!draft.length) { flash.error("An order needs at least one item"); return; }
     const total = draft.reduce((s, l) => s + l.qty * l.price, 0);
     const cases = draft.reduce((s, l) => s + l.qty, 0);
     patchOrder(cur.ref, { lines: draft, total, cases, tax: taxBreakdown(total, cur.taxExempt, settings).total });

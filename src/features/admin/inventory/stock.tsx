@@ -101,7 +101,7 @@ export function InventoryTab({ flash }: { flash: Flash }) {
     e.preventDefault();
     const p = products.find((x) => String(x.id) === pid);
     const q = Number(qty);
-    if (!p || !q) { flash("Pick a product and a non-zero quantity"); return; }
+    if (!p || !q) { flash.error("Pick a product and a non-zero quantity"); return; }
     updateProduct(p.id, { stock: Math.max(0, p.stock + q) });
     log({ sku: sku(p), name: p.name, type: "Adjust", qty: q, ref: reason });
     setQty(""); setPid(""); setAdjustOpen(false); flash("Stock adjusted & logged");

@@ -6,6 +6,7 @@
  * and a11y wiring (roles, aria, keyboard) so feature code stays declarative.
  */
 export { cx } from "./cx";
+export { rowActivation } from "./rowActivation";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { Button, buttonVariants, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
 export { Badge, badgeVariants, type BadgeProps, type BadgeTone } from "./Badge";

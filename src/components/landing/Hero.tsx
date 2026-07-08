@@ -43,13 +43,16 @@ export default function Hero() {
           </div>
         </div>
       </div>
-      <div className="hero-dots" role="tablist" aria-label="Warehouse photos">
+      {/* Plain labelled buttons, not a tablist: the slides are decorative
+          background photos with no tabpanels, so a full ARIA tab pattern would
+          be incomplete/misleading. `aria-pressed` conveys the active dot. */}
+      <div className="hero-dots" role="group" aria-label="Warehouse photo controls">
         {HERO_IMAGES.map((img, i) => (
           <button
             key={img.id}
-            role="tab"
-            aria-selected={i === slide}
-            aria-label={img.alt}
+            type="button"
+            aria-pressed={i === slide}
+            aria-label={`Show warehouse photo ${i + 1}: ${img.alt}`}
             className={i === slide ? "on" : ""}
             onClick={() => setSlide(i)}
           />

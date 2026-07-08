@@ -109,8 +109,8 @@ export default function CartPage() {
 
   const next = () => {
     if (!canLeave) {
-      if (step === 0 && belowMin) flash(`Add $${fmt(shortBy)} more to reach the $${fmt(orderMinimum)} order minimum`);
-      else if (step === 1) flash(!schedOk ? "Choose a delivery date" : "Choose a delivery and billing address");
+      if (step === 0 && belowMin) flash.error(`Add $${fmt(shortBy)} more to reach the $${fmt(orderMinimum)} order minimum`);
+      else if (step === 1) flash.error(!schedOk ? "Choose a delivery date" : "Choose a delivery and billing address");
       return;
     }
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
@@ -148,7 +148,7 @@ export default function CartPage() {
       )}
       <div className="ln"><span>{isPickup ? "Pickup" : isScheduled ? "Scheduled" : "Delivery"}</span><span className="mono" style={{ color: deliveryFee > 0 ? "inherit" : "var(--green)" }}>{isPickup ? "At warehouse" : deliveryFee > 0 ? `$${fmt(deliveryFee)}` : "Free"}</span></div>
       {!isPickup && deliveryFee > 0 && freeAt > 0 && (
-        <div className="ln"><span className="muted" style={{ fontSize: 12.5 }}>Free delivery over ${fmt(freeAt)} — add ${fmt(Math.max(0, freeAt - subtotal))}</span><span /></div>
+        <div className="ln"><span className="muted" style={{ fontSize: 12.5 }}>Free delivery over ${fmt(freeAt)}. Add ${fmt(Math.max(0, freeAt - subtotal))} more.</span><span /></div>
       )}
       {belowMin && (
         <div className="ln" style={{ color: "var(--red)" }}><span>Order minimum ${fmt(orderMinimum)}</span><span className="mono">add ${fmt(shortBy)}</span></div>
@@ -313,7 +313,7 @@ export default function CartPage() {
                   <label className="field">
                     <span className="sr-only">Shipping address</span>
                     <select value={shipId} onChange={(e) => setShipId(e.target.value)} aria-label="Shipping address">
-                      {addresses.map((a) => <option key={a.id} value={a.id}>{a.label} — {a.addr}</option>)}
+                      {addresses.map((a) => <option key={a.id} value={a.id}>{a.label} · {a.addr}</option>)}
                     </select>
                   </label>
                 ) : (
@@ -334,7 +334,7 @@ export default function CartPage() {
                   <label className="field">
                     <span className="sr-only">Billing address</span>
                     <select value={billId} onChange={(e) => setBillId(e.target.value)} aria-label="Billing address">
-                      {addresses.map((a) => <option key={a.id} value={a.id}>{a.label} — {a.addr}</option>)}
+                      {addresses.map((a) => <option key={a.id} value={a.id}>{a.label} · {a.addr}</option>)}
                     </select>
                   </label>
                 )}

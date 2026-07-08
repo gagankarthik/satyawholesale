@@ -22,7 +22,7 @@ export default function PortalAddresses() {
   const addAddr = (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.label.trim() || !draft.line.trim() || !draft.city.trim() || !draft.state.trim() || !draft.zip.trim()) {
-      flash("Fill in label, address, city, state and ZIP");
+      flash.error("Fill in label, address, city, state and ZIP");
       return;
     }
     add(draft);

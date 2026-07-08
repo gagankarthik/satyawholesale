@@ -35,8 +35,8 @@ export function UsersTab({ flash }: { flash: Flash }) {
 
   const addUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!d.name.trim()) { flash("Full name is required"); return; }
-    if (!d.email.trim()) { flash("Email is required to create a login"); return; }
+    if (!d.name.trim()) { flash.error("Full name is required"); return; }
+    if (!d.email.trim()) { flash.error("Email is required to create a login"); return; }
     setAddBusy(true);
     try {
       await createUser(d.email.trim(), "admin");
@@ -45,7 +45,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
       flash("User added. Cognito emailed a temporary password.");
       setD(EMPTY_STAFF); setAdding(false);
     } catch (err) {
-      flash(err instanceof Error ? err.message : "Could not create the login");
+      flash.error(err instanceof Error ? err.message : "Could not create the login");
     } finally {
       setAddBusy(false);
     }
@@ -54,7 +54,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
   const saveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
-    if (!editing.name.trim()) { flash("Full name is required"); return; }
+    if (!editing.name.trim()) { flash.error("Full name is required"); return; }
     update(editing.id, { name: editing.name.trim(), role: editing.role, device: editing.device?.trim() || null });
     flash(`${editing.name.trim()} updated`);
     setEditing(null);
@@ -146,12 +146,12 @@ export function UsersTab({ flash }: { flash: Flash }) {
                           items={[
                             { label: active ? "Set inactive" : "Set active", icon: active ? <EyeOff /> : <Eye />, onSelect: async () => {
                               try { await setAdminEnabled(a.email, !active); flash(active ? `${a.email} set inactive` : `${a.email} set active`); refreshAdmins(); }
-                              catch (err) { flash(err instanceof Error ? err.message : "Couldn't update that login"); }
+                              catch (err) { flash.error(err instanceof Error ? err.message : "Couldn't update that login"); }
                             } },
                             { label: "Delete user", icon: <Trash />, danger: true, onSelect: async () => {
                               if (!await confirm({ title: "Delete user?", message: `${a.email} will lose access to the console.`, confirmLabel: "Delete", danger: true })) return;
                               try { await removeAdmin(a.email); flash(`${a.email} deleted`); refreshAdmins(); }
-                              catch (err) { flash(err instanceof Error ? err.message : "Couldn't delete that user"); }
+                              catch (err) { flash.error(err instanceof Error ? err.message : "Couldn't delete that user"); }
                             } },
                           ]}
                         />
@@ -234,8 +234,8 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     e.preventDefault();
     const r = Number(rate);
     const cr = Number(countyRate);
-    if (Number.isNaN(r) || r < 0 || r > 100) { flash("Enter a sales tax rate between 0 and 100"); return; }
-    if (Number.isNaN(cr) || cr < 0 || cr > 100) { flash("Enter a county tax rate between 0 and 100"); return; }
+    if (Number.isNaN(r) || r < 0 || r > 100) { flash.error("Enter a sales tax rate between 0 and 100"); return; }
+    if (Number.isNaN(cr) || cr < 0 || cr > 100) { flash.error("Enter a county tax rate between 0 and 100"); return; }
     update({ taxRate: r, taxLabel: label.trim() || "Sales tax", countyTaxRate: cr, countyTaxLabel: countyLabel.trim() || "County tax" });
     flash("Tax settings saved");
   };
@@ -243,7 +243,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
   const savePolicies = (e: React.FormEvent) => {
     e.preventDefault();
     const om = Number(orderMin), df = Number(delivFee), fa = Number(freeAt);
-    if ([om, df, fa].some((n) => Number.isNaN(n) || n < 0)) { flash("Enter valid, non-negative dollar amounts"); return; }
+    if ([om, df, fa].some((n) => Number.isNaN(n) || n < 0)) { flash.error("Enter valid, non-negative dollar amounts"); return; }
     update({ orderMinimum: om, deliveryFee: df, freeFreightThreshold: fa });
     flash("Ordering policy saved");
   };
@@ -251,7 +251,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
   const saveWarehouse = (e: React.FormEvent) => {
     e.preventDefault();
     const ls = Number(lowStock), pa = Number(poApproval), rt = Number(recvTol);
-    if ([ls, pa, rt].some((n) => Number.isNaN(n) || n < 0)) { flash("Enter valid, non-negative values"); return; }
+    if ([ls, pa, rt].some((n) => Number.isNaN(n) || n < 0)) { flash.error("Enter valid, non-negative values"); return; }
     update({ lowStock: ls, poApproval: pa, receiveTolerance: rt / 100 });
     flash("Warehouse policy saved");
   };

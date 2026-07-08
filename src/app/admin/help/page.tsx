@@ -74,7 +74,7 @@ export default function AdminHelpPage() {
             <div className="panel-h"><h3><Grid /> Console overview</h3></div>
             <p className="guide-p">The left sidebar groups every tool into four areas. Use the search box at the top of any page to jump straight to a section by name.</p>
             <dl className="guide-def">
-              <dt>Sales</dt><dd>Dashboard analytics, customer orders, trade accounts and the site message inbox.</dd>
+              <dt>Sales</dt><dd>Dashboard analytics, customer orders, customer accounts and the site message inbox.</dd>
               <dt>Catalog</dt><dd>Products, bulk import, categories, suppliers and the promotions shown in the portal.</dd>
               <dt>Inventory</dt><dd>The stock ledger, purchase orders and the warehouse bin map.</dd>
               <dt>Admin</dt><dd>Staff users &amp; roles, company / tax / warehouse settings, and POS sync.</dd>
@@ -104,13 +104,13 @@ export default function AdminHelpPage() {
           {/* ---- Accounts & customer ID ---- */}
           <section id="accounts" className="panel guide-sec">
             <div className="panel-h"><h3><Users /> Accounts &amp; the customer ID</h3></div>
-            <p className="guide-p"><b>The customer ID is the membership number</b> — a 12-digit, Costco-style number assigned automatically the moment an account is created. It is the customer&apos;s identity everywhere in the system: on their orders, on invoices, in the portal and on account search. It is <b>not</b> the internal database id, which is never shown.</p>
+            <p className="guide-p"><b>The customer ID is the membership number</b>: a 12-digit, Costco-style number assigned automatically the moment an account is created. It is the customer&apos;s identity everywhere in the system: on their orders, on invoices, in the portal and on account search. It is <b>not</b> the internal database id, which is never shown.</p>
             <dl className="guide-def">
-              <dt>Membership no.</dt><dd>The 12-digit customer ID, e.g. <span className="mono">100000000042</span>. Sequential and stable — it never changes once assigned. Search accounts by it.</dd>
+              <dt>Membership no.</dt><dd>The 12-digit customer ID, e.g. <span className="mono">100000000042</span>. Sequential and stable, it never changes once assigned. Search accounts by it.</dd>
               <dt>Status</dt><dd>Pending → Active once approved. Frozen (can sign in, can&apos;t order) or Blocked (no access) as needed.</dd>
             </dl>
             <ol className="guide-steps">
-              <li>Stores apply from the public site — the account arrives <b>Pending</b> with their licenses and documents.</li>
+              <li>Stores apply from the public site. The account arrives <b>Pending</b> with their licenses and documents.</li>
               <li>Review the business and tobacco licenses and any uploaded files, approving each document.</li>
               <li><b>Approve</b> the account to make it Active; the membership number is assigned and used from then on.</li>
               <li>Use <b>Freeze</b> to pause ordering while keeping sign-in, or <b>Block</b> to remove access entirely.</li>
@@ -128,10 +128,10 @@ export default function AdminHelpPage() {
           {/* ---- Products: SKU vs UPC ---- */}
           <section id="products" className="panel guide-sec">
             <div className="panel-h"><h3><Barcode /> Products &middot; SKU vs UPC</h3></div>
-            <p className="guide-p">Products are what customers buy in the portal. Onboard them from <b>Products → Onboard product</b>, set pricing, stock, category and supplier. Every product carries two codes — keep both accurate:</p>
+            <p className="guide-p">Products are what customers buy in the portal. Onboard them from <b>Products → Onboard product</b>, set pricing, stock, category and supplier. Every product carries two codes, keep both accurate:</p>
             <dl className="guide-def">
               <dt>SKU</dt><dd>Your <b>internal item code</b> for local inventory management (e.g. <span className="mono">100-2345</span>). Optional and set by you; it never leaves your systems.</dd>
-              <dt>UPC</dt><dd>The <b>retailer / manufacturer barcode</b> on the pack — UPC-A (12) or EAN-13 (13). Scanned at receiving and checkout, validated by its check digit.</dd>
+              <dt>UPC</dt><dd>The <b>retailer / manufacturer barcode</b> on the pack (UPC-A (12) or EAN-13 (13)). Scanned at receiving and checkout, validated by its check digit.</dd>
             </dl>
             <div className="guide-links">
               <Link href="/admin/products" className="btn btn-ghost btn-sm">Open Products</Link>
@@ -145,7 +145,7 @@ export default function AdminHelpPage() {
             <p className="guide-p">Add many products at once by pasting a CSV. Columns: <span className="mono">name, category, upc, cost, price, caseQty, uom, reorderPoint, maxStock, supplierId, stock</span>.</p>
             <ol className="guide-steps">
               <li>Load the sample CSV to see the format, then paste your rows.</li>
-              <li><b>Validate</b> — each row is checked for schema, integrity (unknown category / supplier, duplicate UPC) and business rules (price below cost, reorder above max).</li>
+              <li><b>Validate</b>: each row is checked for schema, integrity (unknown category / supplier, duplicate UPC) and business rules (price below cost, reorder above max).</li>
               <li>Fix any flagged rows, then <b>Commit</b> the clean ones. Each committed product is logged into the stock ledger as a receipt.</li>
             </ol>
             <Link href="/admin/import" className="btn btn-ghost btn-sm">Open Bulk import</Link>
@@ -165,7 +165,7 @@ export default function AdminHelpPage() {
             <ol className="guide-steps">
               <li>Choose <b>Add supplier</b> and enter the name, contact person, email and phone.</li>
               <li>Set their <b>payment terms</b>, <b>lead time</b> (days from order to delivery) and delivery day.</li>
-              <li>Save — the supplier is now selectable when onboarding products and creating purchase orders.</li>
+              <li>Save. The supplier is now selectable when onboarding products and creating purchase orders.</li>
               <li>Link products to the supplier from <b>Products → edit → Supplier</b>.</li>
             </ol>
             <Link href="/admin/suppliers" className="btn btn-ghost btn-sm">Open Suppliers</Link>
@@ -183,14 +183,14 @@ export default function AdminHelpPage() {
             <div className="panel-h"><h3><Refresh /> Stock ledger &mdash; how it works</h3></div>
             <p className="guide-p">The stock ledger is the single audit trail of everything that affects stock. It is one activity table; the <b>Show</b> filter navigates between the four kinds of record, and the search box narrows whatever is in view.</p>
             <dl className="guide-def">
-              <dt>Movements</dt><dd>Every stock change — receipts, picks, transfers and manual adjustments — with In / Out quantities and a running balance when you narrow to one product.</dd>
+              <dt>Movements</dt><dd>Every stock change (receipts, picks, transfers and manual adjustments) with In / Out quantities and a running balance when you narrow to one product.</dd>
               <dt>Purchase orders</dt><dd>Inbound orders: cases ordered vs received and the PO value.</dd>
               <dt>Sales</dt><dd>Outbound customer orders: cases out and revenue.</dd>
-              <dt>Stock health</dt><dd>The exceptions to act on — products <b>out of stock</b>, <b>below reorder</b>, or <b>overstocked</b> above their max.</dd>
+              <dt>Stock health</dt><dd>The exceptions to act on: products <b>out of stock</b>, <b>below reorder</b>, or <b>overstocked</b> above their max.</dd>
             </dl>
             <ol className="guide-steps">
               <li>Read the KPI row for the totals of whatever the filter shows (records, cases in, cases out, value).</li>
-              <li>Use <b>New adjustment</b> to correct on-hand stock — pick the product, enter a &plusmn; quantity and a reason. It posts to on-hand stock and logs a movement.</li>
+              <li>Use <b>New adjustment</b> to correct on-hand stock. Pick the product, enter a &plusmn; quantity and a reason. It posts to on-hand stock and logs a movement.</li>
               <li>Edit or delete a movement from its row menu; adjusting a manual entry re-applies the difference to stock automatically.</li>
             </ol>
             <Link href="/admin/inventory" className="btn btn-ghost btn-sm">Open Stock ledger</Link>
@@ -204,7 +204,7 @@ export default function AdminHelpPage() {
               <li>Create a PO for a supplier and add the products and case quantities (it starts as <b>Draft</b>).</li>
               <li>POs above the approval threshold need a manager to <b>approve</b> before sending.</li>
               <li><b>Send</b> the PO to the supplier.</li>
-              <li><b>Receive</b> cases as they arrive — within the receiving tolerance — and each receipt writes a movement into the stock ledger.</li>
+              <li><b>Receive</b> cases as they arrive (within the receiving tolerance) and each receipt writes a movement into the stock ledger.</li>
               <li>Reconcile the PO against the goods receipt and the supplier invoice (a three-way match) before it&apos;s paid; log credit memos for shortages or damage.</li>
             </ol>
             <Link href="/admin/purchaseorder" className="btn btn-ghost btn-sm">Open Purchase orders</Link>
@@ -263,7 +263,7 @@ export default function AdminHelpPage() {
               <dt>Company</dt><dd>Legal name, warehouse address, phone, email and hours shown on invoices and the site.</dd>
               <dt>Tax &amp; invoicing</dt><dd>Sales and county tax rates and their invoice labels. B2B resale accounts are exempt by default.</dd>
               <dt>Ordering policy</dt><dd>Order minimum, delivery fee, and the subtotal above which delivery is free.</dd>
-              <dt>Warehouse policy</dt><dd>Low-stock threshold, the PO value that triggers manager approval, and the receiving tolerance — all admin-editable.</dd>
+              <dt>Warehouse policy</dt><dd>Low-stock threshold, the PO value that triggers manager approval, and the receiving tolerance, all admin-editable.</dd>
             </dl>
             <Link href="/admin/settings" className="btn btn-ghost btn-sm">Open Settings</Link>
           </section>

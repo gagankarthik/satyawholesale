@@ -184,12 +184,11 @@ export const useCustomers = () => {
   return { customers: col.items, ready: col.ready, error: col.error, refresh: col.refresh, setStatus, update: col.update, add: col.add, remove: col.remove };
 };
 
-/** Files a Pending application from the public site (no auth). */
+/** Files a Pending application from the public site (no auth). Resolves once the
+    warehouse has received it and rejects with a user-friendly message, so the
+    form only confirms on a real success and never loses a submission silently. */
 export function fileApplication(a: Omit<TradeAccount, "id" | "since" | "status">) {
-  void apiPost("/api/apply", a).catch(() => {
-    /* the /apply page shows success optimistically; failures surface on retry */
-  });
-  return { ...a, id: "pending", since: String(new Date().getFullYear()), status: "Pending" as const };
+  return apiPost("/api/apply", a);
 }
 
 /** Approve + invite: creates the Cognito buyer login for an account. */

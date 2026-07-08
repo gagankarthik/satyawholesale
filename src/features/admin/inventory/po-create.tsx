@@ -32,7 +32,7 @@ export function AdminPOCreate({ flash }: { flash: Flash }) {
     const p = products.find((x) => String(x.id) === id);
     if (!p) return;
     const code = sku(p);
-    if (lines.some((l) => l.sku === code)) { flash("Already on this PO"); return; }
+    if (lines.some((l) => l.sku === code)) { flash.error("Already on this PO"); return; }
     setLines((ls) => [...ls, lineFromProduct(p, 12)]);
   };
   const setField = (code: string, field: "ordered" | "cost", val: string) =>
@@ -40,8 +40,8 @@ export function AdminPOCreate({ flash }: { flash: Flash }) {
   const drop = (code: string) => setLines((ls) => ls.filter((l) => l.sku !== code));
 
   const create = () => {
-    if (!supplierId) { flash("Pick a supplier"); return; }
-    if (!lines.length) { flash("Add at least one line"); return; }
+    if (!supplierId) { flash.error("Pick a supplier"); return; }
+    if (!lines.length) { flash.error("Add at least one line"); return; }
     const id = rid("PO-");
     add({ id, supplierId, status: "Draft", created: Date.now(), expected: new Date(expected).getTime(), lines, supplierRef: supplierRef.trim(), notes: notes.trim(), attachment: attachment?.url, attachmentName: attachment?.name });
     flash("Draft PO created");

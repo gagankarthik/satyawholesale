@@ -110,7 +110,7 @@ export function ReportsView({ flash }: { flash: Flash }) {
   const fromLbl = toInput(range.from);
   const toLbl = toInput(range.to - DAY);
   const exportCsv = (name: string, headers: string[], rows: (string | number)[][]) => {
-    if (!rows.length) { flash("Nothing to export for this filter."); return; }
+    if (!rows.length) { flash.error("Nothing to export for this filter."); return; }
     downloadCsv(name, headers, rows);
     flash(`Exported ${rows.length} rows`);
   };

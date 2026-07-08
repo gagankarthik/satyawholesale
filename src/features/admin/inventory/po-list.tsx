@@ -6,7 +6,7 @@ import { useInventory, LOW_STOCK, type Product } from "@/lib/store";
 import { useSuppliers, usePurchaseOrders, useReceipts, useInvoices, useCredits, poTotal, PO_FLOW, RECEIVE_TOLERANCE, threeWayMatch } from "@/lib/wms";
 import { Plus, Package } from "@/components/Icons";
 import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, timeAgo, type Flash } from "../shared";
-import { Button, DataTable, EmptyState, Fab, ListToolbar, Progress, Skeleton, ViewToggle, type Column, type ViewMode } from "@/components/ui";
+import { Button, DataTable, EmptyState, Fab, ListToolbar, Progress, Skeleton, ViewToggle, rowActivation, type Column, type ViewMode } from "@/components/ui";
 import { rid, matchClass, lineFromProduct } from "./_shared";
 
 /* =======================================================================
@@ -111,7 +111,7 @@ export function POTab({ flash }: { flash: Flash }) {
           const ord = po.lines.reduce((s, l) => s + l.ordered, 0);
           const match = threeWayMatch(po, receipts, invoices, credits);
           return (
-            <div className="ordercard clickrow" key={po.id} role="button" tabIndex={0} onClick={() => router.push(`/admin/purchaseorder/${po.id}`)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/admin/purchaseorder/${po.id}`); } }}>
+            <div className="ordercard clickrow" key={po.id} {...rowActivation(() => router.push(`/admin/purchaseorder/${po.id}`))}>
               <div className="oc-head">
                 <div>
                   <div className="oc-ref mono">{po.id} · {supName(po.supplierId)}</div>

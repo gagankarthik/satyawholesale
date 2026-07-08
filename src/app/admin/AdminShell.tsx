@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { flash } from "@/lib/flash";
 import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help, Chart } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import { AdminSearchResults } from "./AdminSearchResults";
@@ -60,7 +60,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => { setCollapsed(localStorage.getItem("satya.sidebar") === "1"); }, []);
   const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.sidebar", n ? "1" : "0"); } catch {} return n; });
 
-  const flash: Flash = (msg) => toast(msg);
   const go = (t: Tab) => router.push(TAB_PATH[t]);
 
   const { messages } = useMessages();

@@ -36,7 +36,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
 
   const sendInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inv.store.trim() || !inv.email.trim()) { flash("Store name and email are required"); return; }
+    if (!inv.store.trim() || !inv.email.trim()) { flash.error("Store name and email are required"); return; }
     add({
       id: "C-" + Math.floor(1300 + Math.random() * 700),
       store: inv.store.trim(), contact: inv.contact.trim(), email: inv.email.trim(),
@@ -104,7 +104,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   const viewDoc = async (url?: string) => {
     if (!url) return;
     try { window.open(await resolveFileUrl(url), "_blank", "noopener"); }
-    catch { flash("Couldn't open that document"); }
+    catch { flash.error("Couldn't open that document"); }
   };
   /* Uploads land in the private S3 "documents" folder — served only to admins
      via short-lived presigned links (/api/file), so they stay confidential. */
@@ -118,7 +118,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
       const doc: AccountDoc = { name: f.name.slice(0, 160), url, uploaded: Date.now() };
       update(cur.id, which === "business" ? { businessLicenseDoc: doc } : { tobaccoLicenseDoc: doc });
       flash("Document attached");
-    } catch { flash("Couldn't upload that file"); }
+    } catch { flash.error("Couldn't upload that file"); }
     finally { setDocUploading(null); }
   };
   const saveDocs = () => {
@@ -264,7 +264,7 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                         <span className={`di ${ok ? "" : "di-missing"}`} aria-hidden="true">{ok ? <Check /> : <Close />}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="dn">Age verification</div>
-                          {ok ? <div className="ds">{LEGAL_AGE}+ confirmed · DOB {cur.dob}</div> : <div className="ds ds-missing">{cur.dob ? `Under ${LEGAL_AGE} — do not approve` : "Date of birth not provided"}</div>}
+                          {ok ? <div className="ds">{LEGAL_AGE}+ confirmed · DOB {cur.dob}</div> : <div className="ds ds-missing">{cur.dob ? `Under ${LEGAL_AGE}, do not approve` : "Date of birth not provided"}</div>}
                         </div>
                       </div>
                     );

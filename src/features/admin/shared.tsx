@@ -14,8 +14,8 @@ export type Tab =
   | "pos" | "inventory" | "orders" | "customers" | "users" | "warehouse"
   | "settings" | "possync";
 
-/** Toast emitter passed to feature tabs. */
-export type Flash = (message: string) => void;
+/** Tone-aware toast emitter passed to feature tabs. See "@/lib/flash". */
+export type { Flash } from "@/lib/flash";
 
 /** Money, full precision. */
 export const m = (n: number) => "$" + fmt(n);

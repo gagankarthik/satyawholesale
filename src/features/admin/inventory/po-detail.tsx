@@ -57,11 +57,11 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
 
   const postReceipt = () => {
     const glines = cur.lines.map((l) => ({ sku: l.sku, qty: Number(recvQty[l.sku] || 0) })).filter((x) => x.qty > 0);
-    if (!glines.length) { flash("Enter quantities to receive"); return; }
+    if (!glines.length) { flash.error("Enter quantities to receive"); return; }
     for (const l of cur.lines) {
       const q = Number(recvQty[l.sku] || 0);
       const maxAllow = Math.ceil(l.ordered * (1 + RECEIVE_TOLERANCE)) - l.received;
-      if (q > maxAllow) { flash(`${l.name}: over-receipt beyond ±${RECEIVE_TOLERANCE * 100}% tolerance`); return; }
+      if (q > maxAllow) { flash.error(`${l.name}: over-receipt beyond ±${RECEIVE_TOLERANCE * 100}% tolerance`); return; }
     }
     addReceipt({ id: rid("GRN-"), poId: cur.id, received: Date.now(), lines: glines, by: "M. Bell" });
     const newLines = cur.lines.map((l) => { const q = Number(recvQty[l.sku] || 0); return q > 0 ? { ...l, received: l.received + q } : l; });
@@ -79,7 +79,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
     const ilines = cur.lines
       .map((l) => ({ sku: l.sku, qty: Number(invQty[l.sku] ?? l.received), cost: Number(invCost[l.sku] ?? l.cost) }))
       .filter((x) => x.qty > 0);
-    if (!ilines.length) { flash("Nothing to invoice yet. Receive goods first"); return; }
+    if (!ilines.length) { flash.error("Nothing to invoice yet. Receive goods first"); return; }
     const charges = Number(invCharge) || 0;
     const tax = Number(invTax) || 0;
     const total = ilines.reduce((s, l) => s + l.qty * l.cost, 0) + charges + tax;
@@ -108,11 +108,11 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
     const p = products.find((x) => String(x.id) === id);
     if (!p) return;
     const code = sku(p);
-    if (dLines.some((l) => l.sku === code)) { flash("Already on this PO"); return; }
+    if (dLines.some((l) => l.sku === code)) { flash.error("Already on this PO"); return; }
     setDLines((ls) => [...ls, lineFromProduct(p, 12)]);
   };
   const saveEdit = () => {
-    if (!dLines.length) { flash("A PO needs at least one line"); return; }
+    if (!dLines.length) { flash.error("A PO needs at least one line"); return; }
     update(cur.id, { supplierId: dSup, expected: new Date(dExp).getTime(), lines: dLines, supplierRef: dRef.trim(), notes: dNotes.trim() });
     setEditing(false);
     flash("Purchase order updated");
@@ -120,7 +120,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
 
   const postCredit = () => {
     const amount = Number(cr.amount);
-    if (!amount || amount <= 0) { flash("Enter the credit amount"); return; }
+    if (!amount || amount <= 0) { flash.error("Enter the credit amount"); return; }
     const ref = cr.ref.trim() || rid("CM-");
     addCredit({ id: rid("CM-"), poId: cur.id, date: Date.now(), ref, reason: cr.reason, amount, note: cr.note.trim() || undefined });
     flash(`Credit #${ref} recorded, ${m(amount)} off the balance`);

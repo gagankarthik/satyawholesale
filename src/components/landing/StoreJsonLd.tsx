@@ -11,10 +11,14 @@ export default function StoreJsonLd() {
           "@context": "https://schema.org",
           "@type": "Store",
           name: "Satya Wholesale",
+          legalName: CONTACT.legalName,
           description:
             "Licensed wholesale and cash-and-carry distributor for independent convenience retailers across Greater Cincinnati.",
           url: "https://satyawholesalers.com",
-          telephone: "+15132666175",
+          logo: "https://satyawholesalers.com/logo.webp",
+          image: "https://satyawholesalers.com/warehouse.webp",
+          // Derive from the single source of truth so it can't drift.
+          telephone: CONTACT.phoneHref.replace("tel:", ""),
           email: CONTACT.email,
           priceRange: "$$",
           address: {
