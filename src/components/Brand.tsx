@@ -9,7 +9,11 @@ import Image from "next/image";
    matched so next/image reserves the correct box and the mark isn't offset. */
 const LOGO_RATIO = 787 / 226;
 
-export default function Brand({ dark = false, height = 34 }: { dark?: boolean; height?: number }) {
+/* `priority` is OPT-IN: the shells render several Brand instances, some hidden
+   by CSS (e.g. the mobile topbar logo on desktop). Preloading (priority) every
+   one makes the browser warn "preloaded but not used" for the hidden variants,
+   so default to lazy loading and only opt in for a genuine above-the-fold LCP. */
+export default function Brand({ dark = false, height = 34, priority = false }: { dark?: boolean; height?: number; priority?: boolean }) {
   const img = (
     <Image
       src="/logo.webp"
@@ -17,7 +21,7 @@ export default function Brand({ dark = false, height = 34 }: { dark?: boolean; h
       width={Math.round(height * LOGO_RATIO)}
       height={height}
       style={{ height, width: "auto", display: "block" }}
-      priority
+      priority={priority}
     />
   );
   return dark ? <span className="brandchip">{img}</span> : img;

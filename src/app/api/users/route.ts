@@ -46,7 +46,10 @@ export async function GET(req: Request) {
   } catch (e) {
     const err = e as { name?: string; message?: string };
     console.error("list admins failed", { name: err?.name, message: err?.message });
-    return Response.json({ error: "Couldn't load the administrator list." }, { status: 500 });
+    // These routes are admin-only, so surfacing the AWS error name is safe and
+    // makes a production misconfig (e.g. AccessDeniedException on the Amplify
+    // compute role) diagnosable straight from the browser.
+    return Response.json({ error: "Couldn't load the administrator list.", code: err?.name }, { status: 500 });
   }
 }
 
@@ -122,7 +125,7 @@ export async function PATCH(req: Request) {
   } catch (e) {
     const err = e as { name?: string; message?: string };
     console.error("update admin failed", { email, action, name: err?.name, message: err?.message });
-    return Response.json({ error: "Couldn't update that login." }, { status: 500 });
+    return Response.json({ error: "Couldn't update that login.", code: err?.name }, { status: 500 });
   }
 }
 
@@ -154,6 +157,6 @@ export async function DELETE(req: Request) {
   } catch (e) {
     const err = e as { name?: string; message?: string };
     console.error("remove admin failed", { email, name: err?.name, message: err?.message });
-    return Response.json({ error: "Couldn't remove that admin." }, { status: 500 });
+    return Response.json({ error: "Couldn't remove that admin.", code: err?.name }, { status: 500 });
   }
 }

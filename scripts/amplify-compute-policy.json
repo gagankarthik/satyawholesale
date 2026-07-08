@@ -1,0 +1,43 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SatyaDynamoTable",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:Query",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-2:417915984158:table/satya-app",
+        "arn:aws:dynamodb:us-east-2:417915984158:table/satya-app/index/*"
+      ]
+    },
+    {
+      "Sid": "SatyaMediaBucketObjects",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::satya-wholesale-media-417915984158/*"
+    },
+    {
+      "Sid": "SatyaCognitoUserAdmin",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminAddUserToGroup",
+        "cognito-idp:AdminRemoveUserFromGroup",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:AdminUpdateUserAttributes",
+        "cognito-idp:AdminDisableUser",
+        "cognito-idp:AdminEnableUser",
+        "cognito-idp:ListUsersInGroup"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-east-2:417915984158:userpool/us-east-2_ixJsLLKMf"
+    }
+  ]
+}
