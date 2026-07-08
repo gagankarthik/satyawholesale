@@ -402,6 +402,19 @@
 .field textarea { resize: vertical; min-height: 96px; }
 .field input:focus, .field select:focus, .field textarea:focus,
 .adjsec input:focus, .adjsec select:focus { outline: none; border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-soft); }
+
+/* password field with show/hide eye toggle */
+.pwinput { position: relative; display: flex; }
+.pwinput input { width: 100%; padding-right: 46px; }
+.pwtoggle {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  display: inline-grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 8px; color: var(--slate-2); background: none;
+  transition: color 0.15s, background 0.15s;
+}
+.pwtoggle:hover { color: var(--ink); background: var(--paper-2); }
+.pwtoggle:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--signal-soft); }
+.pwtoggle svg { width: 18px; height: 18px; }
 .auth-alt { font-size: 13.5px; color: var(--slate); }
 .auth-alt a { color: var(--signal-text); font-weight: 600; }
 

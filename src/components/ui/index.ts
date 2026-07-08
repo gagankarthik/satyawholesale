@@ -12,6 +12,7 @@ export { Badge, badgeVariants, type BadgeProps, type BadgeTone } from "./Badge";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { InputField, SelectField, type InputFieldProps, type SelectFieldProps } from "./Field";
+export { PasswordInput } from "./PasswordInput";
 export { Modal, type ModalProps } from "./Modal";
 export { DialogFrame } from "./DialogFrame";
 export { KpiCard, type KpiCardProps, type KpiTone } from "./KpiCard";

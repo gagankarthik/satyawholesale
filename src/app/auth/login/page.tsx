@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CONTACT } from "@/lib/store";
 import { useSession } from "@/lib/auth";
-import { Alert, Button } from "@/components/ui";
+import { Alert, Button, PasswordInput } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
 import { Arrow, ArrowLeft } from "@/components/Icons";
@@ -67,7 +67,7 @@ export default function Login() {
                   Password
                   <button type="button" className="linklike" onClick={() => setForgot((v) => !v)}>Forgot password?</button>
                 </span>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
               </label>
               {forgot && (
                 <div className="auth-note">
@@ -84,7 +84,7 @@ export default function Login() {
               </div>
               <label className="field">
                 <span>New password</span>
-                <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required autoFocus />
+                <PasswordInput value={newPw} onChange={(e) => setNewPw(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required autoFocus />
               </label>
               {(pwFocus || newPw) && <PasswordChecklist value={newPw} />}
             </>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession, signUp, confirmSignUp, resendCode, signIn } from "@/lib/auth";
-import { Alert, Button } from "@/components/ui";
+import { Alert, Button, PasswordInput } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
 import { Arrow, ArrowLeft } from "@/components/Icons";
@@ -77,7 +77,7 @@ export default function SignUp() {
             </label>
             <label className="field">
               <span>Password</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required />
+              <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setPwFocus(true)} onBlur={() => setPwFocus(false)} autoComplete="new-password" minLength={10} required />
             </label>
             {(pwFocus || password) && <PasswordChecklist value={password} />}
             {error && <Alert tone="danger">{error}</Alert>}
