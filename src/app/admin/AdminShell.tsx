@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help, Chart } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import { AdminSearchResults } from "./AdminSearchResults";
 import Brand from "@/components/Brand";
@@ -81,12 +81,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       { path: "/admin/promotions", label: "Promotions", Icon: Sparkles },
     ] },
     { label: "Inventory", items: [
-      { path: "/admin/inventory", label: "Stock ledger", Icon: Refresh },
+      { path: "/admin/inventory", label: "Inventory valuation", Icon: Refresh },
       { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package },
       { path: "/admin/warehouse", label: "Warehouse", Icon: Store },
     ] },
     { label: "Admin", items: [
-      { path: "/admin/users", label: "Users & roles", Icon: Shield },
+      { path: "/admin/users", label: "Users", Icon: Shield },
+      { path: "/admin/reports", label: "Reports", Icon: Chart },
       { path: "/admin/settings", label: "Settings", Icon: Gear },
       { path: "/admin/possync", label: "POS sync", Icon: Card, soon: true },
     ] },
@@ -164,7 +165,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </Link>
                 <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">SW</span>}>
                   <div className="menu-head"><div className="mh-nm">Warehouse console</div><div className="mh-em">{email || "Satya Wholesale"}</div></div>
-                  <Link href="/admin/settings" className="menu-item" role="menuitem"><Gear /> Settings</Link>
+                  <Link href="/admin/reports" className="menu-item" role="menuitem"><Chart /> Reports</Link>
                   <Link href="/portal" className="menu-item" role="menuitem"><Store /> Order portal</Link>
                   <div className="menu-sep" />
                   <button type="button" className="menu-item danger" role="menuitem" onClick={() => { signOut(); router.replace("/auth/login"); }}><LogOut /> Sign out</button>

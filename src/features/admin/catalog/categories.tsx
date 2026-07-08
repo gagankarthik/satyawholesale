@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useInventory } from "@/lib/store";
 import { useCategories } from "@/lib/wms";
-import { Search, Plus, Tag as TagIcon } from "@/components/Icons";
+import { Search, Plus, Tag as TagIcon, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, tableEmpty, type Flash } from "../shared";
 import { Button, Breadcrumb, DataTable, ImageUpload, Menu, type Column } from "@/components/ui";
@@ -40,9 +40,9 @@ export function CategoriesTab({ flash }: { flash: Flash }) {
             <Menu
               label={`Actions for ${c.name}`}
               items={[
-                { label: "Edit category", onSelect: () => router.push(`/admin/categories/${c.key}`) },
+                { label: "Edit category", icon: <Pencil />, onSelect: () => router.push(`/admin/categories/${c.key}`) },
                 { label: c.active ? "Hide category" : "Show category", onSelect: () => { update(c.key, { active: !c.active }); flash(c.active ? `${c.name} hidden from portal` : `${c.name} visible on portal`); } },
-                { label: "Delete category", danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products. Reassign them first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash(`${c.name} deleted`); } } },
+                { label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (count(c.key) > 0) { flash("Category has products. Reassign them first"); return; } if (categories.some((x) => x.parent === c.key)) { flash("Remove sub-categories first"); return; } if (await confirm({ title: "Delete category?", message: `${c.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(c.key); flash(`${c.name} deleted`); } } },
               ]}
             />
           ) },
@@ -106,7 +106,7 @@ export function CategoryForm({ catKey, flash }: { catKey?: string; flash: Flash 
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
-            items={[{ label: "Delete category", danger: true, onSelect: async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash("Category has products. Reassign them first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash(`${existing!.name} deleted`); } } }]}
+            items={[{ label: "Delete category", icon: <Trash />, danger: true, onSelect: async () => { if (products.filter((p) => p.dep === existing!.key).length > 0) { flash("Category has products. Reassign them first"); return; } if (await confirm({ title: "Delete category?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.key); router.push("/admin/categories"); flash(`${existing!.name} deleted`); } } }]}
           />
         )}
       </header>

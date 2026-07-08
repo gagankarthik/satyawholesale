@@ -3,7 +3,7 @@
 import { useMemo, useState, Fragment } from "react";
 import { useConfirm } from "@/components/Confirm";
 import { useLocations, type WLocation } from "@/lib/wms";
-import { Plus } from "@/components/Icons";
+import { Plus, Pencil, Trash } from "@/components/Icons";
 import { Head, type Flash } from "../shared";
 import { Button, DialogFrame, EmptyState, KpiCard, ListToolbar, Menu, Skeleton, type ToolbarOption } from "@/components/ui";
 
@@ -138,8 +138,8 @@ export function WarehouseTab({ flash }: { flash: Flash }) {
                           <Menu
                             label={`Actions for bin ${l.id}`}
                             items={[
-                              { label: "Edit bin", onSelect: () => openEdit(l.id) },
-                              { label: "Remove bin", danger: true, onSelect: () => removeBin(l) },
+                              { label: "Edit bin", icon: <Pencil />, onSelect: () => openEdit(l.id) },
+                              { label: "Remove bin", icon: <Trash />, danger: true, onSelect: () => removeBin(l) },
                             ]}
                           />
                         </td>

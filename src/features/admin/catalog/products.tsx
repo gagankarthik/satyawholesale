@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DEPTS, deptName, productImg, sku, useInventory, LOW_STOCK, type DeptKey, type Product, type Tag } from "@/lib/store";
 import { useSuppliers, useCategories } from "@/lib/wms";
-import { Search, Inbox, Plus, ArrowLeft } from "@/components/Icons";
+import { Search, Inbox, Plus, ArrowLeft, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, fmtDate, type Tab, type Flash } from "../shared";
@@ -110,7 +110,7 @@ export function ProductForm({ productId, flash }: { productId?: string; flash: F
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
-            items={[{ label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${existing!.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(existing!.id); router.push("/admin/products"); flash(`${existing!.name} removed from catalog`); } } }]}
+            items={[{ label: "Remove product", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${existing!.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(existing!.id); router.push("/admin/products"); flash(`${existing!.name} removed from catalog`); } } }]}
           />
         )}
       </header>
@@ -297,9 +297,9 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
             <Menu
               label={`Actions for ${p.name}`}
               items={[
-                { label: "Edit product", onSelect: () => router.push(`/admin/products/${p.id}/edit`) },
-                { label: "Add 12 cases", onSelect: () => { updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); } },
-                { label: "Remove product", danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash(`${p.name} removed from catalog`); } } },
+                { label: "Edit product", icon: <Pencil />, onSelect: () => router.push(`/admin/products/${p.id}/edit`) },
+                { label: "Add 12 cases", icon: <Plus />, onSelect: () => { updateProduct(p.id, { stock: p.stock + 12 }); flash("+12 cases"); } },
+                { label: "Remove product", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Remove product?", message: `${p.name} will be removed from the catalog.`, confirmLabel: "Remove", danger: true })) { removeProduct(p.id); flash(`${p.name} removed from catalog`); } } },
               ]}
             />
           ) },

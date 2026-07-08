@@ -403,6 +403,28 @@
 .auth-alt { font-size: 13.5px; color: var(--slate); }
 .auth-alt a { color: var(--signal-text); font-weight: 600; }
 
+/* Onboarding: a longer, multi-section form. Top-align and let it scroll rather
+   than vertically centering (which clips a tall form), give it a little more
+   width for the paired fields, and group fields into labelled sections. */
+.auth-form.onboard { justify-content: flex-start; gap: 24px; padding-top: 52px; padding-bottom: 52px; overflow-y: auto; }
+.auth-form.onboard > * { max-width: 480px; }
+.ob-section {
+  border: 0; margin: 0; padding: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ob-legend {
+  float: none; width: 100%; padding: 0; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--slate);
+  padding-bottom: 9px; border-bottom: 1px solid var(--line);
+}
+.ob-opt {
+  font-family: var(--font-mono-f); font-size: 9px; letter-spacing: .6px;
+  color: var(--slate-2); background: var(--paper-2); border: 1px solid var(--line);
+  padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+}
+
 /* live password requirements checklist */
 .pwchecks { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
 .pwchecks li { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--slate); transition: color 0.15s; }
@@ -896,12 +918,20 @@ a.fg-inner:hover { background: var(--paper); }
 .fchips button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .fchips button.warn.on { background: #9a6b00; border-color: #9a6b00; }
 
-.tablewrap { background: var(--card); border: 1px solid var(--line); overflow-x: auto; }
-.invtable { width: 100%; border-collapse: collapse; }
-.invtable th { text-align: left; font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--slate-2); font-weight: 500; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--paper-2); }
+/* Standalone table: a self-contained rounded card. Inside a .panel the panel
+   is already the card, so the tablewrap drops its own frame (see below). */
+.tablewrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+.panel .tablewrap { border: 0; background: transparent; border-radius: 0; margin: 2px 0 0; }
+.invtable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.invtable th { text-align: left; font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--slate-2); font-weight: 500; padding: 13px 18px; border-bottom: 1px solid var(--line); background: var(--paper-2); white-space: nowrap; }
 .invtable th.r, .invtable td.r { text-align: right; }
-.invtable td { padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
-.invtable tr:last-child td { border-bottom: none; }
+.invtable td { padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+/* comfortable edge gutters on the outer columns of a framed table */
+.tablewrap > .invtable:not(.flat) > thead th:first-child,
+.tablewrap > .invtable:not(.flat) > tbody td:first-child { padding-left: 22px; }
+.tablewrap > .invtable:not(.flat) > thead th:last-child,
+.tablewrap > .invtable:not(.flat) > tbody td:last-child { padding-right: 22px; }
+.invtable tbody tr:last-child td { border-bottom: none; }
 .invtable tbody tr:hover { background: var(--paper-2); }
 .invtable tr.rowdim { opacity: 0.55; }
 
@@ -969,6 +999,23 @@ a.fg-inner:hover { background: var(--paper); }
 .ustatus.active { background: var(--green-soft); color: var(--green); }
 .ustatus.pending { background: var(--signal-soft); color: var(--signal-deep); }
 .ustatus.hold { background: #fde2dc; color: var(--red); }
+
+/* Users & roles: inline notice when the live Cognito admin-group lookup fails */
+.ustatus-note { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 9px 13px; border-radius: 10px; font-size: 13px; color: var(--ink); background: var(--signal-soft); border: 1px solid #f6cdb0; }
+
+/* Reports: compact dropdown filters, inline tab bar + export, totals row */
+.repdd { font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 9px 30px 9px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); cursor: pointer; max-width: 180px; transition: border-color 0.15s, background 0.15s;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8f99' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; }
+.repdd:hover { border-color: var(--kraft-edge); background-color: var(--paper-2); }
+.repdd:focus { outline: none; border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-soft); }
+.reptabbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.reptabbar .tabs { margin-bottom: 0; }
+.reptabbar-actions { display: flex; align-items: center; gap: 8px; }
+.reptable th { padding-top: 6px; padding-bottom: 12px; }
+.reptable td { padding-top: 14px; padding-bottom: 14px; }
+.totalrow td { border-top: 2px solid var(--line); background: var(--paper); }
 
 .orders { display: flex; flex-direction: column; gap: 14px; }
 .ordercard { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; }
@@ -1317,12 +1364,13 @@ a.fg-inner:hover { background: var(--paper); }
   .auth-aside { display: none; }
   .auth-mini-brand { display: inline-flex; margin-bottom: 8px; }
   .auth-form { padding: 40px 22px; }
+  .auth-form.onboard { padding-top: 36px; padding-bottom: 40px; }
   /* no dark aside behind it on mobile — darken so it stays visible on the form */
   .auth-back { color: var(--slate); }
   .auth-back:hover { color: var(--ink); }
   .kpis { grid-template-columns: 1fr 1fr; }
   .formgrid { grid-template-columns: 1fr; }
-  .field-row { grid-template-columns: 1fr; }
+  .field-row, .field-row.two { grid-template-columns: 1fr; }
   .tablewrap { overflow-x: auto; }
   .invtable { min-width: 560px; }
   .contact-grid, .dash { grid-template-columns: 1fr; }
@@ -1478,8 +1526,31 @@ a.fg-inner:hover { background: var(--paper); }
 .docchip { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper-2); font-size: 13px; }
 .docchip .di { width: 32px; height: 32px; border-radius: 8px; background: var(--green-soft); color: var(--green); display: grid; place-items: center; flex: none; font-size: 15px; }
 .docchip .dn { font-weight: 600; } .docchip .ds { font-size: 11px; color: var(--slate-2); }
-.modalactions { display: flex; flex-wrap: wrap; gap: 10px; }
-.modalactions .btn { flex: 1; justify-content: center; }
+/* missing license number: flag it to the admin instead of a neutral dash */
+.docchip .di.di-missing { background: #fde2dc; color: var(--red); }
+.docchip .ds.ds-missing { color: var(--red); font-weight: 600; }
+.docnote { font-size: 12.5px; color: var(--slate-2); padding: 4px 2px; }
+/* small file icon on a license row: view the uploaded doc, or dimmed if none */
+.docfile { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); color: var(--slate); background: var(--card); flex: none; transition: color .15s, border-color .15s, background .15s; }
+.docfile:hover:not(:disabled) { color: var(--signal-text); border-color: var(--signal); background: var(--signal-soft); }
+.docfile.is-empty, .docfile:disabled { color: var(--slate-3); opacity: .55; cursor: default; }
+.docfile svg { width: 15px; height: 15px; }
+/* license-document upload row (onboarding + admin edit) */
+.ob-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.ob-file { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate); max-width: 100%; word-break: break-all; }
+.ob-file svg { width: 14px; height: 14px; color: var(--green); flex: none; }
+button.ob-file { cursor: pointer; }
+button.ob-file:hover { color: var(--signal-text); text-decoration: underline; }
+.auth-form .field > span.ob-note, .ob-note { font-family: var(--font-mono-f); text-transform: none; letter-spacing: .2px; font-size: 10.5px; font-weight: 400; color: var(--slate-2); }
+.btn.is-busy { opacity: .65; pointer-events: none; }
+/* compact modal action row: small right-aligned buttons */
+.modalactions-sm { justify-content: flex-end; gap: 8px; margin-top: 2px; }
+/* verification-documents edit form: evenly spaced fields, upload under each */
+.docedit { display: flex; flex-direction: column; gap: 16px; }
+.docedit .ob-upload { margin-top: 8px; }
+.modalactions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+/* compact, right-aligned action buttons — not full-width stretched */
+.modalactions .btn { flex: 0 0 auto; justify-content: center; padding: 9px 16px; font-size: 13.5px; }
 @media (max-width: 520px) { .checkout, .docgrid { grid-template-columns: 1fr; } }
 
 /* three-way match + goods receipts */
@@ -1922,6 +1993,7 @@ footer { border-top: 3px solid var(--signal); padding: 0 !important; }
 .menu-head .mh-nm { font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu-head .mh-em { font-family: var(--font-mono-f); font-size: 11px; color: var(--slate-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menu-item svg { width: 16px; height: 16px; flex: none; }
+.menu-item-ic { display: inline-flex; }
 
 /* topbar account avatar (Dropdown trigger) */
 .topavatar { display: inline-grid; place-items: center; flex: none; border-radius: 50%; transition: box-shadow 0.15s; }
@@ -2127,6 +2199,11 @@ footer { position: relative; background-image: radial-gradient(680px 320px at 88
 
 /* product detail hero + clickable account row (route split) */
 .pd-hero { position: relative; overflow: hidden; min-height: 340px; padding: 0; background: #e8ecf1; }
+/* admin product view: image + master-data hero, then detail panels */
+.pdhero { display: grid; grid-template-columns: 380px 1fr; gap: 18px; align-items: start; margin-bottom: 18px; }
+.pdhero-side { display: flex; flex-direction: column; gap: 18px; }
+.pdhero .pd-hero { min-height: 320px; }
+@media (max-width: 900px) { .pdhero { grid-template-columns: 1fr; } .pdhero .pd-hero { min-height: 260px; } }
 .acct .who-link { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; color: inherit; text-decoration: none; }
 
 /* admin sidebar nav as <Link> (route split) — mirror the button styles */

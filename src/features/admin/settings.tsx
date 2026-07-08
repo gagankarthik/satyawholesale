@@ -5,18 +5,25 @@ import {
   useSettings, LOW_STOCK, CONTACT,
 } from "@/lib/store";
 import {
-  useStaff, createUser, PO_APPROVAL_THRESHOLD, RECEIVE_TOLERANCE, ROLES, type Role,
+  useStaff, useAdmins, createUser, setAdminEnabled, removeAdmin,
+  PO_APPROVAL_THRESHOLD, RECEIVE_TOLERANCE, ROLES, type Role, type StaffUser,
 } from "@/lib/wms";
 import { Button, DialogFrame, EmptyState, FieldHelp, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
 import { useConfirm } from "@/components/Confirm";
+import { Eye, EyeOff, Pencil, Trash } from "@/components/Icons";
 import { Head, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
+// Active/Inactive from a Cognito admin-group member's account state.
+const cognitoActive = (a: { status: string; enabled: boolean }) => a.enabled && a.status === "CONFIRMED";
+
 export function UsersTab({ flash }: { flash: Flash }) {
   const { staff, add, update, remove, ready, error, refresh } = useStaff();
+  const { admins, ready: adminsReady, error: adminsError, refresh: refreshAdmins } = useAdmins();
   const confirm = useConfirm();
   const [adding, setAdding] = useState(false);
   const [d, setD] = useState(EMPTY_STAFF);
+  const [editing, setEditing] = useState<StaffUser | null>(null);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("all");
   const [sort, setSort] = useState("name");
@@ -34,6 +41,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
     try {
       await createUser(d.email.trim(), "admin");
       add({ id: "U-" + Math.floor(10 + Math.random() * 89), name: d.name.trim(), email: d.email.trim(), role: d.role, device: d.device || null, status: "Active" });
+      refreshAdmins(); // the new login joins the Cognito admin group
       flash("User added. Cognito emailed a temporary password.");
       setD(EMPTY_STAFF); setAdding(false);
     } catch (err) {
@@ -41,6 +49,15 @@ export function UsersTab({ flash }: { flash: Flash }) {
     } finally {
       setAddBusy(false);
     }
+  };
+
+  const saveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    if (!editing.name.trim()) { flash("Full name is required"); return; }
+    update(editing.id, { name: editing.name.trim(), role: editing.role, device: editing.device?.trim() || null });
+    flash(`${editing.name.trim()} updated`);
+    setEditing(null);
   };
 
   const roleOpts: ToolbarOption[] = [{ value: "all", label: "All roles" }, ...ROLES.map((r) => ({ value: r, label: r }))];
@@ -53,11 +70,31 @@ export function UsersTab({ flash }: { flash: Flash }) {
     return [...list].sort((a, b) => (sort === "role" ? a.role.localeCompare(b.role) : a.name.localeCompare(b.name)));
   }, [staff, query, role, sort]);
 
+  // Real admins that aren't on the staff roster (e.g. the seeded owner login):
+  // appended as rows so the table shows the whole admin group.
+  const extraAdmins = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const onRoster = new Set(staff.map((u) => u.email.toLowerCase()));
+    return admins
+      .filter((a) => !onRoster.has(a.email.toLowerCase()))
+      .filter(() => role === "all" || role === "Admin")
+      .filter((a) => q === "" || a.email.toLowerCase().includes(q))
+      .sort((a, b) => a.email.localeCompare(b.email));
+  }, [admins, staff, role, query]);
+
   return (
     <>
       <Head title="Users & roles">
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
       </Head>
+
+      {adminsError && (
+        <div className="ustatus-note">
+          Couldn&apos;t read console access from Cognito.
+          <Button variant="ghost" size="sm" onClick={refreshAdmins}>Retry</Button>
+        </div>
+      )}
+
       <ListToolbar
         search={{ value: query, onChange: setQuery, placeholder: "Search name or email…" }}
         filters={[{ label: "Role", value: role, onChange: setRole, options: roleOpts }]}
@@ -73,24 +110,56 @@ export function UsersTab({ flash }: { flash: Flash }) {
               ))
             ) : (
               <>
-                {rows.map((u) => (
+                {rows.map((u) => {
+                  const active = u.status === "Active";
+                  return (
                   <tr key={u.id}>
                     <td><div className="prodcell"><span className="avatar">{u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}</span><div><div className="pn">{u.name}</div><div className="mono muted" style={{ fontSize: 11 }}>{u.email}</div></div></div></td>
                     <td><select className="rolesel" aria-label={`Role for ${u.name}`} value={u.role} onChange={(e) => { update(u.id, { role: e.target.value as Role }); flash(`${u.name} is now ${e.target.value}`); }}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></td>
                     <td className="mono muted">{u.device || "—"}</td>
-                    <td className="r"><span className={`ustatus ${u.status === "Active" ? "active" : "hold"}`}>{u.status}</span></td>
+                    <td className="r"><span className={`ustatus ${active ? "active" : "hold"}`}>{active ? "Active" : "Inactive"}</span></td>
                     <td className="r">
                       <Menu
                         label={`Actions for ${u.name}`}
                         items={[
-                          { label: u.status === "Active" ? "Suspend user" : "Restore user", danger: u.status === "Active", onSelect: () => { const suspending = u.status === "Active"; update(u.id, { status: suspending ? "Suspended" : "Active" }); flash(suspending ? `${u.name} suspended` : `${u.name} restored`); } },
-                          { label: "Remove user", danger: true, onSelect: async () => { if (await confirm({ title: "Remove user?", message: `${u.name} will lose access and be removed.`, confirmLabel: "Remove", danger: true })) { remove(u.id); flash(`${u.name} removed`); } } },
+                          { label: "Edit user", icon: <Pencil />, onSelect: () => setEditing(u) },
+                          { label: active ? "Set inactive" : "Set active", icon: active ? <EyeOff /> : <Eye />, onSelect: () => { update(u.id, { status: active ? "Suspended" : "Active" }); flash(active ? `${u.name} set inactive` : `${u.name} set active`); } },
+                          { label: "Delete user", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete user?", message: `${u.name} will lose access and be removed.`, confirmLabel: "Delete", danger: true })) { remove(u.id); flash(`${u.name} deleted`); } } },
                         ]}
                       />
                     </td>
                   </tr>
-                ))}
-                {!rows.length && (
+                  );
+                })}
+                {/* Cognito admins with no staff-roster row. */}
+                {adminsReady && extraAdmins.map((a) => {
+                  const active = cognitoActive(a);
+                  return (
+                    <tr key={`admin-${a.email}`}>
+                      <td><div className="prodcell"><span className="avatar">{a.email.slice(0, 2).toUpperCase()}</span><div><div className="pn">{a.email}</div></div></div></td>
+                      <td className="mono muted">Admin</td>
+                      <td className="mono muted">—</td>
+                      <td className="r"><span className={`ustatus ${active ? "active" : "hold"}`}>{active ? "Active" : "Inactive"}</span></td>
+                      <td className="r">
+                        <Menu
+                          label={`Actions for ${a.email}`}
+                          items={[
+                            { label: active ? "Set inactive" : "Set active", icon: active ? <EyeOff /> : <Eye />, onSelect: async () => {
+                              try { await setAdminEnabled(a.email, !active); flash(active ? `${a.email} set inactive` : `${a.email} set active`); refreshAdmins(); }
+                              catch (err) { flash(err instanceof Error ? err.message : "Couldn't update that login"); }
+                            } },
+                            { label: "Delete user", icon: <Trash />, danger: true, onSelect: async () => {
+                              if (!await confirm({ title: "Delete user?", message: `${a.email} will lose access to the console.`, confirmLabel: "Delete", danger: true })) return;
+                              try { await removeAdmin(a.email); flash(`${a.email} deleted`); refreshAdmins(); }
+                              catch (err) { flash(err instanceof Error ? err.message : "Couldn't delete that user"); }
+                            } },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!rows.length && !extraAdmins.length && (
                   <tr><td colSpan={5} style={{ padding: 0 }}>
                     {error
                       ? <EmptyState title="Couldn't load" description="There was a problem loading users." action={<Button variant="ghost" onClick={refresh}>Retry</Button>} />
@@ -114,6 +183,21 @@ export function UsersTab({ flash }: { flash: Flash }) {
               <label className="field full"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={d.device} onChange={(e) => setD({ ...d, device: e.target.value })} placeholder="SCN-120" /></label>
             </div>
             <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setAdding(false)} disabled={addBusy}>Cancel</Button><Button variant="primary" type="submit" loading={addBusy}>Add user</Button></div>
+          </form>
+        </DialogFrame>
+      )}
+      {editing && (
+        <DialogFrame onClose={() => setEditing(null)} label="Edit user">
+          <form className="modal" onSubmit={saveEdit}>
+            <h3>Edit user</h3>
+            <p className="auth-sub" style={{ marginTop: 0 }}>Update this user&apos;s details and role. The login email can&apos;t be changed here.</p>
+            <div className="formgrid">
+              <label className="field full"><span>Full name *</span><input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required autoFocus /></label>
+              <label className="field"><span>Work email</span><input type="email" value={editing.email} disabled /></label>
+              <label className="field"><span>Role</span><select value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value as Role })}>{ROLES.map((r) => <option key={r}>{r}</option>)}</select></label>
+              <label className="field full"><span>Scanner device <FieldHelp text="ID of the handheld barcode scanner assigned to this user (optional)." /></span><input value={editing.device ?? ""} onChange={(e) => setEditing({ ...editing, device: e.target.value })} placeholder="SCN-120" /></label>
+            </div>
+            <div className="modalbtns"><Button variant="ghost" type="button" onClick={() => setEditing(null)}>Cancel</Button><Button variant="primary" type="submit">Save changes</Button></div>
           </form>
         </DialogFrame>
       )}

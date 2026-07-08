@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrders } from "@/lib/store";
-import { useCustomers, setAccountStatus } from "@/lib/wms";
-import { resolveFileUrl } from "@/lib/api";
-import { Plus, Check, Paperclip, ArrowLeft } from "@/components/Icons";
+import { useCustomers, setAccountStatus, ageFromDob, LEGAL_AGE, type AccountDoc } from "@/lib/wms";
+import { resolveFileUrl, uploadFile } from "@/lib/api";
+import { Plus, Check, Close, Paperclip, ArrowLeft, Arrow, Clock, EyeOff, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, FlowHelp, CUSTOMER_FLOW, tableEmpty, m, k, timeAgo, type Flash } from "../shared";
 import { KpiCard, DataTable, Badge, Button, DialogFrame, ListToolbar, Menu, type Column, type ToolbarOption, type MenuAction } from "@/components/ui";
-import { PaymentTermsSelect, PaymentTermHint, PaymentTermsGuide } from "@/components/PaymentTerms";
+import { PaymentTermsSelect, PaymentTermHint } from "@/components/PaymentTerms";
 import { paymentTermInfo, DEFAULT_PAYMENT_TERM } from "@/lib/paymentTerms";
 import { acctTone, statusTone } from "./_shared";
 
@@ -30,7 +30,8 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   const [inviting, setInviting] = useState(false);
   const [inv, setInv] = useState(EMPTY_INVITE);
   const [docEdit, setDocEdit] = useState(false);
-  const [docDraft, setDocDraft] = useState({ business: "", tobacco: "" });
+  const [docDraft, setDocDraft] = useState({ business: "", tobacco: "", dob: "" });
+  const [docUploading, setDocUploading] = useState<"business" | "tobacco" | null>(null);
   const confirm = useConfirm();
 
   const sendInvite = (e: React.FormEvent) => {
@@ -105,32 +106,55 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     try { window.open(await resolveFileUrl(url), "_blank", "noopener"); }
     catch { flash("Couldn't open that document"); }
   };
+  /* Uploads land in the private S3 "documents" folder — served only to admins
+     via short-lived presigned links (/api/file), so they stay confidential. */
+  const uploadLicenseDoc = (which: "business" | "tobacco") => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f || !cur) return;
+    setDocUploading(which);
+    try {
+      const url = await uploadFile(f, f.type || "application/pdf", "documents");
+      const doc: AccountDoc = { name: f.name.slice(0, 160), url, uploaded: Date.now() };
+      update(cur.id, which === "business" ? { businessLicenseDoc: doc } : { tobaccoLicenseDoc: doc });
+      flash("Document attached");
+    } catch { flash("Couldn't upload that file"); }
+    finally { setDocUploading(null); }
+  };
+  const saveDocs = () => {
+    if (!cur) return;
+    update(cur.id, { businessLicense: docDraft.business.trim() || undefined, tobaccoLicense: docDraft.tobacco.trim() || undefined, dob: docDraft.dob || undefined });
+    setDocEdit(false); flash("Verification updated");
+  };
 
   /* One source of truth for account actions, used by both the list row menu
      and the open-account header, so every surface offers the same options in
      the same order and wording. `includeOpen` adds the list's "Open account". */
   const accountActions = (c: (typeof stats)[number], opts?: { includeOpen?: boolean }): MenuAction[] => {
     const items: MenuAction[] = [];
-    if (opts?.includeOpen) items.push({ label: "Open account", onSelect: () => setOpenId(c.id) });
-    if (c.status !== "Active") items.push({ label: "Approve account", onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } });
-    if (c.status !== "Pending") items.push({ label: "Mark pending", onSelect: () => { setStatus(c.id, "Pending"); flash("Marked pending"); } });
+    if (opts?.includeOpen) items.push({ label: "Open account", icon: <Arrow />, onSelect: () => setOpenId(c.id) });
+    if (c.status !== "Active") items.push({ label: "Approve account", icon: <Check />, onSelect: () => { setStatus(c.id, "Active"); flash("Account approved"); } });
+    if (c.status !== "Pending") items.push({ label: "Mark pending", icon: <Clock />, onSelect: () => { setStatus(c.id, "Pending"); flash("Marked pending"); } });
     // Freeze / Unfreeze — a blocked account can't be frozen, only unblocked.
     if (c.status === "Frozen")
-      items.push({ label: "Unfreeze account", onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } });
+      items.push({ label: "Unfreeze account", icon: <Check />, onSelect: async () => { await setAccountStatus(c.id, "unfreeze"); refresh(); flash("Account reactivated"); } });
     else if (c.status !== "Blocked")
-      items.push({ label: "Freeze account", onSelect: async () => { if (await confirm({ title: "Freeze account?", message: `${c.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } } });
+      items.push({ label: "Freeze account", icon: <EyeOff />, onSelect: async () => { if (await confirm({ title: "Freeze account?", message: `${c.store} can still sign in and browse but cannot place orders.`, confirmLabel: "Freeze account", danger: true })) { await setAccountStatus(c.id, "freeze"); refresh(); flash("Account frozen"); } } });
     // Block / Unblock
     if (c.status === "Blocked")
-      items.push({ label: "Unblock account", onSelect: async () => { await setAccountStatus(c.id, "unblock"); refresh(); flash("Account reactivated"); } });
+      items.push({ label: "Unblock account", icon: <Check />, onSelect: async () => { await setAccountStatus(c.id, "unblock"); refresh(); flash("Account reactivated"); } });
     else
-      items.push({ label: "Block account", danger: true, onSelect: async () => { if (await confirm({ title: "Block account?", message: `${c.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) { await setAccountStatus(c.id, "block"); refresh(); flash("Account blocked"); } } });
-    items.push({ label: "Edit details", onSelect: () => startEditFor(c) });
-    items.push({ label: "Delete account", danger: true, onSelect: async () => { if (await confirm({ title: "Delete account?", message: `${c.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(c.id); setOpenId(null); flash("Account deleted"); } } });
+      items.push({ label: "Block account", icon: <Close />, danger: true, onSelect: async () => { if (await confirm({ title: "Block account?", message: `${c.store} will no longer be able to sign in.`, confirmLabel: "Block account", danger: true })) { await setAccountStatus(c.id, "block"); refresh(); flash("Account blocked"); } } });
+    items.push({ label: "Edit details", icon: <Pencil />, onSelect: () => startEditFor(c) });
+    items.push({ label: "Delete account", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete account?", message: `${c.store} and its access will be removed.`, confirmLabel: "Delete account", danger: true })) { remove(c.id); setOpenId(null); flash("Account deleted"); } } });
     return items;
   };
 
   /* ---------- full-page account detail ---------- */
   if (cur) {
+    const history = [...cur.history].sort((a, b) => b.placed - a.placed);
+    const lastOrder = history[0];
+    const avgOrder = cur.orders ? cur.spend / cur.orders : 0;
     return (
       <>
         <button className="detail-back" onClick={() => { setOpenId(null); setEdit(false); }}><ArrowLeft /> All accounts</button>
@@ -148,6 +172,15 @@ export function CustomersTab({ flash }: { flash: Flash }) {
           </div>
         </header>
 
+        {/* sales summary for this customer */}
+        <div className="kpis" style={{ marginBottom: 18 }}>
+          <KpiCard label="Orders" value={String(cur.orders)} foot="all time" />
+          <KpiCard label="Total spend" value={m(cur.spend)} foot="all time" />
+          <KpiCard label="Avg order" value={m(avgOrder)} foot="per order" />
+          <KpiCard label="Last order" value={lastOrder ? timeAgo(lastOrder.placed) : "—"} foot={lastOrder ? lastOrder.ref : "none yet"} />
+        </div>
+
+        {/* customer info */}
         <div className="detail-grid">
           <div className="detail-main">
             <div className="panel">
@@ -176,58 +209,69 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                   <div className="kv2"><span>Primary contact</span><b>{cur.contact}</b></div>
                   <div className="kv2"><span>Email</span><b>{cur.email}</b></div>
                   <div className="kv2"><span>Phone</span><b>{cur.phone || "—"}</b></div>
-                  <div className="kv2"><span>Payment terms</span><b>{cur.terms || DEFAULT_PAYMENT_TERM}</b></div>
-                  {paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM) && (
-                    <div className="kv2 full"><span>What it means</span><b style={{ fontWeight: 400, color: "var(--slate)" }}>{paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM)}</b></div>
-                  )}
+                  <div className="kv2 full"><span>Payment terms</span><b>{cur.terms || DEFAULT_PAYMENT_TERM}{paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM) && <span className="muted" style={{ fontWeight: 400 }}> · {paymentTermInfo(cur.terms || DEFAULT_PAYMENT_TERM)}</span>}</b></div>
                   <div className="kv2 full"><span>Address</span><b>{[cur.address, cur.city, [cur.state, cur.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "—"}</b></div>
                 </div>
               )}
-            </div>
-
-            <div className="panel">
-              <div className="panel-h"><h3>Order history</h3><span className="hint">{cur.orders} orders · {m(cur.spend)}</span></div>
-              {cur.history.length ? (
-                <div className="tablewrap">
-                <table className="invtable flat">
-                  <thead><tr><th>Order</th><th>Date</th><th className="r">Cases</th><th className="r">Total</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {cur.history.map((o) => (
-                      <tr key={o.ref} className="clickrow" style={{ cursor: "pointer" }} onClick={() => router.push(`/admin/orders/${o.ref}`)}><td className="mono" style={{ fontWeight: 600 }}>{o.ref}</td><td className="muted" style={{ fontSize: 13 }}>{timeAgo(o.placed)}</td><td className="r mono">{o.cases}</td><td className="r mono">{m(o.total)}</td><td><Badge tone={statusTone(o.status)}>{o.status}</Badge></td></tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-              ) : <p style={{ color: "var(--slate)", fontSize: 14 }}>No orders on record yet. Orders this account places in the portal will appear here.</p>}
             </div>
           </div>
 
           <aside className="detail-side">
             <div className="panel">
-              <div className="panel-h"><h3>Approval</h3></div>
-              <div className="modalactions" style={{ flexDirection: "column" }}>
-                {cur.status !== "Active" && <Button fullWidth onClick={() => { setStatus(cur.id, "Active"); flash("Account approved"); }}>Approve account</Button>}
-                {cur.status !== "Pending" && <Button variant="ghost" fullWidth onClick={() => { setStatus(cur.id, "Pending"); flash("Marked pending"); }}>Mark pending</Button>}
-              </div>
-            </div>
-            <div className="panel">
               <div className="panel-h"><h3>Verification documents</h3>
                 {docEdit
                   ? <span className="hint">editing</span>
-                  : <Button variant="ghost" size="sm" onClick={() => { setDocDraft({ business: cur.businessLicense || "", tobacco: cur.tobaccoLicense || "" }); setDocEdit(true); }}>Edit</Button>}
+                  : <Button variant="ghost" size="sm" onClick={() => { setDocDraft({ business: cur.businessLicense || "", tobacco: cur.tobaccoLicense || "", dob: cur.dob || "" }); setDocEdit(true); }}>Edit</Button>}
               </div>
               {docEdit ? (
-                <div className="formgrid" style={{ margin: 0 }}>
-                  <label className="field full"><span>Business license #</span><input value={docDraft.business} onChange={(e) => setDocDraft({ ...docDraft, business: e.target.value })} /></label>
-                  <label className="field full"><span>Tobacco license #</span><input value={docDraft.tobacco} onChange={(e) => setDocDraft({ ...docDraft, tobacco: e.target.value })} /></label>
-                  <div className="full modalactions"><Button variant="ghost" onClick={() => setDocEdit(false)}>Cancel</Button><Button variant="primary" onClick={() => { update(cur.id, { businessLicense: docDraft.business.trim() || undefined, tobaccoLicense: docDraft.tobacco.trim() || undefined }); setDocEdit(false); flash("Documents updated"); }}>Save</Button></div>
+                <div className="docedit">
+                  <label className="field"><span>Date of birth</span><input type="date" value={docDraft.dob} onChange={(e) => setDocDraft({ ...docDraft, dob: e.target.value })} /></label>
+                  <label className="field">
+                    <span>Business license #</span>
+                    <input value={docDraft.business} onChange={(e) => setDocDraft({ ...docDraft, business: e.target.value })} placeholder="License number" />
+                    <div className="ob-upload">
+                      <label className={`btn btn-ghost btn-sm ${docUploading === "business" ? "is-busy" : ""}`}><Paperclip /> {cur.businessLicenseDoc ? "Replace file" : "Attach file"}<input type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={uploadLicenseDoc("business")} disabled={docUploading === "business"} /></label>
+                      {docUploading === "business" ? <span className="ob-file muted">Uploading…</span> : cur.businessLicenseDoc && <button type="button" className="ob-file" onClick={() => viewDoc(cur.businessLicenseDoc!.url)}><Check /> {cur.businessLicenseDoc.name}</button>}
+                    </div>
+                  </label>
+                  <label className="field">
+                    <span>Tobacco license #</span>
+                    <input value={docDraft.tobacco} onChange={(e) => setDocDraft({ ...docDraft, tobacco: e.target.value })} placeholder="License number" />
+                    <div className="ob-upload">
+                      <label className={`btn btn-ghost btn-sm ${docUploading === "tobacco" ? "is-busy" : ""}`}><Paperclip /> {cur.tobaccoLicenseDoc ? "Replace file" : "Attach file"}<input type="file" accept="image/*,application/pdf" style={{ display: "none" }} onChange={uploadLicenseDoc("tobacco")} disabled={docUploading === "tobacco"} /></label>
+                      {docUploading === "tobacco" ? <span className="ob-file muted">Uploading…</span> : cur.tobaccoLicenseDoc && <button type="button" className="ob-file" onClick={() => viewDoc(cur.tobaccoLicenseDoc!.url)}><Check /> {cur.tobaccoLicenseDoc.name}</button>}
+                    </div>
+                  </label>
+                  <div className="modalactions modalactions-sm"><Button variant="ghost" size="sm" onClick={() => setDocEdit(false)}>Cancel</Button><Button variant="primary" size="sm" onClick={saveDocs}>Save</Button></div>
                 </div>
               ) : (
                 <div className="doclist">
-                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Business license</div><div className="ds mono">{cur.businessLicense || "—"}</div></div></div>
-                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Tobacco license</div><div className="ds mono">{cur.tobaccoLicense || "—"}</div></div></div>
-                  <div className="docchip"><span className="di" aria-hidden="true"><Check /></span><div><div className="dn">Age verification</div><div className="ds">21+ confirmed</div></div></div>
-                  {(cur.docs || []).map((d, i) => (
+                  {([{ label: "Business license", val: cur.businessLicense, doc: cur.businessLicenseDoc }, { label: "Tobacco license", val: cur.tobaccoLicense, doc: cur.tobaccoLicenseDoc }] as const).map(({ label, val, doc }) => (
+                    <div className="docchip" key={label}>
+                      <span className={`di ${val ? "" : "di-missing"}`} aria-hidden="true">{val ? <Check /> : <Close />}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="dn">{label}</div>
+                        {val ? <div className="ds mono">{val}</div> : <div className="ds ds-missing">Not provided</div>}
+                      </div>
+                      <button type="button" className={`docfile ${doc ? "" : "is-empty"}`} title={doc ? "View uploaded document" : "No document attached"} onClick={() => doc && viewDoc(doc.url)} disabled={!doc} aria-label={doc ? `View ${label} document` : `${label}: no document`}><Paperclip /></button>
+                    </div>
+                  ))}
+                  {(() => {
+                    const age = ageFromDob(cur.dob);
+                    const ok = age != null && age >= LEGAL_AGE;
+                    return (
+                      <div className="docchip">
+                        <span className={`di ${ok ? "" : "di-missing"}`} aria-hidden="true">{ok ? <Check /> : <Close />}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="dn">Age verification</div>
+                          {ok ? <div className="ds">{LEGAL_AGE}+ confirmed · DOB {cur.dob}</div> : <div className="ds ds-missing">{cur.dob ? `Under ${LEGAL_AGE} — do not approve` : "Date of birth not provided"}</div>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {(cur.docs || []).length === 0 ? (
+                    <div className="docnote">No other documents uploaded yet.</div>
+                  ) : (cur.docs || []).map((d, i) => (
                     <div className="docchip" key={i}>
                       <span className="di" aria-hidden="true"><Paperclip /></span>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -237,18 +281,31 @@ export function CustomersTab({ flash }: { flash: Flash }) {
                       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
                         {d.url && <Button variant="ghost" size="sm" onClick={() => viewDoc(d.url)}>View</Button>}
                         <Button variant={d.approved ? "ghost" : "primary"} size="sm" onClick={() => setDocApproved(i, !d.approved)}>{d.approved ? "Unapprove" : "Approve"}</Button>
-                        <Menu label={`Actions for ${d.label}`} items={[{ label: "Remove document", danger: true, onSelect: () => removeDoc(i) }]} />
+                        <Menu label={`Actions for ${d.label}`} items={[{ label: "Remove document", icon: <Trash />, danger: true, onSelect: () => removeDoc(i) }]} />
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <label className="btn btn-ghost btn-sm uploadbtn" style={{ marginTop: 14 }}>
-                <Paperclip /> Upload document
-                <input type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { update(cur.id, { docs: [...(cur.docs || []), { label: f.name, name: f.name, uploaded: Date.now() }] }); flash("Document uploaded"); } e.target.value = ""; }} />
-              </label>
             </div>
           </aside>
+        </div>
+
+        {/* all sales & orders from this customer, full width */}
+        <div className="panel" style={{ marginTop: 18 }}>
+          <div className="panel-h"><h3>Orders &amp; sales</h3><span className="hint">{cur.orders} orders · {m(cur.spend)} total</span></div>
+          {history.length ? (
+            <div className="tablewrap">
+              <table className="invtable flat">
+                <thead><tr><th>Order</th><th>Date</th><th className="r">Cases</th><th className="r">Total</th><th>Status</th></tr></thead>
+                <tbody>
+                  {history.map((o) => (
+                    <tr key={o.ref} className="clickrow" style={{ cursor: "pointer" }} onClick={() => router.push(`/admin/orders/${o.ref}`)}><td className="mono" style={{ fontWeight: 600 }}>{o.ref}</td><td className="muted" style={{ fontSize: 13 }}>{timeAgo(o.placed)}</td><td className="r mono">{o.cases}</td><td className="r mono">{m(o.total)}</td><td><Badge tone={statusTone(o.status)}>{o.status}</Badge></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p style={{ color: "var(--slate)", fontSize: 14 }}>No orders on record yet. Orders this account places in the portal will appear here.</p>}
         </div>
       </>
     );
@@ -259,9 +316,10 @@ export function CustomersTab({ flash }: { flash: Flash }) {
     { key: "store", header: "Store", render: (c) => (
       <div className="prodcell">
         <span className="avatar">{c.store.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
-        <div><div className="pn">{c.store}</div><div className="mono muted" style={{ fontSize: 11 }}><span className="memberno-val">#{c.memberNo ?? "—"}</span> · {c.email}</div></div>
+        <div><div className="pn">{c.store}</div><div className="mono muted" style={{ fontSize: 11 }}>{c.email}</div></div>
       </div>
     ) },
+    { key: "memberNo", header: "Membership No.", render: (c) => <span className="mono memberno-val" style={{ fontSize: 12.5 }}>{c.memberNo ? `#${c.memberNo}` : "—"}</span> },
     { key: "contact", header: "Contact", render: (c) => <span style={{ fontSize: 13 }}>{c.contact}</span> },
     { key: "city", header: "Location", render: (c) => <span style={{ fontSize: 13 }}>{c.city}</span> },
     { key: "orders", header: "Orders", align: "right", render: (c) => <span className="mono">{c.orders}</span> },
@@ -275,7 +333,6 @@ export function CustomersTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Customer accounts">
-        <PaymentTermsGuide />
         <Button variant="primary" size="sm" onClick={() => setInviting(true)}><Plus /> Invite account</Button>
       </Head>
       <FlowHelp steps={CUSTOMER_FLOW} active="review" title="Customer onboarding" />

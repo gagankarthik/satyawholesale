@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSuppliers, usePurchaseOrders, poTotal, SUPPLIER_TERMS } from "@/lib/wms";
-import { Search, Plus } from "@/components/Icons";
+import { Search, Plus, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, tableEmpty, m, timeAgo, type Flash } from "../shared";
 import { Button, Badge, Breadcrumb, DataTable, FieldHelp, ListToolbar, Menu, Switch, type Column } from "@/components/ui";
@@ -50,7 +50,7 @@ export function SuppliersTab({ flash }: { flash: Flash }) {
             <Menu
               label={`Actions for ${s.name}`}
               items={[
-                { label: "Edit supplier", onSelect: () => router.push(`/admin/suppliers/${s.id}`) },
+                { label: "Edit supplier", icon: <Pencil />, onSelect: () => router.push(`/admin/suppliers/${s.id}`) },
                 { label: s.status === "Active" ? "Disable supplier" : "Enable supplier", onSelect: () => { const disabling = s.status === "Active"; update(s.id, { status: disabling ? "Inactive" : "Active" }); flash(disabling ? `${s.name} disabled` : `${s.name} enabled`); } },
               ]}
             />
@@ -177,7 +177,7 @@ export function SupplierForm({ supId, flash }: { supId?: string; flash: Flash })
         {editing && (
           <Menu
             label={`More actions for ${existing!.name}`}
-            items={[{ label: "Delete supplier", danger: true, onSelect: async () => { if (await confirm({ title: "Delete supplier?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/suppliers"); flash(`${existing!.name} deleted`); } } }]}
+            items={[{ label: "Delete supplier", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete supplier?", message: `${existing!.name} will be removed.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/suppliers"); flash(`${existing!.name} deleted`); } } }]}
           />
         )}
       </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cx } from "./cx";
 
@@ -8,6 +8,8 @@ export interface MenuAction {
   label: string;
   onSelect: () => void;
   danger?: boolean;
+  /** Optional leading icon, rendered before the label. */
+  icon?: ReactNode;
 }
 
 export interface MenuProps {
@@ -78,6 +80,7 @@ export function Menu({ items, label = "Row actions" }: MenuProps) {
               className={cx("menu-item", it.danger && "danger")}
               onClick={(e) => { e.stopPropagation(); close(); it.onSelect(); }}
             >
+              {it.icon && <span className="menu-item-ic" aria-hidden="true">{it.icon}</span>}
               {it.label}
             </button>
           ))}

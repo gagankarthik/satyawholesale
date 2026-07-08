@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePromotions } from "@/lib/wms";
-import { Search } from "@/components/Icons";
+import { Search, Pencil, Trash } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, type Flash } from "../shared";
 import { Button, Breadcrumb, EmptyState, FieldHelp, ImageUpload, Menu, Skeleton, Switch } from "@/components/ui";
@@ -51,7 +51,7 @@ export function PromotionForm({ promoId, flash }: { promoId?: string; flash: Fla
         {editing && (
           <Menu
             label={`More actions for ${existing!.title || "this promotion"}`}
-            items={[{ label: "Delete promotion", danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${existing!.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/promotions"); flash("Promotion deleted"); } } }]}
+            items={[{ label: "Delete promotion", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${existing!.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(existing!.id); router.push("/admin/promotions"); flash("Promotion deleted"); } } }]}
           />
         )}
       </header>
@@ -115,8 +115,8 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
                 <Menu
                   label={`Actions for ${p.title}`}
                   items={[
-                    { label: "Edit promotion", onSelect: () => router.push(`/admin/promotions/${p.id}`) },
-                    { label: "Delete promotion", danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Promotion deleted"); } } },
+                    { label: "Edit promotion", icon: <Pencil />, onSelect: () => router.push(`/admin/promotions/${p.id}`) },
+                    { label: "Delete promotion", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete promotion?", message: `"${p.title}" will be removed from the portal.`, confirmLabel: "Delete", danger: true })) { remove(p.id); flash("Promotion deleted"); } } },
                   ]}
                 />
               </div>

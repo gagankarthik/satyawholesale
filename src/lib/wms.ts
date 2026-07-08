@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCollection } from "./collection";
-import { apiPost } from "./api";
+import { apiGet, apiPost, apiPatchPath, apiDeletePath } from "./api";
 import type { Product, Customer, DeptKey } from "./store";
 
 /* =========================================================
@@ -142,16 +142,38 @@ export const useStaff = () => {
 /* =========================================================
    TRADE ACCOUNTS (customers) + public application intake
    ========================================================= */
+/** A verification file stored in the private S3 `documents` folder. `url` is
+    always an /api/file link (admin-only, presigned on demand) — never a public
+    or external URL, so account documents stay access-controlled. */
+export interface AccountDoc { name: string; url: string; uploaded: number }
+
 export interface TradeAccount extends Customer {
   phone?: string;
   businessLicense?: string;
   tobaccoLicense?: string;
+  /** Date of birth (YYYY-MM-DD) used to confirm the buyer is 21+. */
+  dob?: string;
+  businessLicenseDoc?: AccountDoc;
+  tobaccoLicenseDoc?: AccountDoc;
   applied?: number;
   invited?: number;
   state?: string;
   zip?: string;
   docs?: { label: string; name: string; uploaded: number; url?: string; approved?: boolean }[];
 }
+
+/** Whole years old today from a YYYY-MM-DD date of birth (null if unparseable). */
+export function ageFromDob(dob?: string): number | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
+export const LEGAL_AGE = 21;
 
 export const useCustomers = () => {
   const col = useCollection<TradeAccount>("accounts", (c) => c.id);
@@ -178,6 +200,8 @@ export const inviteAccount = (accountId: string) =>
 export interface OnboardingInput {
   store: string; contact: string; phone?: string; city?: string;
   businessLicense?: string; tobaccoLicense?: string;
+  dob?: string;
+  businessLicenseDoc?: AccountDoc; tobaccoLicenseDoc?: AccountDoc;
 }
 export const onboardAccount = (input: OnboardingInput) =>
   apiPost<{ item: TradeAccount }>("/api/onboarding", input);
@@ -190,6 +214,31 @@ export const setAccountStatus = (accountId: string, action: AccountAction) =>
 /** Admin: create a staff/admin or customer login (Cognito emails the temp password). */
 export const createUser = (email: string, role: "admin" | "buyer", store?: string) =>
   apiPost<{ item: { email: string; role: string; store: string | null } }>("/api/users", { email, role, store });
+
+/** The real console administrators: live members of the Cognito `admin` group. */
+export interface AdminLogin { email: string; status: string; enabled: boolean; created: number | null }
+export const listAdmins = () => apiGet<{ items: AdminLogin[] }>("/api/users").then((r) => r.items);
+/** Enable / disable an admin login's sign-in access (active / inactive). */
+export const setAdminEnabled = (email: string, enabled: boolean) =>
+  apiPatchPath<{ item: { email: string; enabled: boolean } }>("/api/users", { email, action: enabled ? "enable" : "disable" });
+/** Revoke console access: remove the login from the Cognito `admin` group. */
+export const removeAdmin = (email: string) =>
+  apiDeletePath<{ ok: true }>("/api/users", { email });
+
+export function useAdmins() {
+  const [admins, setAdmins] = useState<AdminLogin[]>([]);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
+  const refresh = useCallback(() => {
+    setReady(false); setError(false);
+    listAdmins()
+      .then((items) => { setAdmins(items); })
+      .catch(() => setError(true))
+      .finally(() => setReady(true));
+  }, []);
+  useEffect(() => { refresh(); }, [refresh]);
+  return { admins, ready, error, refresh };
+}
 
 /* =========================================================
    PURCHASE ORDERS

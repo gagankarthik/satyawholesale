@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { sku, useInventory, deptName, type DeptKey } from "@/lib/store";
 import { useSuppliers, useMovements, usePurchaseOrders, useReceipts, useInvoices, useCredits, poTotal, termsDueDays, PO_FLOW, RECEIVE_TOLERANCE, CREDIT_REASONS, threeWayMatch, type POLine } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
-import { Search, Close, Check } from "@/components/Icons";
+import { Search, Close, Check, Trash } from "@/components/Icons";
 import { m, timeAgo, type Flash } from "../shared";
 import { Breadcrumb, Button, Combobox, DialogFrame, Menu } from "@/components/ui";
 import { rid, matchClass, lineFromProduct, fmtGp, AuthImage, InvoiceImport } from "./_shared";
@@ -172,7 +172,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
           <span className={`matchbadge ${matchClass(match.status)}`}>{match.status}</span>
           <Menu
             label={`More actions for ${cur.id}`}
-            items={[{ label: "Delete purchase order", danger: true, onSelect: async () => { if (await confirm({ title: "Delete purchase order?", message: `${cur.id} will be permanently removed.`, confirmLabel: "Delete PO", danger: true })) { remove(cur.id); router.push("/admin/purchaseorder"); flash("Purchase order deleted"); } } }]}
+            items={[{ label: "Delete purchase order", icon: <Trash />, danger: true, onSelect: async () => { if (await confirm({ title: "Delete purchase order?", message: `${cur.id} will be permanently removed.`, confirmLabel: "Delete PO", danger: true })) { remove(cur.id); router.push("/admin/purchaseorder"); flash("Purchase order deleted"); } } }]}
           />
         </div>
       </header>

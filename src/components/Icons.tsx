@@ -127,6 +127,18 @@ export const Minus = ({ className }: P) => (
 export const Trash = ({ className }: P) => (
   <svg {...base} className={className}><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m2 0-.7 12a2 2 0 0 1-2 1.9H7.7a2 2 0 0 1-2-1.9L5 7M10 11v6M14 11v6" /></svg>
 );
+export const Chart = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M4 20V4M4 20h16M8 20v-6M13 20v-9M18 20v-4" /></svg>
+);
+export const Pencil = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4ZM13.5 6.5l3 3" /></svg>
+);
+export const Eye = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+);
+export const EyeOff = ({ className }: P) => (
+  <svg {...base} className={className}><path d="M10.6 6.7A9.8 9.8 0 0 1 12 6.5c6 0 9.5 5.5 9.5 5.5a17 17 0 0 1-2.7 3.2M6.2 7.9A17 17 0 0 0 2.5 12S6 17.5 12 17.5a9.4 9.4 0 0 0 3.4-.6M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" /></svg>
+);
 export const Inbox = ({ className }: P) => (
   <svg {...base} className={className}><path d="M3 13.5 6 5h12l3 8.5M3 13.5V19a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-5.5M3 13.5h5l1.2 2.5h5.6L16 13.5h5" /></svg>
 );
