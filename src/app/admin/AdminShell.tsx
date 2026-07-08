@@ -81,7 +81,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       { path: "/admin/promotions", label: "Promotions", Icon: Sparkles },
     ] },
     { label: "Inventory", items: [
-      { path: "/admin/inventory", label: "Inventory valuation", Icon: Refresh },
+      { path: "/admin/inventory", label: "Inventory", Icon: Refresh },
       { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package },
       { path: "/admin/warehouse", label: "Warehouse", Icon: Store },
     ] },
@@ -112,6 +112,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <aside className={`aside-dark ${mobileNav ? "open" : ""}`}>
             <div className="side-brand">
               <Link href="/" className="side-logo" aria-label="Satya Wholesale home"><Brand height={40} /></Link>
+              {/* compact mark shown only when the rail is collapsed */}
+              <Link href="/" className="side-mark" aria-label="Satya Wholesale home"><span>SW</span></Link>
             </div>
             <nav className="anav scroll">
               {GROUPS.map((g) => (

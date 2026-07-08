@@ -2,14 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession, refreshSession } from "@/lib/auth";
 import { onboardAccount, ageFromDob, LEGAL_AGE, type AccountDoc } from "@/lib/wms";
 import { uploadFile } from "@/lib/api";
 import { Alert, Button } from "@/components/ui";
 import Brand from "@/components/Brand";
 import AuthAside from "@/components/AuthAside";
-import { Arrow, Paperclip, Check } from "@/components/Icons";
+import { Arrow, ArrowLeft, Paperclip, Check } from "@/components/Icons";
+
+const STEPS = [
+  { key: "business", label: "Business", legend: "Your business" },
+  { key: "location", label: "Location", legend: "Where you're located" },
+  { key: "verify", label: "Verification", legend: "Age & licensing" },
+];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -17,8 +23,10 @@ export default function Onboarding() {
   const [form, setForm] = useState({ store: "", contact: "", phone: "", address: "", city: "", state: "", zip: "", dob: "", businessLicense: "", tobaccoLicense: "" });
   const [docs, setDocs] = useState<{ business: AccountDoc | null; tobacco: AccountDoc | null }>({ business: null, tobacco: null });
   const [uploading, setUploading] = useState<"business" | "tobacco" | null>(null);
+  const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const last = step === STEPS.length - 1;
 
   /* Must be signed in; anyone already onboarded (buyer) or admin skips this. */
   useEffect(() => {
@@ -27,6 +35,16 @@ export default function Onboarding() {
     else if (isAdmin) router.replace("/admin");
     else if (isBuyer) router.replace("/portal");
   }, [ready, signedIn, isAdmin, isBuyer, router]);
+
+  /* A customer who already onboarded can land here with a stale token that
+     hasn't picked up their buyer claim yet. Refresh once so they're recognized
+     and redirected to the portal instead of being asked to onboard again. */
+  const refreshedOnce = useRef(false);
+  useEffect(() => {
+    if (!ready || !signedIn || isAdmin || isBuyer || refreshedOnce.current) return;
+    refreshedOnce.current = true;
+    refreshSession();
+  }, [ready, signedIn, isAdmin, isBuyer]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -48,13 +66,29 @@ export default function Onboarding() {
     }
   };
 
+  /* Validate only the fields on the current step before letting them advance. */
+  const stepError = (): string | null => {
+    if (step === 0) {
+      if (!form.store.trim()) return "Enter your store name.";
+      if (!form.contact.trim()) return "Enter your name.";
+    }
+    if (step === 2) {
+      const age = ageFromDob(form.dob);
+      if (!form.dob) return "Please enter your date of birth.";
+      if (age == null) return "Enter a valid date of birth.";
+      if (age < LEGAL_AGE) return `You must be ${LEGAL_AGE} or older to buy from us.`;
+    }
+    return null;
+  };
+
+  const back = () => { setError(""); setStep((s) => Math.max(0, s - 1)); };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.store.trim() || !form.contact.trim()) { setError("Store name and your name are required."); return; }
-    const age = ageFromDob(form.dob);
-    if (!form.dob) { setError("Please enter your date of birth."); return; }
-    if (age == null) { setError("Enter a valid date of birth."); return; }
-    if (age < LEGAL_AGE) { setError(`You must be ${LEGAL_AGE} or older to buy from us.`); return; }
+    const err = stepError();
+    if (err) { setError(err); return; }
+    // Not on the last step yet → advance instead of submitting.
+    if (!last) { setError(""); setStep((s) => s + 1); return; }
     setBusy(true); setError("");
     try {
       await onboardAccount({ ...form, businessLicenseDoc: docs.business ?? undefined, tobaccoLicenseDoc: docs.tobacco ?? undefined });
@@ -65,9 +99,9 @@ export default function Onboarding() {
       const refreshed = await refreshSession();
       if (refreshed) router.replace("/portal");
       else window.location.assign("/portal");
-    } catch (err) {
+    } catch (err2) {
       setBusy(false);
-      setError((err as Error)?.message || "Couldn't complete onboarding. Try again.");
+      setError((err2 as Error)?.message || "Couldn't complete onboarding. Try again.");
     }
   };
 
@@ -90,73 +124,92 @@ export default function Onboarding() {
       <div className="auth-grid rise-in">
         <AuthAside />
 
-        <form className="auth-form onboard" onSubmit={submit}>
+        <form className="auth-form onboard wizard" onSubmit={submit}>
           <Link href="/" className="auth-mini-brand" aria-label="Satya Wholesale home"><Brand height={30} /></Link>
           <div className="auth-head">
             <span className="auth-tag mono">Almost there</span>
             <h1 className="auth-h">Complete your account</h1>
-            <p className="auth-sub">One last step before you can browse the catalog and place orders.</p>
+            <p className="auth-sub">Step {step + 1} of {STEPS.length} · {STEPS[step].legend}</p>
           </div>
 
-          <fieldset className="ob-section">
-            <legend className="ob-legend mono">Your business</legend>
-            <label className="field">
-              <span>Store name</span>
-              <input value={form.store} onChange={set("store")} placeholder="Your business name" maxLength={120} required autoFocus />
-            </label>
-            <div className="field-row two">
-              <label className="field">
-                <span>Your name</span>
-                <input value={form.contact} onChange={set("contact")} placeholder="Full name" autoComplete="name" required />
-              </label>
-              <label className="field">
-                <span>Phone</span>
-                <input type="tel" value={form.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" />
-              </label>
-            </div>
-          </fieldset>
+          {/* step indicator */}
+          <ol className="ob-steps" aria-label="Onboarding steps">
+            {STEPS.map((s, i) => (
+              <li key={s.key} className={`ob-step ${i === step ? "on" : ""} ${i < step ? "done" : ""}`}>
+                <span className="ob-step-n">{i < step ? <Check /> : i + 1}</span>
+                <span className="ob-step-l">{s.label}</span>
+              </li>
+            ))}
+          </ol>
 
-          <fieldset className="ob-section">
-            <legend className="ob-legend mono">Where you&apos;re located</legend>
-            <label className="field">
-              <span>Street address</span>
-              <input value={form.address} onChange={set("address")} placeholder="123 Reading Rd" autoComplete="address-line1" />
-            </label>
-            <div className="field-row">
-              <label className="field"><span>City</span><input value={form.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" /></label>
-              <label className="field"><span>State</span><input value={form.state} onChange={set("state")} placeholder="OH" maxLength={2} autoComplete="address-level1" /></label>
-              <label className="field"><span>ZIP</span><input value={form.zip} onChange={set("zip")} placeholder="45202" inputMode="numeric" autoComplete="postal-code" /></label>
-            </div>
-          </fieldset>
-
-          <fieldset className="ob-section">
-            <legend className="ob-legend mono">Age &amp; licensing</legend>
-            <label className="field">
-              <span>Date of birth</span>
-              <input type="date" value={form.dob} onChange={set("dob")} max="9999-12-31" required />
-              <span className="ob-note mono">We verify you are {LEGAL_AGE} or older.</span>
-            </label>
-            <div className="field-row two">
+          {/* step 1 — business */}
+          {step === 0 && (
+            <div className="ob-pane">
               <label className="field">
-                <span>Business license # <span className="ob-opt">optional</span></span>
-                <input value={form.businessLicense} onChange={set("businessLicense")} placeholder="Speeds up verification" />
-                {uploadField("business")}
+                <span>Store name</span>
+                <input value={form.store} onChange={set("store")} placeholder="Your business name" maxLength={120} required autoFocus />
               </label>
-              <label className="field">
-                <span>Tobacco license # <span className="ob-opt">optional</span></span>
-                <input value={form.tobaccoLicense} onChange={set("tobaccoLicense")} placeholder="For tobacco & vape" />
-                {uploadField("tobacco")}
-              </label>
+              <div className="field-row two">
+                <label className="field">
+                  <span>Your name</span>
+                  <input value={form.contact} onChange={set("contact")} placeholder="Full name" autoComplete="name" required />
+                </label>
+                <label className="field">
+                  <span>Phone</span>
+                  <input type="tel" value={form.phone} onChange={set("phone")} placeholder="(513) 555-0100" autoComplete="tel" />
+                </label>
+              </div>
             </div>
-          </fieldset>
+          )}
 
-          <p className="auth-hint mono">Buying is limited to licensed retailers, 21 and older.</p>
+          {/* step 2 — location */}
+          {step === 1 && (
+            <div className="ob-pane">
+              <label className="field">
+                <span>Street address</span>
+                <input value={form.address} onChange={set("address")} placeholder="123 Reading Rd" autoComplete="address-line1" autoFocus />
+              </label>
+              <div className="field-row">
+                <label className="field"><span>City</span><input value={form.city} onChange={set("city")} placeholder="Cincinnati" autoComplete="address-level2" /></label>
+                <label className="field"><span>State</span><input value={form.state} onChange={set("state")} placeholder="OH" maxLength={2} autoComplete="address-level1" /></label>
+                <label className="field"><span>ZIP</span><input value={form.zip} onChange={set("zip")} placeholder="45202" inputMode="numeric" autoComplete="postal-code" /></label>
+              </div>
+            </div>
+          )}
+
+          {/* step 3 — verification */}
+          {step === 2 && (
+            <div className="ob-pane">
+              <label className="field">
+                <span>Date of birth</span>
+                <input type="date" value={form.dob} onChange={set("dob")} max="9999-12-31" required autoFocus />
+                <span className="ob-note mono">We verify you are {LEGAL_AGE} or older.</span>
+              </label>
+              <div className="field-row two">
+                <label className="field">
+                  <span>Business license # <span className="ob-opt">optional</span></span>
+                  <input value={form.businessLicense} onChange={set("businessLicense")} placeholder="Speeds up verification" />
+                  {uploadField("business")}
+                </label>
+                <label className="field">
+                  <span>Tobacco license # <span className="ob-opt">optional</span></span>
+                  <input value={form.tobaccoLicense} onChange={set("tobaccoLicense")} placeholder="For tobacco & vape" />
+                  {uploadField("tobacco")}
+                </label>
+              </div>
+              <p className="auth-hint mono">Buying is limited to licensed retailers, 21 and older.</p>
+            </div>
+          )}
+
           {error && <Alert tone="danger">{error}</Alert>}
-          <Button variant="primary" type="submit" fullWidth loading={busy} iconRight={<Arrow />}>
-            {busy ? "Setting up..." : "Enter the portal"}
-          </Button>
-          <div className="auth-alt">
-            Need help? <Link href="/">Back to the site <Arrow /></Link>
+
+          <div className="ob-nav">
+            {step > 0
+              ? <Button variant="ghost" type="button" onClick={back} iconLeft={<ArrowLeft />}>Back</Button>
+              : <Link href="/" className="auth-alt">Back to the site</Link>}
+            <Button variant="primary" type="submit" loading={busy} iconRight={<Arrow />}>
+              {last ? (busy ? "Setting up..." : "Enter the portal") : "Continue"}
+            </Button>
           </div>
         </form>
       </div>

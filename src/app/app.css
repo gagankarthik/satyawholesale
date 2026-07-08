@@ -429,6 +429,38 @@
   padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
 }
 
+/* ---- Multi-step onboarding wizard ---- */
+/* Each step is short, so center vertically and use a wider column that fills
+   more of the right pane instead of leaving a big empty gutter. */
+.auth-form.onboard.wizard { justify-content: center; gap: 22px; }
+.auth-form.onboard.wizard > * { max-width: 600px; }
+/* horizontal step indicator: numbered circles joined by a progress rail */
+.ob-steps { list-style: none; display: flex; align-items: center; gap: 8px; padding: 0; margin: 0; }
+.ob-step { display: flex; align-items: center; gap: 9px; flex: 1 1 0; min-width: 0; color: var(--slate-2); }
+.ob-step:not(:last-child)::after { content: ""; flex: 1; height: 2px; margin-left: 4px; border-radius: 2px; background: var(--line); }
+.ob-step-n {
+  flex: none; width: 27px; height: 27px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--font-mono-f); font-size: 12px; font-weight: 700;
+  background: var(--paper-2); border: 1.5px solid var(--line); color: var(--slate-2);
+  transition: background .18s, border-color .18s, color .18s;
+}
+.ob-step-n svg { width: 14px; height: 14px; }
+.ob-step-l { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.ob-step.on .ob-step-n { background: var(--signal); border-color: var(--signal); color: #fff; }
+.ob-step.on .ob-step-l, .ob-step.done .ob-step-l { color: var(--ink); }
+.ob-step.done .ob-step-n { background: var(--green); border-color: var(--green); color: #fff; }
+.ob-step.done:not(:last-child)::after { background: var(--green); }
+/* the fields for the active step */
+.ob-pane { display: flex; flex-direction: column; gap: 16px; }
+/* footer: Back on the left, primary action on the right */
+.ob-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.ob-nav .auth-alt { font-size: 13.5px; }
+@media (max-width: 560px) {
+  .ob-step-l { display: none; }
+  .ob-step { flex: none; }
+  .ob-steps { justify-content: space-between; }
+}
+
 /* live password requirements checklist */
 .pwchecks { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
 .pwchecks li { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--slate); transition: color 0.15s; }
@@ -551,8 +583,12 @@ a.help-row:hover { background: var(--paper); }
 
 .app { display: grid; grid-template-columns: 268px 1fr; height: 100vh; overflow: hidden; background: var(--paper); }
 .side { background: var(--card); color: var(--ink); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0 18px 22px; height: 100vh; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
-.side-brand { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; height: var(--hh); margin: 0 0 10px; padding: 0 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+/* flex:none so the bar holds its full --hh height (a flex item would otherwise
+   shrink to the logo, dropping its border above the content topbar's border). */
+.side-brand { position: sticky; top: 0; z-index: 3; flex: none; display: flex; align-items: center; height: var(--hh); margin: 0 0 10px; padding: 0 12px; background: var(--card); border-bottom: 1px solid var(--line); }
 .side-brand img { height: 38px; width: auto; max-width: none; display: block; flex: none; }
+/* compact square monogram — only revealed when the rail is collapsed */
+.side-mark { display: none; }
 .snav { flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
 .sgroup { font-family: var(--font-mono-f); font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--slate-2); padding: 8px 12px; }
 .sitem { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 11px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); transition: background 0.15s, color 0.15s; }
@@ -589,6 +625,10 @@ a.help-row:hover { background: var(--paper); }
   .admin.collapsed { grid-template-columns: 72px 1fr; }
   .app.collapsed .side, .admin.collapsed .aside-dark { padding-left: 12px; padding-right: 12px; }
   .app.collapsed .side-logo, .admin.collapsed .side-logo { display: none; }
+  .app.collapsed .side-mark, .admin.collapsed .side-mark {
+    display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 11px;
+    background: var(--signal); color: #fff; font-family: var(--font-disp); font-weight: 800; font-size: 15px; letter-spacing: 0.3px;
+  }
   .app.collapsed .side-brand, .admin.collapsed .side-brand { padding-left: 0; padding-right: 0; justify-content: center; }
   .app.collapsed .side-collapse, .admin.collapsed .side-collapse { margin-left: 0; }
   .app.collapsed .sitem,
@@ -852,8 +892,8 @@ a.fg-inner:hover { background: var(--paper); }
 .admin { display: grid; grid-template-columns: 248px 1fr; height: 100vh; overflow: hidden; background: var(--paper); }
 .aside-dark { background: var(--card); color: var(--ink); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0 18px 22px; height: 100vh; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
 .adminrole { font-size: 10px; letter-spacing: 1.5px; color: var(--slate-2); padding: 0 8px 18px; }
-.anav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.anav button { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); transition: background 0.15s, color 0.15s; }
+.anav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.anav button { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); transition: background 0.15s, color 0.15s; }
 .anav button .nicon { width: 18px; height: 18px; flex: none; }
 .anav button .cb { margin-left: auto; font-family: var(--font-mono-f); font-size: 11px; color: var(--slate-2); background: var(--paper); padding: 2px 7px; border-radius: 7px; }
 .anav button:hover { background: var(--paper); color: var(--ink); }
@@ -1409,8 +1449,10 @@ a.fg-inner:hover { background: var(--paper); }
    WMS ADMIN — extra components
    ========================================================= */
 .anav.scroll { overflow-y: auto; }
-.anav-group { margin-bottom: 2px; }
-.anav-label { font-family: var(--font-mono-f); font-size: 9.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--slate-2); padding: 12px 12px 5px; }
+.anav-group { margin-bottom: 4px; }
+.anav-label { font-family: var(--font-mono-f); font-size: 9.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--slate-2); padding: 14px 12px 6px; }
+/* the first group sits right under the brand bar — don't double the top gap */
+.anav-group:first-child .anav-label { padding-top: 6px; }
 .anav button .soon { margin-left: auto; font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; background: var(--paper); color: var(--slate-2); padding: 2px 7px; border-radius: 6px; }
 
 .valbox { background: #fff6f3; border: 1px solid #f3c4b8; border-radius: 10px; padding: 12px 14px; color: var(--red); font-size: 13px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
@@ -1649,8 +1691,11 @@ button.ob-file:hover { color: var(--signal-text); text-decoration: underline; }
 /* =========================================================
    AGE GATE (21+)
    ========================================================= */
-.agegate { position: fixed; inset: 0; z-index: 300; background: rgba(20, 24, 48, 0.72); backdrop-filter: blur(8px); display: grid; place-items: center; padding: 20px; animation: fade 0.25s; }
-.agegate-card { background: var(--card); border-radius: var(--rx); padding: 44px 40px; width: min(460px, 100%); text-align: center; box-shadow: var(--shadow-lg); }
+/* Flex (not grid place-items) so the card's `min(460px, 100%)` resolves against
+   the viewport — a centered auto grid track grows to the card's max-content and
+   would let it overflow narrow phones. */
+.agegate { position: fixed; inset: 0; z-index: 300; background: rgba(20, 24, 48, 0.72); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fade 0.25s; }
+.agegate-card { background: var(--card); border-radius: var(--rx); padding: 44px 40px; width: min(460px, 100%); max-width: 100%; text-align: center; box-shadow: var(--shadow-lg); }
 .agegate-logo { display: inline-flex; }
 .agegate-logo img { height: 42px; width: auto; }
 .agegate-21 { width: 66px; height: 66px; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--font-disp); font-weight: 800; font-size: 22px; display: grid; place-items: center; margin: 24px auto 18px; }
@@ -1660,6 +1705,13 @@ button.ob-file:hover { color: var(--signal-text); text-decoration: underline; }
 .agegate-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
 .agegate-btns .btn { justify-content: center; }
 .agegate-foot { font-size: 12px; color: var(--slate-2); margin-top: 18px; }
+@media (max-width: 460px) {
+  .agegate { padding: 14px; }
+  .agegate-card { padding: 30px 20px; }
+  .agegate-card h2 { font-size: 22px; }
+  .agegate-card p { font-size: 14px; }
+  .agegate-21 { width: 58px; height: 58px; font-size: 20px; margin: 18px auto 14px; }
+}
 
 /* =========================================================
    PORTAL — offers carousel + category rows
@@ -2211,7 +2263,7 @@ footer { position: relative; background-image: radial-gradient(680px 320px at 88
 .acct .who-link { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; color: inherit; text-decoration: none; }
 
 /* admin sidebar nav as <Link> (route split) — mirror the button styles */
-.anav a { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); text-decoration: none; transition: background 0.15s, color 0.15s; }
+.anav a { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); text-decoration: none; transition: background 0.15s, color 0.15s; }
 .anav a .nicon { width: 18px; height: 18px; flex: none; }
 .anav a .cb { margin-left: auto; font-family: var(--font-mono-f); font-size: 11px; color: var(--slate-2); background: var(--paper); padding: 2px 7px; border-radius: 7px; }
 .anav a:hover { background: var(--paper); color: var(--ink); }

@@ -77,9 +77,12 @@ export default function RootLayout({
     >
       <body>
         <a href="#main" className="skip">Skip to content</a>
-        {process.env.NEXT_PUBLIC_SKIP_AGEGATE ? null : <AgeGate />}
         {children}
         <Toaster />
+        {/* Rendered LAST so it paints above every page's content: the gate is a
+            fixed z-index:300 overlay, and being last in the DOM also wins any
+            z-index tie against a page that mounts its own positioned element. */}
+        {process.env.NEXT_PUBLIC_SKIP_AGEGATE ? null : <AgeGate />}
       </body>
     </html>
   );
