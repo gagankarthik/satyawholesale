@@ -3,7 +3,6 @@ import LandingEffects from "@/components/landing/LandingEffects";
 import ContactBar from "@/components/landing/ContactBar";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
-import Marquee from "@/components/landing/Marquee";
 import Departments from "@/components/landing/Departments";
 import HowWeServe from "@/components/landing/HowWeServe";
 import Process from "@/components/landing/Process";
@@ -24,11 +23,9 @@ export default function Home() {
     <>
       <StoreJsonLd />
       <LandingEffects />
-      <ContactBar />
       <Header />
       <main id="main">
         <Hero />
-        <Marquee />
         <Departments />
         <HowWeServe />
         <Process />

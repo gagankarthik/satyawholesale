@@ -1,7 +1,7 @@
 import {
-  Check, Phone, Store, Truck, Receipt, Shield,
   DeptLeaf, DeptDrop, DeptFlame, DeptPlus, DeptCart, DeptCar, DeptPhone,
 } from "@/components/Icons";
+import { Check, Phone, Store, Truck, ReceiptText, ShieldCheck } from "lucide-react";
 
 /* Unsplash helper + landing content. Shared by the landing section components. */
 export const ush = (id: string, w = 1000) =>
@@ -26,7 +26,7 @@ export const HERO_IMAGES = [
 export const SERVICE = [
   { Icon: Store, n: "At the warehouse", h: "Cash & carry", img: "1494412519320-aa613dfb7738", p: "Walk our Reading Road floor, load your own cases and check out the same day. No appointment and no order minimum." },
   { Icon: Truck, n: "Across the region", h: "Regional delivery", img: "1601584115197-04ecc0da31d7", p: "Order from the customer portal and we deliver across Greater Cincinnati, usually the next business day." },
-  { Icon: Receipt, n: "One invoice", h: "A single account", img: "1605902711622-cfb43c4437b5", p: "Put tobacco, grocery, health and beauty, and automotive on one bill and one delivery instead of managing five separate suppliers." },
+  { Icon: ReceiptText, n: "One invoice", h: "A single account", img: "1605902711622-cfb43c4437b5", p: "Put tobacco, grocery, health and beauty, and automotive on one bill and one delivery instead of managing five separate suppliers." },
 ];
 
 export const STRENGTHS = [
@@ -37,8 +37,8 @@ export const STRENGTHS = [
 ];
 
 export const REQS = [
-  { Icon: Receipt, h: "Business license", p: "Proof your store is a registered business." },
-  { Icon: Shield, h: "Tobacco license", p: "Required for the regulated tobacco categories." },
+  { Icon: ReceiptText, h: "Business license", p: "Proof your store is a registered business." },
+  { Icon: ShieldCheck, h: "Tobacco license", p: "Required for the regulated tobacco categories." },
   { Icon: Phone, h: "Store contact details", p: "Address, phone and delivery instructions." },
   { Icon: Check, h: "Age verification (21+)", p: "Confirming every buyer is 21 or older." },
 ];

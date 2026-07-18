@@ -348,7 +348,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             <HelpFlyout />
           </aside>
 
-          <main id="main" className="pcontent">
+          <main id="main" className="pcontent page-in" key={pathname}>
             {!isDetail && <div className="pagehead"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>}
             {children}
           </main>

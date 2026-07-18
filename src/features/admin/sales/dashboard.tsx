@@ -5,7 +5,7 @@ import { deptName, sku, useInventory, useOrders, LOW_STOCK, CONTACT, type DeptKe
 import { useSuppliers, useCustomers, usePurchaseOrders } from "@/lib/wms";
 import { Plus, Arrow, Calendar } from "@/components/Icons";
 import { Head, m, k, timeAgo, type Tab } from "../shared";
-import { KpiCard, Badge, Button, Dropdown, cx } from "@/components/ui";
+import { KpiCard, Badge, Button, Dropdown, Skeleton, cx } from "@/components/ui";
 import { AreaTrend } from "@/components/ui/AreaTrend";
 import { PieBreakdown, BarBreakdown } from "@/components/ui";
 import { O_STATUSES } from "./_shared";
@@ -163,20 +163,22 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <h3>Revenue · {isCustom ? "custom range" : `last ${days} days`}</h3>
           <div className="legend"><span className="lg cur">This period {k(stats.rev)}</span><span className="lg prev">Previous {k(stats.revPrev)}</span></div>
         </div>
-        <AreaTrend
-          data={curBuckets.map((b, i) => ({ label: b.label, current: b.revenue, previous: prevBuckets[i]?.revenue ?? 0 }))}
-          xKey="label"
-          series={[{ key: "current", label: "This period", color: "var(--chart-1)" }, { key: "previous", label: "Previous", color: "var(--chart-5)" }]}
-          stacked={false}
-          height={240}
-          yFormatter={(v) => k(v)}
-        />
+        {ready ? (
+          <AreaTrend
+            data={curBuckets.map((b, i) => ({ label: b.label, current: b.revenue, previous: prevBuckets[i]?.revenue ?? 0 }))}
+            xKey="label"
+            series={[{ key: "current", label: "This period", color: "var(--chart-1)" }, { key: "previous", label: "Previous", color: "var(--chart-5)" }]}
+            stacked={false}
+            height={240}
+            yFormatter={(v) => k(v)}
+          />
+        ) : <Skeleton height={240} radius={12} />}
       </div>
 
       <div className="dash">
         <div className="panel anim-in">
           <div className="panel-h"><h3>Orders by status</h3><span className="hint">{stats.cur.length} in range</span></div>
-          {statusMix.length ? (
+          {!ready ? <Skeleton height={300} radius={12} /> : statusMix.length ? (
             <PieBreakdown
               donut
               centerLabel="orders"
@@ -188,7 +190,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
         </div>
         <div className="panel anim-in">
           <div className="panel-h"><h3>Revenue by department</h3><span className="hint">in range</span></div>
-          {deptRevenue.length ? (
+          {!ready ? <Skeleton height={300} radius={12} /> : deptRevenue.length ? (
             <PieBreakdown
               data={deptRevenue.map((d) => ({ name: deptName(d.dep as DeptKey), value: d.revenue }))}
               valueFormatter={(v) => m(v)}
@@ -200,7 +202,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
 
       <div className="panel anim-in" style={{ marginTop: 18 }}>
         <div className="panel-h"><h3>Top products</h3><span className="hint">by revenue</span></div>
-        {topProducts.length ? (
+        {!ready ? <Skeleton height={320} radius={12} /> : topProducts.length ? (
           <BarBreakdown
             data={topProducts.map((p) => ({ name: p.name, value: p.revenue }))}
             valueFormatter={(v) => m(v)}

@@ -1,5 +1,7 @@
 /* Line-icon set — replaces emoji on the public landing for an enterprise feel.
-   All icons inherit currentColor and a 1.8 stroke. */
+   All icons inherit currentColor and a 1.8 stroke. A few icons defer to lucide
+   for a cleaner mark; they keep the same 1em sizing so nothing else changes. */
+import { Settings as LuSettings, Trash2 as LuTrash, Layers as LuLayers } from "lucide-react";
 
 type P = { className?: string };
 const base = {
@@ -89,7 +91,11 @@ export const Users = ({ className }: P) => (
   <svg {...base} className={className}><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 5.6M18 19.5a5.5 5.5 0 0 0-3-4.9" /></svg>
 );
 export const Gear = ({ className }: P) => (
-  <svg {...base} className={className}><circle cx="12" cy="12" r="3" /><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.3a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.3 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+  <LuSettings className={className} width="1em" height="1em" strokeWidth={1.8} />
+);
+/* Inventory / stock levels — stacked layers read better than a refresh arrow. */
+export const Inventory = ({ className }: P) => (
+  <LuLayers className={className} width="1em" height="1em" strokeWidth={1.8} />
 );
 /* Shopping cart — mirrors the brand logo's cart mark. */
 export const Bag = ({ className }: P) => (
@@ -125,7 +131,7 @@ export const Minus = ({ className }: P) => (
   <svg {...base} className={className} strokeWidth={2.1}><path d="M5 12h14" /></svg>
 );
 export const Trash = ({ className }: P) => (
-  <svg {...base} className={className}><path d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7m2 0-.7 12a2 2 0 0 1-2 1.9H7.7a2 2 0 0 1-2-1.9L5 7M10 11v6M14 11v6" /></svg>
+  <LuTrash className={className} width="1em" height="1em" strokeWidth={1.8} />
 );
 export const Chart = ({ className }: P) => (
   <svg {...base} className={className}><path d="M4 20V4M4 20h16M8 20v-6M13 20v-9M18 20v-4" /></svg>

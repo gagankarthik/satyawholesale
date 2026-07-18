@@ -18,15 +18,15 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "linear-gradient(135deg, #12172e 0%, #1b2138 60%, #241a12 100%)",
+          background: "linear-gradient(135deg, #16233a 0%, #1a2a44 58%, #101a2c 100%)",
           color: "#ffffff",
           padding: "72px 80px",
           fontFamily: "sans-serif",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 8, background: "#f26a1b" }} />
-          <div style={{ fontSize: 30, letterSpacing: 2, color: "#f8b48a", textTransform: "uppercase" }}>
+          <div style={{ width: 26, height: 26, borderRadius: 8, background: "#f57c00" }} />
+          <div style={{ fontSize: 30, letterSpacing: 2, color: "#fdc38f", textTransform: "uppercase" }}>
             Wholesale · Cincinnati, OH
           </div>
         </div>

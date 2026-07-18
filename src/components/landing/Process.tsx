@@ -1,40 +1,56 @@
+"use client";
+
 import Link from "next/link";
-import { Arrow } from "@/components/Icons";
+import { ArrowRight } from "lucide-react";
+import { Reveal, Stagger, Item, MaskText, DrawLine } from "./motion";
 
 const STEPS = [
   { n: "01", h: "Apply for customer access", p: "Submit your business and tobacco licenses online. It costs nothing and takes about five minutes." },
   { n: "02", h: "Get verified, same day", p: "We review your details the same business day and activate your customer account." },
   { n: "03", h: "Order in the portal", p: "Browse the live catalog with case pricing and build an order in minutes." },
-  { n: "04", h: "Pick up or get it delivered", p: "Collect at the Reading Road warehouse, or take delivery across the Tri-State." },
+  { n: "04", h: "Pick up or get it delivered", p: "Collect at the Reading Road warehouse, or have your order delivered across Greater Cincinnati." },
 ];
 
 export default function Process() {
   return (
-    <section id="process" className="process pinwrap" data-pin-track>
-      <div className="pinview">
-        <div className="wrap">
-          <div className="shead reveal">
-            <div className="tag">Getting started</div>
-            <h2 className="sx" data-lines>
-              <span className="lm"><span className="lm-in">From application to</span></span>
-              <span className="lm"><span className="lm-in">your shelf in four steps.</span></span>
-            </h2>
-            <p>Opening a wholesale account is quick. Most stores go from application to their first case order within one business day.</p>
+    <section id="process" className="rd-proc">
+      <div className="wrap">
+        <div className="rd-head">
+          <MaskText
+            as="h2"
+            className="rd-title"
+            lines={["Open a wholesale account", <>in <span className="or">four steps.</span></>]}
+          />
+          <Reveal delay={0.12}>
+            <p className="rd-lede">
+              Opening a Satya Wholesale account is free and takes minutes. Most convenience stores go
+              from application to their first case order within one business day.
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="ptime">
+          <div className="ptrack">
+            <DrawLine className="ptrack-fill" delay={0.2} />
           </div>
-          <div className="steps-grid">
+          <Stagger className="psteps">
             {STEPS.map((s) => (
-              <div className="stepc reveal" key={s.n}>
+              <Item className="pstep" key={s.n}>
+                <span className="pnode" aria-hidden />
+                <span className="pnum">{s.n}</span>
                 <h3>{s.h}</h3>
                 <p>{s.p}</p>
-              </div>
+              </Item>
             ))}
-          </div>
-          <div className="pinbar" aria-hidden="true"><span className="pinbar-fill" /></div>
-          <div className="process-cta reveal">
-            <span>Get started today.</span>
-            <Link className="btn btn-primary" href="/auth/signup">Open a customer account <Arrow /></Link>
-          </div>
+          </Stagger>
         </div>
+
+        <Reveal className="proc-foot" delay={0.1}>
+          <span>Get started today.</span>
+          <Link className="btn btn-primary" href="/auth/signup">
+            Open a customer account <ArrowRight />
+          </Link>
+        </Reveal>
       </div>
     </section>
   );

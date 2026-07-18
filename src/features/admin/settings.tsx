@@ -228,7 +228,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     setLowStock(String(settings.lowStock ?? LOW_STOCK)); setPoApproval(String(settings.poApproval ?? PO_APPROVAL_THRESHOLD)); setRecvTol(String((settings.receiveTolerance ?? RECEIVE_TOLERANCE) * 100));
   }, [settings.taxRate, settings.taxLabel, settings.countyTaxRate, settings.countyTaxLabel, settings.orderMinimum, settings.deliveryFee, settings.freeFreightThreshold, settings.lowStock, settings.poApproval, settings.receiveTolerance]);
 
-  const [tab, setTab] = useState<"company" | "tax" | "policies">("company");
+  const [tab, setTab] = useState<"company" | "tax" | "policies" | "coupons" | "rewards">("company");
 
   const saveTax = (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,12 +258,18 @@ export function SettingsTab({ flash }: { flash: Flash }) {
 
   return (
     <>
-      <Head title="Settings" />
+      <Head title="Store settings" />
       <Tabs
         ariaLabel="Settings sections"
         value={tab}
         onChange={(k) => setTab(k as typeof tab)}
-        tabs={[{ key: "company", label: "Company" }, { key: "tax", label: "Tax & invoicing" }, { key: "policies", label: "Warehouse policies" }]}
+        tabs={[
+          { key: "company", label: "Company" },
+          { key: "tax", label: "Tax & invoicing" },
+          { key: "policies", label: "Warehouse policies" },
+          { key: "coupons", label: "Coupons" },
+          { key: "rewards", label: "Rewards" },
+        ]}
       />
 
       <div className="setpane">
@@ -347,6 +353,28 @@ export function SettingsTab({ flash }: { flash: Flash }) {
                   <button className="btn btn-primary btn-sm" type="submit">Save warehouse policy</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {tab === "coupons" && (
+          <div className="comingsoon anim-in" key="coupons">
+            <div className="cs-badge mono">COMING SOON</div>
+            <h2>Coupons &amp; promo codes</h2>
+            <p>Create percentage or fixed-amount coupon codes, set expiry dates and per-account limits, and apply them at checkout in the order portal. Planned for a later phase.</p>
+            <div className="cs-steps">
+              <span>Code generation</span><span>Usage limits</span><span>Expiry rules</span><span>Portal checkout</span>
+            </div>
+          </div>
+        )}
+
+        {tab === "rewards" && (
+          <div className="comingsoon anim-in" key="rewards">
+            <div className="cs-badge mono">COMING SOON</div>
+            <h2>Loyalty rewards</h2>
+            <p>Reward repeat buyers with points on every case ordered, redeemable for account credit. Tiered earning, points history and automatic redemption at checkout. Planned for a later phase.</p>
+            <div className="cs-steps">
+              <span>Points earning</span><span>Tiers</span><span>Redemption</span><span>Points history</span>
             </div>
           </div>
         )}

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CONTACT } from "@/lib/store";
-import { Arrow, Check, Phone, Mail, Pin, Clock } from "@/components/Icons";
+import { ArrowRight, Check, Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Reveal, MaskText } from "./motion";
 
 /* Formal contact form. Account applications live on /apply. */
 export default function Contact() {
@@ -39,17 +40,25 @@ export default function Contact() {
   return (
     <section id="contact" className="contact">
       <div className="wrap">
-        <div className="shead reveal" style={{ marginBottom: 36 }}>
-          <div className="tag">Contact</div>
-          <h2 className="sx">Talk to the warehouse.</h2>
-          <p>Questions about wholesale pricing, delivery areas or the catalog? Call, email or visit the Reading Road warehouse. A person answers, not a call center.</p>
+        <div className="rd-head" style={{ marginBottom: 40 }}>
+          <MaskText
+            as="h2"
+            className="rd-title"
+            lines={[<>Talk to the <span className="or" key="a">warehouse.</span></>]}
+          />
+          <Reveal delay={0.12}>
+            <p className="rd-lede">
+              Questions about wholesale pricing, delivery areas or the catalog? Call, email or visit our
+              Cincinnati warehouse on Reading Road. A person answers, not a call center.
+            </p>
+          </Reveal>
         </div>
         <div className="contact-grid">
           <div className="contact-card dark reveal">
             <h3>Satya Wholesale</h3>
             <p>Licensed cash-and-carry distributor serving independent convenience retailers across Greater Cincinnati.</p>
             <ul className="cinfo">
-              <li><span className="ic"><Pin /></span><div><div className="k">Warehouse</div><div className="v">{CONTACT.address1}<br />{CONTACT.address2}</div></div></li>
+              <li><span className="ic"><MapPin /></span><div><div className="k">Warehouse</div><div className="v">{CONTACT.address1}<br />{CONTACT.address2}</div></div></li>
               <li><span className="ic"><Phone /></span><div><div className="k">Phone</div><a className="v" href={CONTACT.phoneHref}>{CONTACT.phone}</a></div></li>
               <li><span className="ic"><Mail /></span><div><div className="k">Email</div><a className="v" href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div></li>
               <li><span className="ic"><Clock /></span><div><div className="k">Hours</div><div className="v">{CONTACT.hours}</div></div></li>
@@ -76,7 +85,7 @@ export default function Contact() {
                 </div>
                 <label className="field"><span>How can we help?</span><textarea name="message" required placeholder="Which delivery areas do you serve? Do you carry a specific brand we need?" /></label>
                 {error && <p className="form-err" role="alert" style={{ color: "var(--red)", fontSize: 13 }}>{error}</p>}
-                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }} disabled={sending}>{sending ? "Sending…" : <>Send message <Arrow /></>}</button>
+                <button className="btn btn-primary" type="submit" style={{ justifyContent: "center" }} disabled={sending}>{sending ? "Sending…" : <>Send message <ArrowRight /></>}</button>
               </form>
             )}
           </div>

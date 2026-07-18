@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { flash } from "@/lib/flash";
-import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Refresh, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help, Chart } from "@/components/Icons";
+import { Grid, Receipt, Boxes, Users, Truck, Store, Shield, Inventory, Search, Inbox, Tag, Sparkles, Package, Gear, Card, LogOut, Mail, Help, Chart } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import { AdminSearchResults } from "./AdminSearchResults";
 import Brand from "@/components/Brand";
@@ -12,6 +12,7 @@ import { ConfirmProvider } from "@/components/Confirm";
 import { useSession } from "@/lib/auth";
 import { useMessages } from "@/lib/wms";
 import { type Tab, type Flash } from "@/features/admin/shared";
+import Image from "next/image";
 
 /* tab key -> route, so feature components can keep their `go(tab)` API */
 export const TAB_PATH: Record<Tab, string> = {
@@ -80,14 +81,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       { path: "/admin/promotions", label: "Promotions", Icon: Sparkles },
     ] },
     { label: "Inventory", items: [
-      { path: "/admin/inventory", label: "Inventory", Icon: Refresh },
+      { path: "/admin/inventory", label: "Inventory", Icon: Inventory },
       { path: "/admin/purchaseorder", label: "Purchase orders", Icon: Package },
       { path: "/admin/warehouse", label: "Warehouse", Icon: Store },
     ] },
     { label: "Admin", items: [
       { path: "/admin/users", label: "Users", Icon: Shield },
       { path: "/admin/reports", label: "Reports", Icon: Chart },
-      { path: "/admin/settings", label: "Settings", Icon: Gear },
+      { path: "/admin/settings", label: "Store settings", Icon: Gear },
       { path: "/admin/possync", label: "POS sync", Icon: Card, soon: true },
     ] },
   ];
@@ -112,7 +113,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <div className="side-brand">
               <Link href="/" className="side-logo" aria-label="Satya Wholesale home"><Brand height={40} /></Link>
               {/* compact mark shown only when the rail is collapsed */}
-              <Link href="/" className="side-mark" aria-label="Satya Wholesale home"><span>SW</span></Link>
+              <Link href="/" className="side-mark" aria-label="Satya Wholesale home"><Image src="/icon.png" alt="Satya Wholesale" width={34} height={34} /></Link>
             </div>
             <nav className="anav scroll">
               {GROUPS.map((g) => (
@@ -173,7 +174,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </Dropdown>
               </div>
             </div>
-            <main id="main" className="admincontent">{children}</main>
+            <main id="main" className="admincontent page-in" key={pathname}>{children}</main>
           </div>
         </div>
       </Ctx.Provider>

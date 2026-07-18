@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "./chart";
 
 export interface BarDatum {
@@ -8,14 +8,26 @@ export interface BarDatum {
   value: number;
 }
 
+/* one distinct hue per bar so a "top N" list reads as a palette, not a
+   wall of the same colour */
+const BAR_PALETTE = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
+
 /**
  * Horizontal shadcn/ui bar breakdown — one bar per category, ranked. Good for
  * "top N" lists (products, departments) where labels need room to read.
+ * Each bar takes its own colour from the chart palette. Pass `color` to force
+ * a single colour instead.
  */
 export function BarBreakdown({
   data,
   height = 260,
-  color = "var(--chart-1)",
+  color,
   valueFormatter = (v) => v.toLocaleString(),
 }: {
   data: BarDatum[];
@@ -23,7 +35,8 @@ export function BarBreakdown({
   color?: string;
   valueFormatter?: (v: number) => string;
 }) {
-  const config: ChartConfig = { value: { label: "Value", color } };
+  const barColor = (i: number) => color ?? BAR_PALETTE[i % BAR_PALETTE.length];
+  const config: ChartConfig = { value: { label: "Value", color: color ?? "var(--chart-1)" } };
 
   return (
     <ChartContainer config={config} className="aspect-auto w-full" style={{ height }}>
@@ -47,7 +60,11 @@ export function BarBreakdown({
             </span>
           )} />}
         />
-        <Bar dataKey="value" fill={color} radius={[0, 6, 6, 0]} barSize={22} />
+        <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={22}>
+          {data.map((_, i) => (
+            <Cell key={i} fill={barColor(i)} />
+          ))}
+        </Bar>
       </BarChart>
     </ChartContainer>
   );
