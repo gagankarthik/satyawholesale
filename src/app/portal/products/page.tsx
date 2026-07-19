@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Arrow } from "@/components/Icons";
+import { useSearchParams } from "next/navigation";
+import { Search, Arrow, Sparkles, Tag } from "@/components/Icons";
 import { Button, EmptyState, ListToolbar, Skeleton, type ToolbarOption } from "@/components/ui";
 import { usePortal } from "../PortalShell";
 import ProductCard from "../ProductCard";
@@ -19,8 +20,15 @@ const STOCK_FILTERS: ToolbarOption[] = [
 
 export default function PortalProducts() {
   const { products, ready, error, reload, dept, setDept, sub, setSub, query, setQuery, depts, subsFor, catName, matchDept } = usePortal();
+  const searchParams = useSearchParams();
   const [sort, setSort] = useState("name");
   const [stock, setStock] = useState("all");
+  // "New" / "On offer" are merchandising lenses (was separate pages) — now filters.
+  // Pre-selected when arriving from /portal/arrivals or /portal/offers (?view=…).
+  const [promo, setPromo] = useState<"all" | "new" | "offer">(() => {
+    const v = searchParams.get("view");
+    return v === "new" ? "new" : v === "offer" ? "offer" : "all";
+  });
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -29,6 +37,7 @@ export default function PortalProducts() {
         (dept === "all" || matchDept(p.dep, dept)) &&
         (sub === "" || p.dep === sub) &&
         (stock === "all" || p.stock > 0) &&
+        (promo === "all" || (promo === "new" ? p.onArrivals : p.onOffers)) &&
         (q === "" || p.name.toLowerCase().includes(q) || String(p.id).includes(q))
     );
     return [...filtered].sort((a, b) => {
@@ -39,15 +48,15 @@ export default function PortalProducts() {
         default: return a.name.localeCompare(b.name);
       }
     });
-  }, [products, dept, sub, query, stock, sort, matchDept]);
+  }, [products, dept, sub, query, stock, sort, promo, matchDept]);
 
   const latest = useMemo(
     () => [...products].sort((a, b) => (b.created ?? 0) - (a.created ?? 0)).slice(0, 12),
     [products]
   );
 
-  // any active search/filter/sort flips the shelves view into a filtered grid
-  const filtering = !!query.trim() || stock !== "all" || sort !== "name";
+  // any active search/filter/sort/lens flips the shelves view into a filtered grid
+  const filtering = !!query.trim() || stock !== "all" || sort !== "name" || promo !== "all";
   const browse = dept === "all" && !filtering;
   const activeDept = dept === "all" ? null : dept;
   const subs = activeDept ? subsFor(activeDept) : [];
@@ -70,6 +79,13 @@ export default function PortalProducts() {
 
       {ready && (
         <ListToolbar
+          left={
+            <div className="promochips" role="group" aria-label="Product collections">
+              <button type="button" className={`promochip ${promo === "all" ? "on" : ""}`} aria-pressed={promo === "all"} onClick={() => setPromo("all")}>All</button>
+              <button type="button" className={`promochip ${promo === "new" ? "on" : ""}`} aria-pressed={promo === "new"} onClick={() => setPromo("new")}><Sparkles /> New</button>
+              <button type="button" className={`promochip ${promo === "offer" ? "on" : ""}`} aria-pressed={promo === "offer"} onClick={() => setPromo("offer")}><Tag /> On offer</button>
+            </div>
+          }
           search={{ value: query, onChange: setQuery, placeholder: "Search products by name or item #" }}
           filters={[{ label: "Stock", value: stock, onChange: setStock, options: STOCK_FILTERS }]}
           sort={{ value: sort, onChange: setSort, options: SORTS }}

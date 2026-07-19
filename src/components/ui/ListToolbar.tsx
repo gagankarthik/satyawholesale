@@ -25,6 +25,8 @@ export interface ListToolbarProps {
   filters?: ToolbarSelect[];
   /** Optional sort dropdown (labelled "Sort" by default). */
   sort?: Omit<ToolbarSelect, "label"> & { label?: string };
+  /** Extra controls rendered at the start of the bar (e.g. filter chips). */
+  left?: ReactNode;
   /** Extra controls pinned to the right (e.g. a primary action). */
   right?: ReactNode;
   className?: string;
@@ -35,7 +37,7 @@ export interface ListToolbarProps {
  * Config-driven: pass the controls a page needs and it lays them out the
  * same way everywhere (Jakob's Law — one familiar pattern across pages).
  */
-export function ListToolbar({ search, filters, sort, right, className }: ListToolbarProps) {
+export function ListToolbar({ search, filters, sort, left, right, className }: ListToolbarProps) {
   const selects: ToolbarSelect[] = [
     ...(filters ?? []),
     ...(sort ? [{ ...sort, label: sort.label ?? "Sort" }] : []),
@@ -43,6 +45,7 @@ export function ListToolbar({ search, filters, sort, right, className }: ListToo
 
   return (
     <div className={cx("listbar", className)}>
+      {left}
       {search && (
         <div className="lb-search">
           <Search />

@@ -518,7 +518,15 @@
 .catnav svg { width: 16px; height: 16px; }
 .catnav-chev { width: 13px; height: 13px; transition: transform 0.2s; }
 .catnav-chev.open { transform: rotate(180deg); }
-.pbody { flex: 1; display: grid; grid-template-columns: 234px 1fr; min-height: 0; overflow: hidden; }
+/* content fills the width now that the account rail moved into the avatar menu */
+.pcontent { flex: 1; min-height: 0; }
+.pwrap { max-width: 1440px; margin: 0 auto; }
+/* merchandising lens chips on the Products page (New / On offer) — inline in the toolbar */
+.promochips { display: flex; gap: 8px; flex: none; margin-right: 4px; }
+.promochip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 100px; border: 1.5px solid var(--line); background: var(--card); font-size: 13.5px; font-weight: 600; color: var(--slate); cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.promochip svg { width: 15px; height: 15px; }
+.promochip:hover { border-color: var(--ink); color: var(--ink); }
+.promochip.on { background: var(--signal-soft); border-color: var(--signal); color: var(--signal-text); }
 .pside { background: var(--card); border-right: 1px solid var(--line); padding: 18px 16px; overflow-y: auto; scrollbar-gutter: stable; display: flex; flex-direction: column; }
 .psnav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .pside-collapse { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--slate-2); font-size: 13px; font-weight: 500; margin-top: 8px; flex: none; transition: background 0.15s, color 0.15s; }

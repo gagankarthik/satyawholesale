@@ -5,17 +5,16 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  deptName, fmt, productImg, effPrice, useInventory, useOrders,
+  deptName, fmt, productImg, effPrice, useInventory, useOrders, CONTACT,
   type DeptKey, type Product, type Order,
 } from "@/lib/store";
 import { useCategories, type Category } from "@/lib/wms";
 import { useSession } from "@/lib/auth";
 import { flash, type Flash } from "@/lib/flash";
-import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Sparkles, Tag, Coin, Arrow } from "@/components/Icons";
+import { Bag, Search, Grid, GridView, Receipt, Card, User, LogOut, Shield, Pin, Coin, Arrow, Phone, Mail } from "@/components/Icons";
 import { Dropdown } from "@/components/ui";
 import Brand from "@/components/Brand";
 import { ConfirmProvider } from "@/components/Confirm";
-import HelpFlyout from "./HelpFlyout";
 
 type Cart = Record<number, number>; // id -> cases
 
@@ -106,12 +105,7 @@ export default function PortalShell({ children }: { children: React.ReactNode })
   const [query, setQuery] = useState("");
   const [sub, setSub] = useState("");
   const [cart, setCart] = useState<Cart>({});
-  const [mobileNav, setMobileNav] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
-
-  useEffect(() => { setCollapsed(localStorage.getItem("satya.psidebar") === "1"); }, []);
-  const toggleCollapse = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem("satya.psidebar", n ? "1" : "0"); } catch {} return n; });
 
   /* redirect to login when signed out; to onboarding when signed in but not
      yet activated as a buyer (finished sign-up, hasn't completed onboarding) */
@@ -198,13 +192,6 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     : seg === "orders" ? `${myOrders.length} order${myOrders.length !== 1 ? "s" : ""} on record`
     : "";
 
-  const navItem = (href: string, active: boolean, icon: React.ReactNode, label: string, badge?: number) => (
-    <Link href={href} className={`sitem ${active ? "on" : ""}`} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined} onClick={() => setMobileNav(false)}>
-      <span className="ic">{icon}</span> {label}
-      {badge != null ? <span className="cb">{badge}</span> : null}
-    </Link>
-  );
-
   const value: PortalCtx = {
     products, ready, error, reload, orders, myOrders, STORE, counts,
     depts, subsFor, catName, matchDept,
@@ -212,20 +199,17 @@ export default function PortalShell({ children }: { children: React.ReactNode })
     cart, add, changeQty, removeLine, clearCart, reorder, cases, flash,
   };
 
-  const goDept = (d: string, sk = "") => { setDept(d); setSub(sk); router.push("/portal/products"); setMobileNav(false); };
+  const goDept = (d: string, sk = "") => { setDept(d); setSub(sk); router.push("/portal/products"); };
 
   if (sessionReady && (!signedIn || needsOnboarding)) return <div className="papp" />;
 
   return (
     <ConfirmProvider>
     <Ctx.Provider value={value}>
-      <div className={`papp ${collapsed ? "collapsed" : ""}`}>
+      <div className="papp">
         {/* full-width top bar */}
         <header className="ptopbar">
           <div className="ptop-left">
-            <button className="navtoggle" onClick={() => setMobileNav(true)} aria-label="Open menu">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" /></svg>
-            </button>
             <Link href="/portal" className="ptop-logo" aria-label="Satya Wholesale dashboard"><Brand height={34} /></Link>
           </div>
           <form className="search" onSubmit={(e) => { e.preventDefault(); goSearch(); }} role="search">
@@ -285,20 +269,25 @@ export default function PortalShell({ children }: { children: React.ReactNode })
             </span>
             <Dropdown ariaLabel="Account menu" triggerClassName="topavatar" trigger={() => <span className="av-sm">{initials}</span>}>
               <div className="menu-head"><div className="mh-nm">{STORE || "Customer account"}</div><div className="mh-em">{email}</div></div>
+              <Link href="/portal" className="menu-item" role="menuitem"><Grid /> Dashboard</Link>
+              <Link href="/portal/orders" className="menu-item" role="menuitem"><Receipt /> My orders</Link>
               <Link href="/portal/profile" className="menu-item" role="menuitem"><User /> Profile</Link>
               <Link href="/portal/addresses" className="menu-item" role="menuitem"><Pin /> Addresses</Link>
-              {isAdmin && <Link href="/admin" className="menu-item" role="menuitem"><Shield /> Admin console</Link>}
+              <Link href="/portal/payments" className="menu-item" role="menuitem"><Card /> Payments</Link>
+              <div className="menu-sep" />
+              <a href={CONTACT.phoneHref} className="menu-item" role="menuitem"><Phone /> {CONTACT.phone}</a>
+              <a href={`mailto:${CONTACT.email}`} className="menu-item" role="menuitem"><Mail /> Contact support</a>
+              {isAdmin && <><div className="menu-sep" /><Link href="/admin" className="menu-item" role="menuitem"><Shield /> Admin console</Link></>}
               <div className="menu-sep" />
               <button type="button" className="menu-item danger" role="menuitem" onClick={() => { signOut(); router.replace("/auth/login"); }}><LogOut /> Sign out</button>
             </Dropdown>
           </div>
         </header>
 
-        {/* full-width browse line — every department inline, each a sub-category menu */}
+        {/* full-width browse line — departments only (New / Offers are now filters
+            on the Products page) */}
         <nav className="pcatline" aria-label="Browse departments">
           <div className="pcatline-in">
-            <Link href="/portal/arrivals" className={`catnav ${seg === "arrivals" ? "on" : ""}`} onClick={() => setMobileNav(false)}><Sparkles /> New arrivals</Link>
-            <Link href="/portal/offers" className={`catnav ${seg === "offers" ? "on" : ""}`} onClick={() => setMobileNav(false)}><Tag /> Offers</Link>
             <Link href="/portal/products" className={`catnav ${onProducts && dept === "all" ? "on" : ""}`} onClick={() => goDept("all")}><GridView /> All products</Link>
             {depts.map((d) => {
               const subs = subsFor(d.key);
@@ -327,32 +316,13 @@ export default function PortalShell({ children }: { children: React.ReactNode })
           </div>
         </nav>
 
-        {/* sidebar + content */}
-        <div className="pbody">
-          <div className={`sideov ${mobileNav ? "show" : ""}`} onClick={() => setMobileNav(false)} />
-          <aside className={`pside ${mobileNav ? "open" : ""}`}>
-            <nav className="psnav" aria-label="Account navigation">
-              {navItem("/portal", isDash, <Grid />, "Dashboard")}
-              {navItem("/portal/orders", seg === "orders", <Receipt />, "Orders")}
-              {navItem("/portal/profile", seg === "profile", <User />, "Profile")}
-              {navItem("/portal/addresses", seg === "addresses", <Pin />, "Manage address")}
-              {navItem("/portal/payments", seg === "payments", <Card />, "Payments")}
-              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Rewards, coming soon" : undefined}><span className="ic"><Sparkles /></span> Rewards <span className="soon">soon</span></span>
-              <span className="sitem disabled" aria-disabled="true" title={collapsed ? "Coupons, coming soon" : undefined}><span className="ic"><Tag /></span> Coupons <span className="soon">soon</span></span>
-            </nav>
-            <button className="pside-collapse" onClick={toggleCollapse} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" strokeLinecap="round" /></svg>
-              <span className="pside-collapse-l">Collapse</span>
-            </button>
-
-            <HelpFlyout />
-          </aside>
-
-          <main id="main" className="pcontent page-in" key={pathname}>
+        {/* full-width, product-first content — account nav lives in the avatar menu */}
+        <main id="main" className="pcontent page-in" key={pathname}>
+          <div className="pwrap">
             {!isDetail && <div className="pagehead"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>}
             {children}
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </Ctx.Provider>
     </ConfirmProvider>
