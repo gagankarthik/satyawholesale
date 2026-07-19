@@ -26,10 +26,10 @@ export default function Footer() {
           <div className="foot-cols">
             <div className="fcol">
               <h5>Explore</h5>
-              <a href="#departments">What we carry</a>
-              <a href="#how">How we serve</a>
-              <a href="#process">Getting started</a>
-              <a href="#why">Why Satya</a>
+              <a href="#departments">Products</a>
+              <a href="#how">How it works</a>
+              <a href="#process">Get started</a>
+              <a href="#why">Why us</a>
               <a href="#faq">FAQ</a>
             </div>
             <div className="fcol">

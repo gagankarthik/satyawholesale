@@ -120,7 +120,7 @@
   background: var(--signal); color: #fff;
   font-family: var(--font-mono-f); font-size: 11px; font-weight: 600;
   padding: 8px 13px; border-radius: 100px;
-  box-shadow: 0 14px 26px -8px rgba(245,124,0,.6);
+  box-shadow: 0 1px 2px rgba(20,14,4,.14), 0 2px 6px -2px rgba(176,90,0,.28);
   transform: rotate(4deg); z-index: 2;
 }
 
@@ -307,7 +307,10 @@
   .contactbar-in { justify-content: flex-start; }
   .nav-links { display: none; }
   .nav-cta .btn { display: none; }
-  .nav-in { gap: 12px; justify-content: space-between; }
+  /* on mobile the centre nav-links are hidden, so drop the 3-col grid and
+     lay brand + burger out as a simple row: brand left, burger hard right. */
+  .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .nav-cta { justify-self: auto; margin-left: auto; }
   .nav-in .brand img { height: 34px; width: auto; }
   .burger {
     display: grid !important;
@@ -711,9 +714,9 @@ a.help-row:hover { background: var(--paper); }
 .pricerow .pr { font-family: var(--font-disp); font-weight: 700; font-size: 21px; }
 .pricerow .un { font-family: var(--font-mono-f); font-size: 12px; color: var(--slate-2); }
 .pricerow .was { font-family: var(--font-mono-f); font-size: 13px; color: var(--slate-2); text-decoration: line-through; }
-.addbtn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; width: 100%; padding: 12px; background: var(--signal); color: #fff; border-radius: 11px; font-weight: 700; font-size: 14px; letter-spacing: 0.1px; box-shadow: 0 8px 18px -8px rgba(245,124,0,.6); transition: background 0.15s, transform 0.15s, box-shadow 0.15s; }
+.addbtn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; width: 100%; padding: 12px; background: var(--signal); color: #fff; border-radius: 11px; font-weight: 700; font-size: 14px; letter-spacing: 0.1px; box-shadow: 0 1px 2px rgba(20,14,4,.14), 0 2px 6px -2px rgba(176,90,0,.28); transition: background 0.15s, transform 0.15s, box-shadow 0.15s; }
 .addbtn svg { width: 17px; height: 17px; flex: none; }
-.addbtn:hover:not(:disabled) { background: var(--signal-deep); transform: translateY(-2px); box-shadow: 0 14px 24px -8px rgba(245,124,0,.62); }
+.addbtn:hover:not(:disabled) { background: var(--signal-deep); transform: translateY(-2px); box-shadow: 0 2px 5px rgba(20,14,4,.16), 0 8px 16px -6px rgba(176,90,0,.3); }
 .addbtn:disabled { background: var(--line); color: var(--slate-2); box-shadow: none; cursor: not-allowed; }
 .stepper { display: flex; align-items: center; justify-content: space-between; background: var(--ink); border-radius: 11px; padding: 5px; }
 .stepper button { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,.12); border: none; font-size: 20px; font-weight: 700; color: #fff; display: grid; place-items: center; transition: background 0.15s; }
@@ -843,7 +846,7 @@ a.help-row:hover { background: var(--paper); }
 .modal-lines .ml:last-child { border-bottom: none; }
 .modal-lines .ml span:last-child { color: var(--slate); }
 .formgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
-.formgrid .field.full { grid-column: 1 / -1; }
+.formgrid .field.full, .formgrid > .full { grid-column: 1 / -1; }
 /* A full-width row that lays its own fields out evenly — use for groups that
    don't divide into the 2-column grid cleanly (e.g. City / State / ZIP). */
 .field-row { display: grid; grid-template-columns: 2fr 0.7fr 1fr; gap: 14px; }
@@ -929,7 +932,13 @@ a.fg-inner:hover { background: var(--paper); }
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
 /* auto-fit variant for KPI rows with a non-4 count (stays responsive without media queries) */
 .kpis.auto { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
-.kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.kpi-body { min-width: 0; }
+/* big related icon in a tinted tile, right-aligned */
+.kpi-ic { flex: none; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font-size: 23px; background: var(--signal-soft); color: var(--signal-deep); }
+.kpi.warn .kpi-ic { background: #fdeecb; color: #9a6b00; }
+.kpi.danger .kpi-ic { background: #fde2dc; color: var(--red); }
+.kpi.accent .kpi-ic { background: rgba(255, 255, 255, 0.12); color: #fff; }
 .kpi.warn { border-color: #f1d9a3; background: #fffaf0; }
 .kpi.danger { border-color: #f3c4b8; background: #fff6f3; }
 .kpi.accent { background: var(--ink); border-color: var(--ink); color: #fff; }
@@ -1038,21 +1047,18 @@ a.fg-inner:hover { background: var(--paper); }
 .dt-check input { width: 16px; height: 16px; accent-color: var(--signal); cursor: pointer; vertical-align: middle; }
 .invtable tr.rowsel td { background: var(--signal-soft); }
 /* Bulk-action bar for multi-select tables */
-.bulkbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; padding: 10px 14px; border: 1px solid var(--signal); background: var(--signal-soft); border-radius: 12px; }
-.bulkbar-n { font-size: 13.5px; font-weight: 700; color: #fff; }
+.bulkbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; padding: 10px 14px; border: 1px solid var(--line); background: var(--paper-2); border-radius: 12px; animation: rise-in var(--t-mid) var(--ease) both; }
+.bulkbar-n { font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .bulkbar-acts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .bulkbar-sel { height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font-size: 13px; font-family: var(--font-body-f); cursor: pointer; }
 /* DataTable columns opted out of small screens (Column.hideOnMobile) — keeps
    dense admin tables readable on phones instead of a wide side-scroll. */
 @media (max-width: 640px) { .invtable th.dt-hide-mobile, .invtable td.dt-hide-mobile { display: none; } }
-.bulkbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; padding: 11px 16px; background: var(--ink); color: #fff; border-radius: 12px; box-shadow: var(--shadow); animation: rise-in var(--t-mid) var(--ease) both; }
-.bulk-count { font-weight: 600; font-size: 13.5px; }
-.bulk-set { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--slate-3); }
-.bulk-set select { font-family: inherit; font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; }
-.bulk-set select option { color: var(--ink); }
-.bulkbar .btn-ghost { color: #fff; border-color: rgba(255,255,255,.22); }
-.bulkbar .btn-ghost:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,.08); }
-.bulk-clear { margin-left: auto; font-size: 13px; color: var(--slate-3); text-decoration: underline; }
+/* (bulk bar layout is defined once above — clean neutral surface, no fill) */
+.bulk-count { font-weight: 600; font-size: 13.5px; color: var(--ink); }
+.bulk-set { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--slate); }
+.bulk-set select { font-family: inherit; font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.bulk-clear { margin-left: auto; font-size: 13px; color: var(--slate); text-decoration: underline; }
 .bulk-clear:hover { color: #fff; }
 .avatar { width: 34px; height: 34px; border-radius: 9px; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--font-disp); font-weight: 700; font-size: 12px; flex: none; }
 .ustatus { font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 100px; }
@@ -1127,7 +1133,7 @@ a.fg-inner:hover { background: var(--paper); }
 .oc-line b { color: var(--ink); margin-right: 4px; }
 
 /* segmented control tabs (orders: upcoming / previous / scheduled) */
-.tabs { display: inline-flex; gap: 4px; margin-bottom: 24px; max-width: 100%; background: var(--paper-2); border: 1px solid var(--line); border-radius: 13px; padding: 5px; overflow-x: auto; scrollbar-width: none; }
+.tabs { display: inline-flex; gap: 4px; margin-bottom: 24px; max-width: 100%; background: var(--paper-2); border: 1px solid var(--line); border-radius: 13px; padding: 5px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; color: var(--slate); border-radius: 9px; transition: background var(--t-fast), color var(--t-fast); }
 .tab:hover { color: var(--ink); background: rgba(26, 42, 68, 0.05); }
@@ -1438,6 +1444,10 @@ a.fg-inner:hover { background: var(--paper); }
 @media (max-width: 560px) {
   .admincontent { padding: 18px 14px 50px; }
   .content { padding: 20px 18px 50px; }
+  /* Tab strips: wrap the pills to fill the width instead of clipping off-screen
+     behind a hidden scrollbar (which reads as "cut off / can't scroll"). */
+  .tabs { display: flex; flex-wrap: wrap; overflow-x: visible; }
+  .tab { padding: 9px 14px; }
   .topbar { padding: 12px 16px; gap: 12px; flex-wrap: wrap; }
   .search { width: 100%; margin-left: 0; order: 3; }
   .kpis { grid-template-columns: 1fr; }
@@ -1523,12 +1533,50 @@ a.fg-inner:hover { background: var(--paper); }
 .setrow span { color: var(--slate); }
 .setrow b { font-weight: 600; text-align: right; }
 
-.comingsoon { background: var(--ink); background-image: radial-gradient(600px 360px at 100% 0%, rgba(245,124,0,.2), transparent 62%); color: #fff; border-radius: var(--rx); padding: 64px 48px; text-align: center; }
-.cs-badge { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--signal-text); border: 1px solid var(--signal); border-radius: 100px; padding: 7px 16px; }
-.comingsoon h2 { font-family: var(--font-disp); font-weight: 800; font-size: 34px; letter-spacing: -1px; margin: 22px 0 12px; }
-.comingsoon p { color: var(--slate); font-size: 16px; line-height: 1.6; max-width: 540px; margin: 0 auto; }
+/* Settings page — roomier vertical rhythm (the dense default read as congested).
+   Scoped to .setpane so only the settings screens get the extra breathing room. */
+.setpane { max-width: 780px; }
+/* The Tax tab pairs a form with a sample invoice, so it wants the full content
+   width (the narrow reading column left dead space on the right). */
+.setpane.wide { max-width: 1120px; }
+.setpane .panel { padding: 28px 30px; }
+.setpane .panel-h { margin-bottom: 22px; }
+.setpane .formgrid { gap: 20px 22px; margin: 22px 0 6px; }
+.setpane .setrow { padding: 16px 0; font-size: 14.5px; }
+.setpane .modalbtns { margin-top: 22px; }
+/* space between the two stacked policy panels */
+.setpane .polstack > .panel + .panel { margin-top: 20px; }
+.taxgrid { margin-bottom: 6px; }
+
+/* Tax settings: editor on the left, a live sample invoice on the right that
+   recomputes from the current (unsaved) rates. Stacks on narrow screens. */
+.taxgrid { display: grid; grid-template-columns: 1fr minmax(320px, 400px); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .taxgrid { grid-template-columns: 1fr; } }
+.taxrcpt { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); position: sticky; top: 92px; }
+.txr-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 14px; border-bottom: 2px dashed var(--kraft-edge); }
+.txr-badge { font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--slate-2); }
+.txr-live { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--green-text); }
+.txr-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(65,106,81,.18); }
+.txr-lines { display: flex; flex-direction: column; margin: 14px 0; }
+.txr-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 0; font-size: 14px; }
+.txr-row span { color: var(--slate); }
+.txr-row b { font-family: var(--font-mono-f); font-weight: 600; }
+.txr-row.tax span { color: var(--slate-2); font-size: 13px; }
+.txr-row.tax b { color: var(--signal-text); }
+.txr-tot { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding-top: 14px; border-top: 2px dashed var(--kraft-edge); }
+.txr-tot span { font-weight: 600; color: var(--ink); }
+.txr-tot b { font-family: var(--font-disp); font-weight: 800; font-size: 26px; letter-spacing: -0.5px; }
+.txr-foot { margin-top: 12px; font-size: 11px; color: var(--slate-2); }
+.txr-exempt { margin-top: 10px; font-size: 12px; color: var(--ink); background: var(--signal-soft); border-radius: 8px; padding: 8px 10px; line-height: 1.45; }
+
+/* Coming-soon panel — brand navy surface (matches gate3 / dark contact card).
+   All text tuned for on-dark contrast: gold badge, light-blue muted body. */
+.comingsoon { background: var(--navy); background-image: radial-gradient(620px 380px at 100% 0%, rgba(245,124,0,.18), transparent 60%), radial-gradient(520px 380px at 0% 100%, rgba(255,183,77,.08), transparent 62%); color: #fff; border-radius: var(--rx); padding: 64px 48px; text-align: center; }
+.cs-badge { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--gold); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); border-radius: 100px; padding: 7px 16px; }
+.comingsoon h2 { font-family: var(--font-disp); font-weight: 800; font-size: 34px; letter-spacing: -1px; margin: 22px 0 12px; color: #fff; }
+.comingsoon p { color: var(--ink-muted); font-size: 16px; line-height: 1.6; max-width: 540px; margin: 0 auto; }
 .cs-steps { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
-.cs-steps span { font-family: var(--font-mono-f); font-size: 12px; color: #fff; background: rgba(255,255,255,.06); border: 1px solid var(--ink-line); padding: 9px 15px; border-radius: 100px; }
+.cs-steps span { font-family: var(--font-mono-f); font-size: 12px; color: rgba(255,255,255,.92); background: rgba(255,255,255,.06); border: 1px solid var(--ink-line); padding: 9px 15px; border-radius: 100px; }
 
 /* =========================================================
    LEGAL PAGES (privacy / returns / terms)
@@ -1577,6 +1625,20 @@ a.fg-inner:hover { background: var(--paper); }
 .receipt-tot { display: flex; justify-content: space-between; align-items: center; padding: 12px 2px 0; border-top: 2px dashed var(--kraft-edge); }
 .receipt-tot b { font-family: var(--font-disp); font-size: 24px; }
 .clickrow { cursor: pointer; }
+/* Daily-sales drill-down: rows read as tappable, chevron nudges on hover. */
+.reptable tbody tr.clickrow { transition: background var(--t-fast); }
+.reptable tbody tr.clickrow:hover, .reptable tbody tr.clickrow:focus-visible { background: var(--signal-soft); outline: none; }
+.daychev { width: 16px; height: 16px; color: var(--slate-3); transition: transform var(--t-fast), color var(--t-fast); vertical-align: middle; }
+.reptable tbody tr.clickrow:hover .daychev, .reptable tbody tr.clickrow:focus-visible .daychev { color: var(--signal-deep); transform: translateX(3px); }
+
+/* Dashboard revenue chart — roomier hover card with formatted (currency) values.
+   Overrides the compact shadcn tooltip padding for This period / Previous. */
+.areatip { min-width: 190px !important; padding: 11px 13px !important; gap: 4px !important; border-radius: 12px !important; box-shadow: 0 16px 36px -12px rgba(14, 19, 64, 0.3) !important; }
+.areatip > div:first-child { font-size: 12px; font-weight: 600; color: var(--ink); padding-bottom: 7px; margin-bottom: 3px; border-bottom: 1px solid var(--line); }
+.areatip-row { display: flex; align-items: center; gap: 10px; width: 100%; font-size: 12.5px; padding: 3px 0; line-height: 1.2; }
+.areatip-sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.areatip-name { color: var(--slate); }
+.areatip-val { margin-left: auto; padding-left: 18px; font-family: var(--font-mono-f); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 
 /* account detail */
 .acct-detail .ad-rows { display: flex; flex-direction: column; margin: 8px 0 16px; }
@@ -1597,6 +1659,17 @@ a.fg-inner:hover { background: var(--paper); }
 .docfile:hover:not(:disabled) { color: var(--signal-text); border-color: var(--signal); background: var(--signal-soft); }
 .docfile.is-empty, .docfile:disabled { color: var(--slate-3); opacity: .55; cursor: default; }
 .docfile svg { width: 15px; height: 15px; }
+/* Onboarding paired-field rows use the GRID meaning of .field-row (2-up / 3-up),
+   not the flex "remember me / forgot" row from the auth CSS below. Re-assert grid
+   here (higher specificity) so it survives that later unconditional override, then
+   stack to a single column on phones so inputs + attach buttons aren't cramped. */
+.ob-pane .field-row { display: grid; grid-template-columns: 2fr 0.7fr 1fr; gap: 14px; align-items: start; }
+.ob-pane .field-row.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 560px) {
+  .ob-pane .field-row, .ob-pane .field-row.two { grid-template-columns: 1fr; }
+  /* full-width, comfortable attach targets when the fields stack */
+  .ob-upload .btn { width: 100%; justify-content: center; }
+}
 /* license-document upload row (onboarding + admin edit) */
 .ob-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 .ob-file { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate); max-width: 100%; word-break: break-all; }
@@ -2338,23 +2411,25 @@ footer { position: relative; background-image: radial-gradient(680px 320px at 88
 
 /* ===== admin messages inbox ===== */
 /* Messages — 2-column master / detail */
-.msgpane { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 16px; align-items: start; }
-.msgpane-list { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+/* Gmail-style inbox: one bordered box, fixed height, each pane scrolls on its own. */
+.msgpane { display: grid; grid-template-columns: minmax(280px, 384px) 1fr; height: calc(100vh - 214px); min-height: 460px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--card); box-shadow: var(--shadow); }
+.msgpane-list { display: flex; flex-direction: column; min-width: 0; overflow-y: auto; border-right: 1px solid var(--line); background: var(--paper-2); }
 .msglist { display: flex; flex-direction: column; gap: 10px; }
-.msgrow { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); transition: background .12s, border-color .12s, box-shadow .12s; }
-.msgrow:hover { background: var(--paper-2); }
-.msgrow.unread { border-color: var(--signal); }
-.msgrow.active { border-color: var(--signal); background: var(--paper-2); box-shadow: var(--shadow); }
-.msgdot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); }
+/* continuous divided rows (no cards/gaps) */
+.msgrow { display: flex; align-items: flex-start; gap: 11px; width: 100%; text-align: left; padding: 13px 16px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; transition: background .12s; }
+.msgrow:hover { background: rgba(26, 42, 68, 0.04); }
+.msgrow.unread { background: var(--card); }
+.msgrow.active { background: var(--card); box-shadow: inset 3px 0 0 var(--signal); }
+.msgdot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); margin-top: 6px; }
 .msg-from { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .msg-name { font-weight: 600; font-size: 14px; color: var(--ink); }
 .msgrow.unread .msg-name { font-weight: 700; }
 .msg-store { color: var(--slate-2); font-weight: 500; }
 .msg-preview { font-size: 12.5px; color: var(--slate-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.msg-time { flex: none; font-size: 11.5px; color: var(--slate-3); white-space: nowrap; }
+.msg-time { flex: none; font-size: 11px; color: var(--slate-3); white-space: nowrap; margin-top: 1px; }
 
-.msgpane-detail { position: sticky; top: 16px; }
-.msgdetail { border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 20px 22px; box-shadow: var(--shadow); }
+.msgpane-detail { overflow-y: auto; }
+.msgdetail { border: none; border-radius: 0; background: transparent; padding: 24px 26px; box-shadow: none; }
 .msgdetail-back { display: none; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--slate); margin-bottom: 14px; }
 .msgdetail-back-ic { transform: rotate(180deg); }
 .msgdetail-head h3 { font-family: var(--font-disp); font-weight: 700; font-size: 18px; color: var(--ink); }
@@ -2366,7 +2441,7 @@ footer { position: relative; background-image: radial-gradient(680px 320px at 88
 .msg-contact svg { width: 15px; height: 15px; }
 .msg-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .msg-actions .btn svg { width: 15px; height: 15px; }
-.msgdetail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 300px; border: 1px dashed var(--line); border-radius: 14px; color: var(--slate-3); text-align: center; padding: 24px; }
+.msgdetail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; min-height: 300px; color: var(--slate-3); text-align: center; padding: 24px; }
 .msgdetail-empty svg { width: 34px; height: 34px; opacity: .5; }
 .msgdetail-empty p { font-size: 14px; }
 

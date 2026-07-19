@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMessages, type Message } from "@/lib/wms";
 import { useConfirm } from "@/components/Confirm";
 import { Button, EmptyState, Skeleton } from "@/components/ui";
-import { Mail, Phone, Arrow, Trash } from "@/components/Icons";
+import { Mail, Phone, Arrow, Trash, Check } from "@/components/Icons";
 import { Head, timeAgo, type Flash } from "./shared";
 
 /* Admin inbox for the public "Send us a message" contact form. */
@@ -37,7 +37,7 @@ export function MessagesTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Messages" sub={unread ? `${unread} unread · inquiries from the website contact form` : "Inquiries from the website contact form"}>
-        {unread > 0 && <Button variant="ghost" size="sm" onClick={markAllRead}>Mark all read</Button>}
+        {unread > 0 && <Button variant="ghost" size="sm" iconLeft={<Check />} onClick={markAllRead}>Mark all read</Button>}
       </Head>
 
       {!ready ? (

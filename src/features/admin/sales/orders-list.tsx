@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrders, type Order, type OrderStatus } from "@/lib/store";
 import { downloadCsv } from "@/lib/csv";
-import { Plus, Search } from "@/components/Icons";
+import { Plus, Search, Download } from "@/components/Icons";
 import { Head, tableEmpty, m, k, timeAgo } from "../shared";
 import { KpiCard, DataTable, Badge, Button, EmptyState, ListToolbar, Skeleton, ViewToggle, rowActivation, type Column, type ToolbarOption, type ViewMode } from "@/components/ui";
 import { ov, statusTone, payTone, O_STATUSES } from "./_shared";
@@ -74,7 +74,7 @@ export function OrdersTab() {
     <>
       <Head title="Orders">
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={exportOrders} disabled={!rows.length}>Export CSV</Button>
+          <Button variant="ghost" size="sm" iconLeft={<Download />} onClick={exportOrders} disabled={!rows.length}>Export CSV</Button>
           <Button variant="primary" size="sm" onClick={() => router.push("/admin/orders/new")}><Plus /> New order</Button>
         </div>
       </Head>

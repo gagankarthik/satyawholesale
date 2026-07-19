@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { productImg, taxBreakdown, statusSlug, useInventory, useOrders, useSettings, type Order, type OrderLine, type OrderStatus, type PayStatus } from "@/lib/store";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
-import { Search, Close, Plus, Minus } from "@/components/Icons";
+import { Search, Close, Plus, Minus, ArrowLeft, Printer } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { m, type Flash } from "../shared";
-import { Badge, Breadcrumb, Button, Combobox, Menu } from "@/components/ui";
+import { Badge, Button, Combobox, Menu } from "@/components/ui";
 import { ov, statusTone, payTone, O_STATUSES, PAY_STATUSES } from "./_shared";
 
 /* Editable money adjustments + manual tracking for an order. */
@@ -82,7 +83,7 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
   if (!cur) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: "Not found" }]} />
+        <Link className="detail-back" href="/admin/orders"><ArrowLeft /> Back to orders</Link>
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Order not found</h3><p>It may have been deleted.</p></div>
       </>
     );
@@ -120,15 +121,16 @@ export function AdminOrderDetail({ id, flash }: { id: string; flash: Flash }) {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Orders", href: "/admin/orders" }, { label: cur.ref }]} />
+      <Link className="detail-back" href="/admin/orders"><ArrowLeft /> Back to orders</Link>
       <header className="adminbar">
         <div><h1>{cur.ref}</h1><p>{cur.store} · placed {new Date(cur.placed).toLocaleString()}</p></div>
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={() => window.print()}>Print receipt</Button>
+          <Button variant="ghost" size="sm" iconLeft={<Printer />} onClick={() => window.print()}>Print receipt</Button>
           {cur.status !== "Cancelled" && cur.status !== "Completed" && (
             <Button
               variant="ghost"
               size="sm"
+              iconLeft={<Close />}
               style={{ color: "var(--red)" }}
               onClick={async () => {
                 if (await confirm({ title: "Cancel order?", message: `Order ${cur.ref} will be marked cancelled and removed from the active fulfilment queue.`, confirmLabel: "Cancel order", danger: true })) {

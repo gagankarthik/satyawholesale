@@ -9,8 +9,8 @@ import {
 import Image from "next/image";
 import OrderTracker from "@/components/OrderTracker";
 import PrintReceipt from "@/components/PrintReceipt";
-import { EmptyState, Skeleton } from "@/components/ui";
-import { Search, Chat, Close, Plus, Minus, ArrowLeft } from "@/components/Icons";
+import { EmptyState, Skeleton, Menu } from "@/components/ui";
+import { Search, Chat, Close, Plus, Minus, ArrowLeft, Refresh, Pencil, Printer } from "@/components/Icons";
 import { usePortal } from "../../PortalShell";
 
 const FULFILMENTS = ["Delivery", "Pickup", "Scheduled delivery"];
@@ -119,19 +119,21 @@ export default function PortalOrderDetail({ params }: { params: Promise<{ id: st
               <button className="btn btn-primary btn-sm" onClick={saveEdit}>Save changes</button>
             </>
           ) : (
-            <>
-              <button className="btn btn-ghost btn-sm" onClick={() => reorder(o.lines)}>Reorder</button>
-              {editable && <button className="btn btn-ghost btn-sm" onClick={startEdit}>Edit order</button>}
-              {!closed && (
-                <button
-                  className="btn btn-ghost btn-sm od-cancel"
-                  onClick={() => (cancellable ? (setConfirmCancel(true), setCallToCancel(false)) : (setCallToCancel(true), setConfirmCancel(false)))}
-                >
-                  Cancel order
-                </button>
-              )}
-              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>Print receipt</button>
-            </>
+            <Menu
+              label="Order actions"
+              items={[
+                { label: "Reorder", icon: <Refresh />, onSelect: () => reorder(o.lines) },
+                ...(editable ? [{ label: "Edit order", icon: <Pencil />, onSelect: startEdit }] : []),
+                ...(!closed ? [{
+                  label: "Cancel order", icon: <Close />, danger: true,
+                  onSelect: () => {
+                    if (cancellable) { setConfirmCancel(true); setCallToCancel(false); }
+                    else { setCallToCancel(true); setConfirmCancel(false); }
+                  },
+                }] : []),
+                { label: "Print receipt", icon: <Printer />, onSelect: () => window.print() },
+              ]}
+            />
           )}
         </div>
       </div>

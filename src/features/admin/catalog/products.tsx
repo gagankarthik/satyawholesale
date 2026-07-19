@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DEPTS, deptName, productImg, sku, useInventory, LOW_STOCK, type DeptKey, type Product, type Tag } from "@/lib/store";
 import { useSuppliers, useCategories } from "@/lib/wms";
-import { Search, Inbox, Plus, ArrowLeft, Pencil, Trash } from "@/components/Icons";
+import { Search, Inbox, Plus, ArrowLeft, Pencil, Trash, Tag as TagIcon, Download, Check, EyeOff } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Head, FlowHelp, PRODUCT_FLOW, tableEmpty, m, fmtDate, type Tab, type Flash } from "../shared";
@@ -247,7 +247,7 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
     <>
       <Head title="Products">
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={exportProducts} disabled={!rows.length}>Export CSV</Button>
+          <Button variant="ghost" size="sm" iconLeft={<Download />} onClick={exportProducts} disabled={!rows.length}>Export CSV</Button>
           <Button variant="ghost" size="sm" iconLeft={<Inbox />} onClick={() => go("import")}>Bulk import</Button>
           <Link className="btn btn-primary btn-sm" href="/admin/products/new"><Plus /> Onboard product</Link>
         </div>
@@ -264,19 +264,17 @@ export function ProductsTab({ flash, go }: { flash: Flash; go: (t: Tab) => void 
         <div className="bulkbar anim-in">
           <span className="bulkbar-n">{nSel} {plural} selected</span>
           <div className="bulkbar-acts">
-            <Button size="sm" variant="ghost" onClick={() => bulkPatch({ active: true }, `${nSel} ${plural} activated`)}>Activate</Button>
-            <Button size="sm" variant="ghost" onClick={() => bulkPatch({ active: false }, `${nSel} ${plural} hidden`)}>Deactivate</Button>
-            <Button size="sm" variant="ghost" onClick={() => bulkAddCases(12)}>+12 cases</Button>
-            <select
-              className="bulkbar-sel"
-              value=""
-              aria-label="Set category for selected products"
-              onChange={(e) => { const v = e.target.value as DeptKey; if (v) bulkPatch({ dep: v }, `Moved ${nSel} ${plural} to ${deptName(v)}`); }}
-            >
-              <option value="">Set category…</option>
-              {DEPTS.map((d) => <option key={d.key} value={d.key}>{d.name}</option>)}
-            </select>
-            <Button size="sm" variant="danger" onClick={bulkRemove}>Remove</Button>
+            {/* 3 most-used stay visible; the rest live in a "More" (3-dot) menu */}
+            <Button size="sm" variant="ghost" iconLeft={<Check />} onClick={() => bulkPatch({ active: true }, `${nSel} ${plural} activated`)}>Activate</Button>
+            <Button size="sm" variant="ghost" iconLeft={<EyeOff />} onClick={() => bulkPatch({ active: false }, `${nSel} ${plural} hidden`)}>Deactivate</Button>
+            <Button size="sm" variant="danger" iconLeft={<Trash />} onClick={bulkRemove}>Remove</Button>
+            <Menu
+              label="More actions for selected products"
+              items={[
+                { label: "Add 12 cases", icon: <Plus />, onSelect: () => bulkAddCases(12) },
+                ...DEPTS.map((d) => ({ label: `Move to ${d.name}`, icon: <TagIcon />, onSelect: () => bulkPatch({ dep: d.key }, `Moved ${nSel} ${plural} to ${d.name}`) })),
+              ]}
+            />
             <Button size="sm" variant="ghost" onClick={clearSel}>Clear</Button>
           </div>
         </div>

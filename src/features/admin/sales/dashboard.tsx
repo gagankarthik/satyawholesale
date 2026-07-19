@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { deptName, sku, useInventory, useOrders, LOW_STOCK, CONTACT, type DeptKey, type Order } from "@/lib/store";
 import { useSuppliers, useCustomers, usePurchaseOrders } from "@/lib/wms";
-import { Plus, Arrow, Calendar } from "@/components/Icons";
+import { Plus, Arrow, Calendar, Coin, Receipt, Card, Truck, Boxes, Package, Inventory, Users } from "@/components/Icons";
 import { Head, m, k, timeAgo, type Tab } from "../shared";
 import { KpiCard, Badge, Button, Dropdown, Skeleton, cx } from "@/components/ui";
 import { AreaTrend } from "@/components/ui/AreaTrend";
@@ -26,6 +26,15 @@ type Bucket = { label: string; revenue: number; orders: number };
 
 const deltaPct = (cur: number, prev: number) =>
   prev > 0 ? ((cur - prev) / prev) * 100 : cur > 0 ? 100 : 0;
+
+/* Keep pie slices within the categorical palette (never cycle a hue): show the
+   top (max-1) categories and merge the tail into a single "Other" slice. */
+function foldSlices(rows: { name: string; value: number }[], max = 6) {
+  if (rows.length <= max) return rows;
+  const sorted = [...rows].sort((a, b) => b.value - a.value);
+  const other = sorted.slice(max - 1).reduce((s, r) => s + r.value, 0);
+  return other > 0 ? [...sorted.slice(0, max - 1), { name: "Other", value: other }] : sorted.slice(0, max - 1);
+}
 
 function DeltaFoot({ cur, prev }: { cur: number; prev: number }) {
   const d = deltaPct(cur, prev);
@@ -152,10 +161,10 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
       </Head>
 
       <div className="kpis">
-        <KpiCard tone="accent" label="Revenue" value={k(stats.rev)} loading={!ready} foot={<DeltaFoot cur={stats.rev} prev={stats.revPrev} />} />
-        <KpiCard label="Orders" value={stats.cur.length} loading={!ready} foot={<DeltaFoot cur={stats.cur.length} prev={stats.prev.length} />} />
-        <KpiCard label="Avg order" value={k(stats.aov)} loading={!ready} foot={<DeltaFoot cur={stats.aov} prev={stats.aovPrev} />} />
-        <KpiCard label="Cases shipped" value={stats.cases} loading={!ready} foot={<DeltaFoot cur={stats.cases} prev={stats.casesPrev} />} />
+        <KpiCard tone="accent" label="Revenue" value={k(stats.rev)} loading={!ready} icon={<Coin />} foot={<DeltaFoot cur={stats.rev} prev={stats.revPrev} />} />
+        <KpiCard label="Orders" value={stats.cur.length} loading={!ready} icon={<Receipt />} foot={<DeltaFoot cur={stats.cur.length} prev={stats.prev.length} />} />
+        <KpiCard label="Avg order" value={k(stats.aov)} loading={!ready} icon={<Card />} foot={<DeltaFoot cur={stats.aov} prev={stats.aovPrev} />} />
+        <KpiCard label="Cases shipped" value={stats.cases} loading={!ready} icon={<Truck />} foot={<DeltaFoot cur={stats.cases} prev={stats.casesPrev} />} />
       </div>
 
       <div className="panel anim-in" style={{ marginBottom: 18 }}>
@@ -167,10 +176,11 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <AreaTrend
             data={curBuckets.map((b, i) => ({ label: b.label, current: b.revenue, previous: prevBuckets[i]?.revenue ?? 0 }))}
             xKey="label"
-            series={[{ key: "current", label: "This period", color: "var(--chart-1)" }, { key: "previous", label: "Previous", color: "var(--chart-5)" }]}
+            series={[{ key: "current", label: "This period", color: "var(--chart-1)" }, { key: "previous", label: "Previous", color: "var(--chart-prev)" }]}
             stacked={false}
             height={240}
             yFormatter={(v) => k(v)}
+            valueFormatter={(v) => "$" + Math.round(v).toLocaleString()}
           />
         ) : <Skeleton height={240} radius={12} />}
       </div>
@@ -192,7 +202,7 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <div className="panel-h"><h3>Revenue by department</h3><span className="hint">in range</span></div>
           {!ready ? <Skeleton height={300} radius={12} /> : deptRevenue.length ? (
             <PieBreakdown
-              data={deptRevenue.map((d) => ({ name: deptName(d.dep as DeptKey), value: d.revenue }))}
+              data={foldSlices(deptRevenue.map((d) => ({ name: deptName(d.dep as DeptKey), value: d.revenue })))}
               valueFormatter={(v) => m(v)}
               height={300}
             />
@@ -206,16 +216,17 @@ export function DashboardTab({ go }: { go: (t: Tab) => void }) {
           <BarBreakdown
             data={topProducts.map((p) => ({ name: p.name, value: p.revenue }))}
             valueFormatter={(v) => m(v)}
+            color="var(--chart-1)"
             height={320}
           />
         ) : <p className="muted" style={{ fontSize: 14 }}>No sales in this range.</p>}
       </div>
 
       <div className="kpis" style={{ marginTop: 18 }}>
-        <KpiCard label="Inventory value" value={k(invValue)} loading={!ready} foot={`${products.length} SKUs at cost`} />
-        <KpiCard tone="warn" label="Reorder needed" value={low.length} loading={!ready} foot="at/below reorder point" />
-        <KpiCard label="Open POs" value={openPOs} loading={!ready} foot="in fulfillment" />
-        <KpiCard tone="danger" label="Pending accounts" value={pending} loading={!ready} foot="awaiting approval" />
+        <KpiCard label="Inventory value" value={k(invValue)} loading={!ready} icon={<Boxes />} foot={`${products.length} SKUs at cost`} />
+        <KpiCard tone="warn" label="Reorder needed" value={low.length} loading={!ready} icon={<Package />} foot="at/below reorder point" />
+        <KpiCard label="Open POs" value={openPOs} loading={!ready} icon={<Inventory />} foot="in fulfillment" />
+        <KpiCard tone="danger" label="Pending accounts" value={pending} loading={!ready} icon={<Users />} foot="awaiting approval" />
       </div>
 
       <div className="dash" style={{ marginTop: 18 }}>

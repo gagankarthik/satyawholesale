@@ -26,7 +26,7 @@ export function PieBreakdown({
   valueFormatter?: (v: number) => string;
 }) {
   const config: ChartConfig = Object.fromEntries(
-    data.map((d, i) => [d.name, { label: d.name, color: `var(--chart-${(i % 5) + 1})` }])
+    data.map((d, i) => [d.name, { label: d.name, color: `var(--chart-${(i % 6) + 1})` }])
   );
   const total = data.reduce((s, d) => s + d.value, 0);
 
@@ -57,7 +57,7 @@ export function PieBreakdown({
           paddingAngle={donut ? 2 : 0}
         >
           {data.map((_, i) => (
-            <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
+            <Cell key={i} fill={`var(--chart-${(i % 6) + 1})`} />
           ))}
           {donut && (
             <Label

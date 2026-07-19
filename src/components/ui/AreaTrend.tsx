@@ -21,6 +21,7 @@ export function AreaTrend({
   height = 240,
   yFormatter,
   xFormatter,
+  valueFormatter,
   stacked = true,
 }: {
   data: Record<string, unknown>[];
@@ -29,12 +30,15 @@ export function AreaTrend({
   height?: number;
   yFormatter?: (v: number) => string;
   xFormatter?: (v: string) => string;
+  /** Formats each series value in the hover card (falls back to yFormatter, then toLocaleString). */
+  valueFormatter?: (v: number) => string;
   /** Stack series (true) or overlay them for comparison (false). */
   stacked?: boolean;
 }) {
   const config: ChartConfig = Object.fromEntries(
     series.map((s, i) => [s.key, { label: s.label, color: s.color ?? `var(--chart-${(i % 5) + 1})` }])
   );
+  const fmtVal = valueFormatter ?? yFormatter ?? ((v: number) => v.toLocaleString());
 
   return (
     <ChartContainer config={config} className="aspect-auto w-full" style={{ height }}>
@@ -50,7 +54,22 @@ export function AreaTrend({
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
         <XAxis dataKey={xKey} tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} tickFormatter={xFormatter} />
         <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={yFormatter} />
-        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              className="areatip"
+              indicator="line"
+              formatter={(value, name) => (
+                <div className="areatip-row">
+                  <span className="areatip-sw" style={{ background: `var(--color-${String(name)})` }} />
+                  <span className="areatip-name">{config[String(name)]?.label ?? String(name)}</span>
+                  <span className="areatip-val">{fmtVal(Number(value))}</span>
+                </div>
+              )}
+            />
+          }
+        />
         {series.map((s) => (
           <Area
             key={s.key}

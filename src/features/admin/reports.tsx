@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useInventory, useOrders, deptName, sku, LOW_STOCK, type DeptKey } from "@/lib/store";
+import { useInventory, useOrders, deptName, sku, LOW_STOCK, CONTACT, type DeptKey } from "@/lib/store";
+import { useRouter } from "next/navigation";
 import { KpiCard, Badge, Button, Tabs, Dropdown, cx } from "@/components/ui";
-import { Chart, Calendar, Arrow } from "@/components/Icons";
+import { Calendar, Arrow, Printer, Download, Coin, Receipt, Truck, Card } from "@/components/Icons";
 import { Head, m, type Flash } from "./shared";
 
 /* =======================================================================
@@ -35,6 +36,7 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
 const O_STATUS = ["Pending", "Processing", "At Local Facility", "Out for delivery", "Completed", "Cancelled"] as const;
 
 export function ReportsView({ flash }: { flash: Flash }) {
+  const router = useRouter();
   const { orders, ready: ordReady } = useOrders();
   const { products, ready: prodReady } = useInventory();
 
@@ -83,6 +85,9 @@ export function ReportsView({ flash }: { flash: Flash }) {
     return rows.reverse();
   }, [filtered, range]);
 
+  /* Drill into a single day → its own page (/admin/reports/<YYYY-MM-DD>). */
+  const openDay = (t: number) => router.push(`/admin/reports/${toInput(t)}`);
+
   /* product sales aggregated over the filtered orders */
   const productRows = useMemo(() => {
     const agg: Record<number, { id: number; name: string; qty: number; revenue: number }> = {};
@@ -118,6 +123,89 @@ export function ReportsView({ flash }: { flash: Flash }) {
     if (tab === "daily") return exportCsv(`daily-sales_${fromLbl}_to_${toLbl}.csv`, ["Date", "Orders", "Cases", "Revenue"], daily.map((d) => [dayLabel(d.t), d.orders, d.cases, d.revenue.toFixed(2)]));
     if (tab === "products") return exportCsv(`products-sold_${fromLbl}_to_${toLbl}.csv`, ["SKU", "Product", "Department", "Qty sold", "Revenue"], productRows.map((r) => [r.sku, r.name, r.dep ? deptName(r.dep) : "", r.qty, r.revenue.toFixed(2)]));
     return exportCsv(`inventory_${toInput(today)}.csv`, ["SKU", "Product", "Department", "Stock", "Reorder point", "Unit cost", "Inventory value"], invRows.map((r) => [sku(r.p), r.p.name, deptName(r.p.dep), r.p.stock, r.p.reorderPoint ?? "", r.unitCost.toFixed(2), r.value.toFixed(2)]));
+  };
+
+  /* Open the active report as a clean, self-contained page in a new tab, with a
+     Back and a Print control. The admin shell's global print CSS blanks anything
+     that isn't a portaled receipt, so we render a standalone document instead. */
+  const openReportPage = () => {
+    const esc = (v: string | number) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+    const table: { caption: string; headers: string[]; align: ("l" | "r")[]; rows: (string | number)[][]; foot?: (string | number)[] } =
+      tab === "daily"
+        ? { caption: "Daily sales", headers: ["Date", "Orders", "Cases", "Revenue"], align: ["l", "r", "r", "r"], rows: daily.map((d) => [dayLabel(d.t), d.orders, d.cases, m(d.revenue)]), foot: ["Total", totals.orders, totals.cases, m(totals.revenue)] }
+        : tab === "products"
+          ? { caption: "Products sold", headers: ["SKU", "Product", "Department", "Qty sold", "Revenue"], align: ["l", "l", "l", "r", "r"], rows: productRows.map((r) => [r.sku, r.name, r.dep ? deptName(r.dep) : "—", r.qty, m(r.revenue)]) }
+          : { caption: "Inventory", headers: ["SKU", "Product", "Department", "Stock", "Reorder", "Value", "Status"], align: ["l", "l", "l", "r", "r", "r", "l"], rows: invRows.map((r) => [sku(r.p), r.p.name, deptName(r.p.dep), r.p.stock, r.p.reorderPoint ?? "—", m(r.value), r.level === "out" ? "Out" : r.level === "low" ? "Low" : "In stock"]) };
+
+    if (!table.rows.length) { flash.error("Nothing to show for this filter."); return; }
+
+    const filters = [`${fromLbl} to ${toLbl}`, store === "all" ? "All customers" : `Customer: ${store}`, status === "all" ? "All statuses" : `Status: ${status}`].join("  ·  ");
+    const kpis = tab === "inventory"
+      ? [["SKUs", String(invRows.length)], ["Value at cost", m(invValue)]]
+      : [["Revenue", m(totals.revenue)], ["Orders", String(totals.orders)], ["Cases", String(totals.cases)], ["Avg order", m(totals.aov)]];
+    const cell = (v: string | number, a: "l" | "r", tag: "td" | "th") => `<${tag} class="${a === "r" ? "r" : ""}">${esc(v)}</${tag}>`;
+    const thead = `<tr>${table.headers.map((h, i) => cell(h, table.align[i], "th")).join("")}</tr>`;
+    const tbody = table.rows.map((r) => `<tr>${r.map((c, i) => cell(c, table.align[i], "td")).join("")}</tr>`).join("");
+    const tfoot = table.foot ? `<tr class="ft">${table.foot.map((c, i) => cell(c, table.align[i], "td")).join("")}</tr>` : "";
+    const generated = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+
+    const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(table.caption)} · ${esc(CONTACT.legalName)}</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c2027;background:#eef0f2}
+.bar{position:sticky;top:0;z-index:2;display:flex;gap:10px;justify-content:flex-end;align-items:center;padding:12px 20px;background:#fff;border-bottom:1px solid #e4e7ee}
+.bar .sp{margin-right:auto;font-weight:700;font-size:14px}
+.bar button{font:inherit;font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;border:1.5px solid #e4e7ee;background:#fff;color:#1c2027;cursor:pointer}
+.bar button:hover{border-color:#1c2027}
+.bar button.pr{background:#b05a00;border-color:#b05a00;color:#fff}
+.sheet{max-width:920px;margin:22px auto;background:#fff;padding:36px 40px 30px;box-shadow:0 10px 34px -14px rgba(14,19,64,.28)}
+.lh{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:2px solid #1c2027;padding-bottom:16px}
+.co{font-weight:800;font-size:20px;letter-spacing:-.4px}
+.ad{font-size:12px;color:#5a6270;margin-top:5px;line-height:1.5}
+.rt{text-align:right}
+.rtt{font-weight:700;font-size:17px}
+.rtf{font-size:12px;color:#5a6270;margin-top:5px}
+.kpis{display:flex;gap:32px;flex-wrap:wrap;margin:22px 0 6px}
+.kpis .k span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#5a6270}
+.kpis .k b{font-size:22px;font-weight:800;letter-spacing:-.3px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e8ebf0}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#5a6270;border-bottom:2px solid #cfd5de}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.ft td{font-weight:800;border-top:2px solid #cfd5de;border-bottom:none}
+.fo{margin-top:22px;font-size:11px;color:#8a909c;text-align:center}
+@media print{.bar{display:none}body{background:#fff}.sheet{box-shadow:none;margin:0;max-width:none;padding:0}@page{margin:14mm}}
+</style></head>
+<body>
+<div class="bar">
+  <span class="sp">${esc(table.caption)}</span>
+  <button onclick="window.close()">&larr; Back</button>
+  <button class="pr" onclick="window.print()">Print</button>
+</div>
+<div class="sheet">
+  <div class="lh">
+    <div>
+      <div class="co">${esc(CONTACT.legalName)}</div>
+      <div class="ad">${esc(CONTACT.address1)}, ${esc(CONTACT.address2)}<br>${esc(CONTACT.phone)} · ${esc(CONTACT.email)}</div>
+    </div>
+    <div class="rt">
+      <div class="rtt">${esc(table.caption)}</div>
+      <div class="rtf">${esc(filters)}</div>
+    </div>
+  </div>
+  <div class="kpis">${kpis.map(([l, v]) => `<div class="k"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("")}</div>
+  <table><thead>${thead}</thead><tbody>${tbody}${tfoot}</tbody></table>
+  <div class="fo">Generated ${esc(generated)} · ${esc(CONTACT.legalName)} reports</div>
+</div>
+</body></html>`;
+
+    const w = window.open("", "_blank", "width=1000,height=820");
+    if (!w) { flash.error("Allow pop-ups to open the printable report."); return; }
+    w.document.open();
+    w.document.write(doc);
+    w.document.close();
+    w.focus();
   };
 
   return (
@@ -156,15 +244,16 @@ export function ReportsView({ flash }: { flash: Flash }) {
             <option value="all">All statuses</option>
             {O_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          <Button variant="primary" size="sm" onClick={openReportPage}><Printer /> Print report</Button>
         </div>
       </Head>
 
       {/* summary for the selected range */}
       <div className="kpis" style={{ marginBottom: 18 }}>
-        <KpiCard tone="accent" label="Revenue" value={m(totals.revenue)} loading={!ready} foot="in range" />
-        <KpiCard label="Orders" value={totals.orders} loading={!ready} foot="in range" />
-        <KpiCard label="Cases" value={totals.cases} loading={!ready} foot="in range" />
-        <KpiCard label="Avg order" value={m(totals.aov)} loading={!ready} foot="per order" />
+        <KpiCard tone="accent" label="Revenue" value={m(totals.revenue)} loading={!ready} icon={<Coin />} foot="in range" />
+        <KpiCard label="Orders" value={totals.orders} loading={!ready} icon={<Receipt />} foot="in range" />
+        <KpiCard label="Cases" value={totals.cases} loading={!ready} icon={<Truck />} foot="in range" />
+        <KpiCard label="Avg order" value={m(totals.aov)} loading={!ready} icon={<Card />} foot="per order" />
       </div>
 
       {/* tabs + export on one line */}
@@ -183,21 +272,38 @@ export function ReportsView({ flash }: { flash: Flash }) {
               <option value="out">Out of stock</option>
             </select>
           )}
-          <Button variant="ghost" size="sm" onClick={exportActive}><Chart /> Export CSV</Button>
+          <Button variant="ghost" size="sm" onClick={exportActive}><Download /> Export CSV</Button>
         </div>
       </div>
 
       {tab === "daily" && (
         <div className="panel anim-in">
-          <div className="panel-h"><h3>Daily sales</h3><span className="hint">{daily.length} days</span></div>
+          <div className="panel-h"><h3>Daily sales</h3><span className="hint">{daily.length} days · tap a day for its orders</span></div>
           <div className="tablewrap">
             <table className="invtable flat reptable">
-              <thead><tr><th>Date</th><th className="r">Orders</th><th className="r">Cases</th><th className="r">Revenue</th></tr></thead>
+              <thead><tr><th>Date</th><th className="r">Orders</th><th className="r">Cases</th><th className="r">Revenue</th><th aria-label="View" /></tr></thead>
               <tbody>
-                {daily.map((d) => (
-                  <tr key={d.t}><td>{dayLabel(d.t)}</td><td className="r mono">{d.orders}</td><td className="r mono">{d.cases}</td><td className="r mono">{m(d.revenue)}</td></tr>
-                ))}
-                <tr className="totalrow"><td><b>Total</b></td><td className="r mono"><b>{totals.orders}</b></td><td className="r mono"><b>{totals.cases}</b></td><td className="r mono"><b>{m(totals.revenue)}</b></td></tr>
+                {daily.map((d) => {
+                  const has = d.orders > 0;
+                  return (
+                    <tr
+                      key={d.t}
+                      className={cx(has && "clickrow")}
+                      onClick={has ? () => openDay(d.t) : undefined}
+                      tabIndex={has ? 0 : undefined}
+                      role={has ? "button" : undefined}
+                      aria-label={has ? `View ${d.orders} orders on ${dayLabel(d.t)}` : undefined}
+                      onKeyDown={has ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDay(d.t); } } : undefined}
+                    >
+                      <td>{dayLabel(d.t)}</td>
+                      <td className="r mono">{d.orders}</td>
+                      <td className="r mono">{d.cases}</td>
+                      <td className="r mono">{m(d.revenue)}</td>
+                      <td className="r">{has && <Arrow className="daychev" />}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="totalrow"><td><b>Total</b></td><td className="r mono"><b>{totals.orders}</b></td><td className="r mono"><b>{totals.cases}</b></td><td className="r mono"><b>{m(totals.revenue)}</b></td><td /></tr>
               </tbody>
             </table>
           </div>

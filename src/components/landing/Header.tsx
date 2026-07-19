@@ -21,10 +21,10 @@ export default function Header() {
           <Image src="/logo.webp" alt="Satya Wholesale, Cincinnati cash and carry distributor" width={232} height={58} priority />
         </a>
         <nav className="nav-links" aria-label="Primary">
-          <a href="#departments">What we carry</a>
-          <a href="#how">How we serve</a>
-          <a href="#process">Getting started</a>
-          <a href="#why">Why Satya</a>
+          <a href="#departments">Products</a>
+          <a href="#how">How it works</a>
+          <a href="#process">Get started</a>
+          <a href="#why">Why us</a>
           <a href="#faq">FAQ</a>
         </nav>
         <div className="nav-cta">
@@ -45,10 +45,10 @@ export default function Header() {
       </div>
       {menuOpen && (
         <div className="mobmenu">
-          <a href="#departments" onClick={close}>What we carry</a>
-          <a href="#how" onClick={close}>How we serve</a>
-          <a href="#process" onClick={close}>Getting started</a>
-          <a href="#why" onClick={close}>Why Satya</a>
+          <a href="#departments" onClick={close}>Products</a>
+          <a href="#how" onClick={close}>How it works</a>
+          <a href="#process" onClick={close}>Get started</a>
+          <a href="#why" onClick={close}>Why us</a>
           <a href="#faq" onClick={close}>FAQ</a>
           <a href="#contact" onClick={close}>Contact</a>
           {loggedIn ? (

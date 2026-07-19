@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { sku, useInventory, deptName, type DeptKey } from "@/lib/store";
 import { useSuppliers, useMovements, usePurchaseOrders, useReceipts, useInvoices, useCredits, poTotal, termsDueDays, PO_FLOW, RECEIVE_TOLERANCE, CREDIT_REASONS, threeWayMatch, type POLine } from "@/lib/wms";
+import Link from "next/link";
 import { useConfirm } from "@/components/Confirm";
-import { Search, Close, Check, Trash } from "@/components/Icons";
+import { Search, Close, Check, Trash, ArrowLeft } from "@/components/Icons";
 import { m, timeAgo, type Flash } from "../shared";
-import { Breadcrumb, Button, Combobox, DialogFrame, Menu } from "@/components/ui";
+import { Button, Combobox, DialogFrame, Menu } from "@/components/ui";
 import { rid, matchClass, lineFromProduct, fmtGp, AuthImage, InvoiceImport } from "./_shared";
 
 /* =======================================================================
@@ -49,7 +50,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
   if (!cur) {
     return (
       <>
-        <Breadcrumb items={[{ label: "Purchase orders", href: "/admin/purchaseorder" }, { label: "Not found" }]} />
+        <Link className="detail-back" href="/admin/purchaseorder"><ArrowLeft /> Back to purchase orders</Link>
         <div className="empty"><div className="ei" aria-hidden="true"><Search /></div><h3>Purchase order not found</h3><p>It may have been closed or removed.</p></div>
       </>
     );
@@ -162,7 +163,7 @@ export function AdminPODetail({ id, flash }: { id: string; flash: Flash }) {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Purchase orders", href: "/admin/purchaseorder" }, { label: cur.id }]} />
+      <Link className="detail-back" href="/admin/purchaseorder"><ArrowLeft /> Back to purchase orders</Link>
       <header className="adminbar">
         <div><h1>{cur.id}</h1><p>{supName(cur.supplierId)} · created {new Date(cur.created).toLocaleDateString()} · expected {new Date(cur.expected).toLocaleDateString()}</p></div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

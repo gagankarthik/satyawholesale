@@ -10,8 +10,8 @@ import {
 } from "@/lib/wms";
 import { Button, DialogFrame, EmptyState, FieldHelp, ListToolbar, Menu, Skeleton, Tabs, type ToolbarOption } from "@/components/ui";
 import { useConfirm } from "@/components/Confirm";
-import { Eye, EyeOff, Pencil, Trash } from "@/components/Icons";
-import { Head, type Flash } from "./shared";
+import { Eye, EyeOff, Pencil, Trash, Plus } from "@/components/Icons";
+import { Head, m, type Flash } from "./shared";
 
 const EMPTY_STAFF = { name: "", email: "", role: "Viewer" as Role, device: "" };
 // Active/Inactive from a Cognito admin-group member's account state.
@@ -85,7 +85,7 @@ export function UsersTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Users & roles">
-        <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add user</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}><Plus /> Add user</button>
       </Head>
 
       {adminsError && (
@@ -256,6 +256,15 @@ export function SettingsTab({ flash }: { flash: Flash }) {
     flash("Warehouse policy saved");
   };
 
+  /* Live tax preview: how the current (unsaved) rates land on a sample invoice.
+     Uses $100 so the percentages read straight off the amounts. */
+  const TAX_SAMPLE = 100;
+  const rNum = Math.max(0, Number(rate) || 0);
+  const crNum = Math.max(0, Number(countyRate) || 0);
+  const salesTax = (TAX_SAMPLE * rNum) / 100;
+  const countyTax = (TAX_SAMPLE * crNum) / 100;
+  const taxTotal = salesTax + countyTax;
+
   return (
     <>
       <Head title="Store settings" />
@@ -272,7 +281,7 @@ export function SettingsTab({ flash }: { flash: Flash }) {
         ]}
       />
 
-      <div className="setpane">
+      <div className={`setpane${tab === "tax" ? " wide" : ""}`}>
         {tab === "company" && (
           <div className="panel anim-in" key="company">
             <div className="panel-h"><h3>Company profile</h3></div>
@@ -287,37 +296,54 @@ export function SettingsTab({ flash }: { flash: Flash }) {
         )}
 
         {tab === "tax" && (
-          <div className="panel anim-in" key="tax">
-            <div className="panel-h"><h3>Tax &amp; invoicing</h3></div>
-            <form className="formgrid" onSubmit={saveTax}>
-              <label className="field"><span>Sales tax rate (%) <FieldHelp text="Applied to taxable subtotals on customer orders. Resale-exempt customers are not charged." /></span>
-                <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
-              </label>
-              <label className="field"><span>Sales tax label <FieldHelp text="How this tax line is named on invoices (e.g. 'OH sales tax')." /></span>
-                <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="OH sales tax" />
-              </label>
-              <label className="field"><span>County tax rate (%) <FieldHelp text="Additional local county tax, charged on top of the sales tax. Set 0 to disable." /></span>
-                <input type="number" step="0.01" min={0} max={100} value={countyRate} onChange={(e) => setCountyRate(e.target.value)} />
-              </label>
-              <label className="field"><span>County tax label <FieldHelp text="How the county tax line is named on invoices." /></span>
-                <input value={countyLabel} onChange={(e) => setCountyLabel(e.target.value)} placeholder="County tax" />
-              </label>
-              <div className="setrow full" style={{ borderBottom: "none" }}>
-                <span>Combined rate</span><b>{(Number(rate) || 0) + (Number(countyRate) || 0)}%</b>
+          <div className="taxgrid anim-in" key="tax">
+            <div className="panel">
+              <div className="panel-h"><h3>Tax &amp; invoicing</h3></div>
+              <form className="formgrid" onSubmit={saveTax}>
+                <label className="field"><span>Sales tax rate (%) <FieldHelp text="Applied to taxable subtotals on customer orders. Resale-exempt customers are not charged." /></span>
+                  <input type="number" step="0.01" min={0} max={100} value={rate} onChange={(e) => setRate(e.target.value)} />
+                </label>
+                <label className="field"><span>Sales tax label <FieldHelp text="How this tax line is named on invoices (e.g. 'OH sales tax')." /></span>
+                  <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="OH sales tax" />
+                </label>
+                <label className="field"><span>County tax rate (%) <FieldHelp text="Additional local county tax, charged on top of the sales tax. Set 0 to disable." /></span>
+                  <input type="number" step="0.01" min={0} max={100} value={countyRate} onChange={(e) => setCountyRate(e.target.value)} />
+                </label>
+                <label className="field"><span>County tax label <FieldHelp text="How the county tax line is named on invoices." /></span>
+                  <input value={countyLabel} onChange={(e) => setCountyLabel(e.target.value)} placeholder="County tax" />
+                </label>
+                <div className="setrow full" style={{ borderBottom: "none" }}>
+                  <span>Default for new orders</span><b>Resale-exempt (B2B)</b>
+                </div>
+                <div className="modalbtns full" style={{ marginTop: 4 }}>
+                  <button className="btn btn-primary btn-sm" type="submit">Save tax settings</button>
+                </div>
+              </form>
+            </div>
+
+            {/* Live invoice preview — recomputes as the rates above change. */}
+            <aside className="taxrcpt" aria-label="Sample invoice preview">
+              <div className="txr-top">
+                <span className="txr-badge mono">Sample invoice</span>
+                <span className="txr-live mono"><i />Live preview</span>
               </div>
-              <div className="setrow full" style={{ borderBottom: "none" }}>
-                <span>Default for new orders</span><b>Resale-exempt (B2B)</b>
+              <div className="txr-lines">
+                <div className="txr-row"><span>Order subtotal</span><b>{m(TAX_SAMPLE)}</b></div>
+                <div className="txr-row tax"><span>{label.trim() || "Sales tax"} · {rNum}%</span><b>{m(salesTax)}</b></div>
+                {crNum > 0 && (
+                  <div className="txr-row tax"><span>{countyLabel.trim() || "County tax"} · {crNum}%</span><b>{m(countyTax)}</b></div>
+                )}
               </div>
-              <div className="modalbtns full" style={{ marginTop: 4 }}>
-                <button className="btn btn-primary btn-sm" type="submit">Save tax settings</button>
-              </div>
-            </form>
+              <div className="txr-tot"><span>Total due</span><b>{m(TAX_SAMPLE + taxTotal)}</b></div>
+              <div className="txr-foot mono">Combined {rNum + crNum}% · {m(taxTotal)} tax on {m(TAX_SAMPLE)}</div>
+              <div className="txr-exempt">Resale-exempt (B2B) customers are charged {m(0)} tax.</div>
+            </aside>
           </div>
         )}
 
         {tab === "policies" && (
-          <div key="policies">
-            <div className="panel anim-in" style={{ marginBottom: 18 }}>
+          <div key="policies" className="polstack">
+            <div className="panel anim-in">
               <div className="panel-h"><h3>Customer ordering &amp; delivery</h3></div>
               <form className="formgrid" onSubmit={savePolicies}>
                 <label className="field"><span>Order minimum ($) <FieldHelp text="Smallest order subtotal a customer can check out with. Set 0 for no minimum." /></span>

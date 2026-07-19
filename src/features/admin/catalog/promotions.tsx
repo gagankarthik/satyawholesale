@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePromotions } from "@/lib/wms";
-import { Search, Pencil, Trash } from "@/components/Icons";
+import { Search, Pencil, Trash, Plus } from "@/components/Icons";
 import { useConfirm } from "@/components/Confirm";
 import { Head, type Flash } from "../shared";
 import { Button, Breadcrumb, EmptyState, FieldHelp, ImageUpload, Menu, Skeleton, Switch } from "@/components/ui";
@@ -86,7 +86,7 @@ export function PromotionsTab({ flash }: { flash: Flash }) {
   return (
     <>
       <Head title="Promotions">
-        <Link className="btn btn-primary btn-sm" href="/admin/promotions/new">+ New promotion</Link>
+        <Link className="btn btn-primary btn-sm" href="/admin/promotions/new"><Plus /> New promotion</Link>
       </Head>
       {!ready ? (
         <div className="promogrid">

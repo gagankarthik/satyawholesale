@@ -1,7 +1,7 @@
 /* Line-icon set — replaces emoji on the public landing for an enterprise feel.
    All icons inherit currentColor and a 1.8 stroke. A few icons defer to lucide
    for a cleaner mark; they keep the same 1em sizing so nothing else changes. */
-import { Settings as LuSettings, Trash2 as LuTrash, Layers as LuLayers } from "lucide-react";
+import { Settings as LuSettings, Trash2 as LuTrash, Layers as LuLayers, Printer as LuPrinter, Download as LuDownload } from "lucide-react";
 
 type P = { className?: string };
 const base = {
@@ -135,6 +135,12 @@ export const Trash = ({ className }: P) => (
 );
 export const Chart = ({ className }: P) => (
   <svg {...base} className={className}><path d="M4 20V4M4 20h16M8 20v-6M13 20v-9M18 20v-4" /></svg>
+);
+export const Printer = ({ className }: P) => (
+  <LuPrinter className={className} width="1em" height="1em" strokeWidth={1.8} />
+);
+export const Download = ({ className }: P) => (
+  <LuDownload className={className} width="1em" height="1em" strokeWidth={1.8} />
 );
 export const Pencil = ({ className }: P) => (
   <svg {...base} className={className}><path d="M4 20h4L18.5 9.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4ZM13.5 6.5l3 3" /></svg>
